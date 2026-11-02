@@ -148,7 +148,8 @@ function homeHTML(){
       ${c.star?'<span class="badge-star">Objectif</span>':""}
       <span class="medal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${c.icon}</svg></span>
       <b>${esc(c.name)}</b>
-      <span class="meta">${s.own} / ${s.total} possédées${S.filter?` · ${l.length} filtrées`:""}</span>
+      <span class="meta">${s.own} / ${s.total} ${all.some(t=>t.v)?"variantes possédées":"possédées"}</span>
+      ${S.filter?`<span class="meta">${l.length} jeton${l.length>1?"s":""} ${({own:"possédé",missing:"avec un manque",dup:"avec doublon"})[S.filter]}${l.length>1&&S.filter==="own"?"s":""}</span>`:""}
       <span class="bar"><i style="width:${pct}%"></i></span></button>`;}).join("")}</div>
     <p class="status">Catalogue mis à jour le ${esc(CATALOG_DATE)} · ${CATALOG.length} médailles${Object.keys(S.custom).length?` + ${Object.keys(S.custom).length} ajoutées par toi`:""} · Données et photos : Numista (licences Creative Commons) · Disney : liste de Nico</p>`;
 }
