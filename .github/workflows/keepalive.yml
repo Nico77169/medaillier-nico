@@ -9,7 +9,7 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Petite requête à la base
         run: |
           URL=$(grep -o 'https://[a-z0-9]*\.supabase\.co' config.js)
