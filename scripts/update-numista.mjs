@@ -78,6 +78,8 @@ try {
 }
 
 fs.writeFileSync(seenFile, JSON.stringify([...seen]));
+// trace du passage : garde le dépôt « actif » (GitHub coupe les robots d'un dépôt public sans activité pendant 60 jours)
+fs.writeFileSync("scripts/last-run.txt", new Date().toISOString() + `\nrequêtes: ${used}, ajouts: ${added.length}\n`);
 if (added.length) {
   cat.updated = new Date().toISOString().slice(0, 10);
   fs.writeFileSync("catalogue.json", JSON.stringify(cat));

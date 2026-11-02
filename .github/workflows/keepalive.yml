@@ -1,0 +1,20 @@
+name: Garder Supabase éveillé
+# Les projets Supabase gratuits se mettent en pause après 7 jours sans activité.
+# Ce robot fait une petite requête chaque jour pour que l'appli de Nico reste toujours disponible.
+on:
+  schedule:
+    - cron: "23 4 * * *"   # tous les jours vers 5h-6h heure de Paris
+  workflow_dispatch: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Petite requête à la base
+        run: |
+          URL=$(grep -o 'https://[a-z0-9]*\.supabase\.co' config.js)
+          KEY=$(grep -o 'sb_publishable_[A-Za-z0-9_-]*' config.js)
+          code=$(curl -s -o /tmp/r.txt -w "%{http_code}" -X POST "$URL/rest/v1/rpc/keepalive" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{}')
+          echo "Réponse $code : $(cat /tmp/r.txt)"
+          test "$code" = "200"

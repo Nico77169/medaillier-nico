@@ -21,5 +21,5 @@ jobs:
         run: |
           git config user.name "Robot Médaillier"
           git config user.email "actions@users.noreply.github.com"
-          git add catalogue.json scripts/seen.json
+          git add catalogue.json scripts/seen.json scripts/last-run.txt
           git diff --cached --quiet || (git commit -m "Nouveautés Numista du mois" && git push)
