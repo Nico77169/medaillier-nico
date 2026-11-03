@@ -248,6 +248,26 @@ img{max-width:100%}
 .zcap small{display:block;color:#9aa4b1;font-size:.75rem;margin-top:4px}
 .zbtns{justify-content:center}
 .zbtns .btn.ghost{background:#2a313b;color:#e8ebef;border-color:#3a434f}
+
+/* --- mosaïque par année --- */
+.mosaic-btn{color:var(--gold)}
+.mosaic-btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.mhint{font-size:.8rem;color:var(--muted);margin:4px 0 10px}
+.mgroup{margin-bottom:18px}
+.myear{width:100%;display:flex;align-items:baseline;gap:10px;border:0;background:none;padding:6px 2px 8px;color:var(--ink);text-align:left}
+.myear b{font-family:var(--f-display);font-size:1.35rem}
+.myear span{font-size:.8rem;color:var(--muted);font-weight:600}
+.myear i{margin-left:auto;font-style:normal;font-size:1.4rem;color:var(--gold);line-height:1}
+.mgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.mtile{position:relative;aspect-ratio:1;border-radius:50%;border:0;padding:0;background:var(--surface);overflow:visible}
+.mtile img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.mtile:not(.own) img{filter:grayscale(1);opacity:.42}
+.mtile .mph{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;padding:6px;text-align:center;font-size:.52rem;font-weight:700;line-height:1.1;color:var(--muted);background:radial-gradient(circle at 35% 30%,var(--coin1),var(--coin2));opacity:.45;overflow:hidden}
+.mtile.own .mph{opacity:1;color:#3b2a06}
+.mtile .mok{position:absolute;right:-2px;bottom:-2px;width:18px;height:18px;border-radius:50%;background:var(--ok);color:#fff;font-size:.62rem;font-weight:800;display:grid;place-items:center;box-shadow:0 0 0 2px var(--bg)}
+.card.flash{animation:flash 1.6s ease-out}
+@keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--gold)}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.card.flash{animation:none;box-shadow:0 0 0 3px var(--gold)}}
 </style>
 </head>
 <body>
@@ -266,7 +286,8 @@ img{max-width:100%}
   <header class="top">
     <div class="brand">
       <button class="back" id="backBtn" hidden aria-label="Retour aux thèmes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <div style="min-width:0"><small id="crumb">Jetons Monnaie de Paris</small><h1 id="title">Médaillier de Nico</h1></div>
+      <div style="min-width:0;flex:1"><small id="crumb">Jetons Monnaie de Paris</small><h1 id="title">Médaillier de Nico</h1></div>
+      <button class="back mosaic-btn" id="mosaicBtn" hidden aria-label="Voir en mosaïque par année"></button>
     </div>
     <div class="search">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);flex:none"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>

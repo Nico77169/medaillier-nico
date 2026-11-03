@@ -130,8 +130,39 @@ async function pull(){
 }
 
 /* ---------- rendu ---------- */
+/* ---------- mosaïque par année ---------- */
+const ICON_GRID='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.6"/><circle cx="12" cy="6" r="2.6"/><circle cx="18" cy="6" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="12" cy="12" r="2.6"/><circle cx="18" cy="12" r="2.6"/><circle cx="6" cy="18" r="2.6"/><circle cx="12" cy="18" r="2.6"/><circle cx="18" cy="18" r="2.6"/></svg>';
+const ICON_LIST='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
+function yearOf(t){ const y=parseInt(String(t.years||""),10); return isNaN(y)?"":String(y); }
+function mosaicHTML(list){
+  if(!list.length) return `<div class="empty">Aucune médaille ne correspond${S.filter?" avec ce filtre":""}.</div>`;
+  const groups=new Map();
+  list.forEach(t=>{ const y=yearOf(t)||"Sans année"; if(!groups.has(y)) groups.set(y,[]); groups.get(y).push(t); });
+  const keys=[...groups.keys()].sort((a,b)=>(a==="Sans année")-(b==="Sans année")||a.localeCompare(b));
+  return `<p class="mhint">Touche une année ou une pièce pour y aller dans la liste.</p>`+keys.map(y=>{
+    const ts=groups.get(y), own=ts.filter(t=>eff(t).qty>0).length;
+    return `<section class="mgroup"><button class="myear" data-jy="${esc(y)}"><b>${esc(y)}</b><span>${own} / ${ts.length} possédée${own>1?"s":""}</span><i aria-hidden="true">›</i></button>
+      <div class="mgrid">${ts.map(mtileHTML).join("")}</div></section>`; }).join("");
+}
+function mtileHTML(t){
+  const e=eff(t), np=PHOTOS[t.id]||{}, own=e.qty>0;
+  let img="";
+  if(e.f) img=`<img src="${esc(ownSrc(e.f))}" data-ph="${esc(e.f)}" alt="" loading="lazy">`;
+  else if(np.f) img=`<img src="${esc(np.f.src)}" alt="" loading="lazy">`;
+  const short=esc(String(t.name).replace(/^(Disneyland( Resort)? Paris|ZooParc de Beauval)\s*[-–:]?\s*/i,"").slice(0,28));
+  return `<button class="mtile${own?" own":""}" data-jt="${t.id}" aria-label="${esc(t.name)}${own?" (possédée)":" (manquante)"}">${img||`<span class="mph">${short}</span>`}${own?'<span class="mok">✓</span>':""}</button>`;
+}
+function jumpTo(sel){
+  S.mosaic=false; render();
+  requestAnimationFrame(()=>{ const el=document.querySelector(sel); if(!el) return;
+    const top=el.getBoundingClientRect().top+scrollY-($(".top").offsetHeight+12); scrollTo({top,behavior:"instant"});
+    el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),1600); });
+}
 function render(){
   $("#backBtn").hidden=!S.cat;
+  const mb=$("#mosaicBtn"); mb.hidden=!S.cat; const mos=!!(S.cat&&S.mosaic);
+  mb.setAttribute("aria-pressed",String(mos)); mb.setAttribute("aria-label",mos?"Revenir à la liste":"Voir en mosaïque par année");
+  mb.innerHTML=mos?ICON_LIST:ICON_GRID;
   $("#title").textContent=S.cat?catOf(S.cat).name:"Médaillier de Nico";
   $("#crumb").textContent=S.cat?"Thème":"Jetons Monnaie de Paris";
   $("#q").placeholder=S.cat?"Chercher dans ce thème…":"Code, nom ou thème…";
@@ -141,6 +172,7 @@ function render(){
   if(!S.cat && !S.q){ v.innerHTML=homeHTML(); renderFoot(allTokens(),"Toute la collection"); return; }
   const pool=allTokens().filter(t=>(!S.cat||t.cat===S.cat));
   const list=pool.filter(t=>matches(t,S.q)&&passFilter(t)).sort((a,b)=>String(a.years).localeCompare(String(b.years))||a.name.localeCompare(b.name));
+  if(mos){ v.innerHTML=mosaicHTML(list); renderFoot(pool,"Total "+catOf(S.cat).name); return; }
   let h="";
   if(!S.cat) h+=`<p class="sect-title">${list.length} résultat${list.length>1?"s":""} dans tous les thèmes</p>`;
   h+= list.length?`<div class="list">${list.map(cardHTML).join("")}</div>`:`<div class="empty">Aucune médaille ne correspond${S.filter?" avec ce filtre":""}.</div>`;
@@ -199,7 +231,7 @@ function cardHTML(t){
   const hasPh=!!(sf||sb);
   const coin=l=>`<span class="ncoin"><span class="blank"></span><small>${l}</small></span>`;
   const dup=e.us.reduce((a,x)=>a+Math.max(0,x.q-1),0);
-  return `<article class="card${own?" own":""}" data-id="${t.id}">
+  return `<article class="card${own?" own":""}" data-id="${t.id}" data-year="${yearOf(t)}">
     ${!hasPh?`<a class="ntile" href="${numUrl(t)}" target="_blank" rel="noopener" aria-label="Voir les photos de ${esc(t.name)} sur Numista">
         <span class="ncoins${faceOnly?" one":""}">${coin("Face")}${faceOnly?"":coin("Dos")}</span>
         <span class="ncap">${t.n?"Voir les photos sur Numista ↗":"Chercher les photos sur Numista ↗"}</span></a>
@@ -252,8 +284,11 @@ function numUrlSafe(t){ return numUrl(t); }
 /* ---------- interactions ---------- */
 document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
-  if(b.dataset.cat){ S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
-  if(b.id==="backBtn"){ S.cat=null; S.q=""; $("#q").value=""; render(); return; }
+  if(b.dataset.cat){ S.mosaic=false; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
+  if(b.id==="mosaicBtn"){ S.mosaic=!S.mosaic; render(); scrollTo(0,0); return; }
+  if(b.dataset.jy){ const y=b.dataset.jy; jumpTo(y==="Sans année"?'article.card[data-year=""]':`article.card[data-year="${CSS.escape(y)}"]`); return; }
+  if(b.dataset.jt){ jumpTo(`article.card[data-id="${CSS.escape(b.dataset.jt)}"]`); return; }
+  if(b.id==="backBtn"){ S.mosaic=false; S.cat=null; S.q=""; $("#q").value=""; render(); return; }
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
   if(b.id==="clearF"){ S.filter=null; saveFilter(); render(); return; }
   if(b.dataset.vt||b.dataset.vi||b.dataset.vd){ const key=b.dataset.vt||b.dataset.vi||b.dataset.vd; const i=key.indexOf("~"); const id=key.slice(0,i), k=key.slice(i+1);
