@@ -116,8 +116,12 @@ async function pull(){
   if(!UID) return;
   if(syncing){ setTimeout(pull,1500); return; }
   const t0=Date.now();
-  const {data,error}=await supa.from("collection").select("token_id,data");
-  if(error){ setSync("off","Serveur injoignable : tu travailles sur la copie du téléphone"); return; }
+  let data=null, error=null;
+  try{ ({data,error}=await supa.from("collection").select("token_id,data")); }catch(e){ error=e; }
+  if(error){ setSync("off","Serveur injoignable : tu travailles sur la copie du téléphone");
+    if(navigator.onLine){ ALERT.server="Le serveur de sauvegarde ne répond pas (peut-être en pause). Tes coches restent sur le téléphone."; showAlert(); }
+    return; }
+  if(ALERT.server){ ALERT.server=""; showAlert(); }
   const items={}, custom={}; let prefs=null;
   data.forEach(r=>{ if(r.token_id==="_prefs"){ prefs=r.data; return; } const d={...r.data}; if(d._custom){ custom[r.token_id]=d._custom; delete d._custom; } if(Object.keys(d).length) items[r.token_id]=d; });
   const q=Q(); Object.keys(EDIT).forEach(id=>{ if(EDIT[id]>=t0-2000) q[id]=1; });
@@ -130,6 +134,21 @@ async function pull(){
     queue("_prefs");
   } else { S.items=items; S.custom=custom; persistLocal(); }
   render(); flush();
+}
+
+/* ---------- bandeau d'alerte (bilan du robot Supabase + serveur injoignable) ---------- */
+const ALERT={robot:"",server:""};
+function showAlert(){ const el=$("#alert"); const m=ALERT.server||ALERT.robot; el.hidden=!m; el.textContent=m?"⚠️ "+m+" Préviens Alex.":""; }
+async function checkRobot(){
+  try{
+    const r=await fetch("status.json",{cache:"no-cache"}); if(!r.ok) return; const s=await r.json();
+    const days=Math.floor((Date.now()-Date.parse(s.date))/864e5);
+    if(s.server&&s.server!=="ok") ALERT.robot="Le serveur de sauvegarde est en pause ou ne répond plus. Tes coches restent sur le téléphone.";
+    else if(s.token==="expired") ALERT.robot="Le robot de sauvegarde a un souci : sa clé Supabase ne marche plus.";
+    else if(days>=3) ALERT.robot=`Le robot de sauvegarde n'est pas passé depuis ${days} jours.`;
+    else ALERT.robot="";
+    showAlert();
+  }catch(e){}
 }
 
 /* ---------- rendu ---------- */
@@ -551,7 +570,7 @@ async function loadCatalogue(){
 async function start(){
   S.filter=ls.get("nico_filter")||null; S.items=ls.get("nico_items")||{}; S.custom=ls.get("nico_custom")||{};
   try{ await loadCatalogue(); }catch(e){ $("#view").innerHTML='<div class="empty">Impossible de charger le catalogue. Vérifie ta connexion et relance l\'appli.</div>'; return; }
-  render();
+  render(); checkRobot();
   const {data:{session}}=await supa.auth.getSession();
   if(!session){ showLogin(); return; }
   UID=session.user.id; setSync("wait","Synchronisation…"); pull();
@@ -565,6 +584,6 @@ function showLogin(){
     $("#login").hidden=true; UID=data.user.id; setSync("wait","Synchronisation…"); pull(); };
 }
 window.addEventListener("online",flush);
-document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&UID){ pull(); } });
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ checkRobot(); if(UID) pull(); } });
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 start();

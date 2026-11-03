@@ -3,38 +3,71 @@ name: Garder Supabase éveillé
 # 1) Chaque jour, une petite requête garde le projet actif.
 # 2) Filet de sécurité : si le projet est quand même en pause, le robot le relance tout seul
 #    (nécessite le secret SUPABASE_ACCESS_TOKEN, un jeton du compte Supabase de Nico).
+# 3) Bilan du jour écrit dans status.json : l'appli de Nico le lit et affiche un bandeau en cas de souci.
+#    En cas de souci, le robot finit aussi en échec -> GitHub envoie un e-mail au propriétaire du dépôt.
 on:
   schedule:
     - cron: "23 4 * * *"   # tous les jours vers 5h-6h heure de Paris
   workflow_dispatch: {}
+permissions:
+  contents: write
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Relancer le projet s'il est en pause
+      - name: Vérifier la clé et relancer le projet s'il est en pause
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
           REF=$(grep -o 'https://[a-z0-9]*\.supabase\.co' config.js | sed 's#https://##; s#\.supabase\.co##')
-          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "Pas de jeton : vérification de pause ignorée."; exit 0; fi
-          STATUS=$(curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF" | grep -o '"status":"[A-Z_]*"' | head -1 | cut -d'"' -f4)
-          echo "État du projet : $STATUS"
-          if [ "$STATUS" = "INACTIVE" ]; then
-            echo "Projet en pause : relance…"
-            curl -s -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF/restore"
-            echo "Relance demandée, attente du redémarrage…"
-            for i in $(seq 1 30); do
-              sleep 20
-              STATUS=$(curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF" | grep -o '"status":"[A-Z_]*"' | head -1 | cut -d'"' -f4)
-              echo "… $STATUS"; [ "$STATUS" = "ACTIVE_HEALTHY" ] && break
-            done
+          TOKEN_STATE=absent
+          if [ -n "$SUPABASE_ACCESS_TOKEN" ]; then
+            code=$(curl -s -o /tmp/p.json -w "%{http_code}" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF")
+            if [ "$code" = "401" ] || [ "$code" = "403" ]; then TOKEN_STATE=expired
+            elif [ "$code" = "200" ]; then TOKEN_STATE=ok
+            else TOKEN_STATE=unknown; fi
+            STATUS=$(grep -o '"status":"[A-Z_]*"' /tmp/p.json | head -1 | cut -d'"' -f4)
+            echo "Clé : $TOKEN_STATE (HTTP $code) · État du projet : $STATUS"
+            if [ "$STATUS" = "INACTIVE" ]; then
+              echo "Projet en pause : relance…"
+              curl -s -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF/restore"
+              for i in $(seq 1 30); do
+                sleep 20
+                STATUS=$(curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF" | grep -o '"status":"[A-Z_]*"' | head -1 | cut -d'"' -f4)
+                echo "… $STATUS"; [ "$STATUS" = "ACTIVE_HEALTHY" ] && break
+              done
+            fi
+          else
+            echo "Pas de jeton : vérification de pause ignorée."
           fi
+          echo "TOKEN_STATE=$TOKEN_STATE" >> "$GITHUB_ENV"
       - name: Petite requête à la base
         run: |
           URL=$(grep -o 'https://[a-z0-9]*\.supabase\.co' config.js)
           KEY=$(grep -o 'sb_publishable_[A-Za-z0-9_-]*' config.js)
-          code=$(curl -s -o /tmp/r.txt -w "%{http_code}" -X POST "$URL/rest/v1/rpc/keepalive" \
-            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{}')
-          echo "Réponse $code : $(cat /tmp/r.txt)"
-          test "$code" = "200"
+          SERVER=ok
+          for i in 1 2 3; do
+            code=$(curl -s -o /tmp/r.txt -w "%{http_code}" -X POST "$URL/rest/v1/rpc/keepalive" \
+              -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{}')
+            echo "Réponse $code : $(cat /tmp/r.txt)"
+            [ "$code" = "200" ] && break
+            sleep 30
+          done
+          [ "$code" = "200" ] || SERVER=down
+          echo "SERVER=$SERVER" >> "$GITHUB_ENV"
+      - name: Écrire le bilan pour l'appli
+        if: always()
+        run: |
+          printf '{"date":"%s","server":"%s","token":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${SERVER:-down}" "${TOKEN_STATE:-unknown}" > status.json
+          cat status.json
+          git config user.name "Robot Médaillier"
+          git config user.email "actions@users.noreply.github.com"
+          git add status.json
+          git diff --cached --quiet || git commit -m "Bilan du robot Supabase"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
+      - name: Prévenir en cas de souci
+        if: always()
+        run: |
+          if [ "${SERVER:-down}" != "ok" ]; then echo "::error::Le serveur Supabase ne répond pas."; exit 1; fi
+          if [ "$TOKEN_STATE" = "expired" ]; then echo "::error::La clé SUPABASE_ACCESS_TOKEN ne marche plus : en refaire une."; exit 1; fi
