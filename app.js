@@ -1,13 +1,15 @@
 /* Médaillier de Nico — appli installable (PWA)
    Données : catalogue.json (public) + collection de Nico dans Supabase (privée, protégée par compte). */
 "use strict";
-let CATS=[], CATALOG=[], PHOTOS={}, CATALOG_DATE="";
+let CATS=[], CATALOG=[], PHOTOS={}, CATALOG_DATE="", LEGACY={}, CJT_OWN={}, CJT_DATE="";
+const IMPORT_CJT=true;
 // Variantes cochées en vert dans le tableau Disney de Nico : appliquées une seule fois, au premier lancement
 const PRESET = {"d0299":{"2004|04 CN Diff. Bas":1},"d0303":{"2004|04 CN":1},"d0297":{"2007|07 MDP":1},"d0577":{"2008|08 EVM France":1},"d0681":{"2008|08 EVM":1},"d0706":{"2009|09 EVM":1,"2013|13 MDP-2":1,"2020|20 MDP-3 NG":1,"2022|22 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d0811":{"2009|09 EVM":1},"d0945":{"2009|09 EVM":1,"2010|10 EVM":1},"d0837":{"2009|09 EVM":1},"d1047":{"2010|10 EVM":1},"d1011":{"2010|10 EVM":1,"2013|13 MDP-2":1,"2015|15 MDP-2 NG":1,"2017|17 MDP-2 NG":1,"2018|18 MDP-2 NG":1,"2020|20 MDP-3 NG":1,"2021|21 MDP-3 NG":1,"2022|22 MDP-3 NG":1},"d1010":{"2010|10 EVM":1,"2012|12 EVM":1,"2017|17 MDP-2 NG":1,"2018|18 MDP-2 NG":1,"2019|19 MDP-2 NG":1,"2021|21 MDP-3 NG":1,"2022|22 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d1100":{"2011|11 EVM":1},"d1373":{"2012|12 MDP-2":1},"d1279":{"2012|12 EVM":1,"2012|12 MDP-2":1},"d1208":{"2012|12 EVM":1,"2020|20 MDP-3 NG":1},"d1201":{"2012|12 EVM":1,"2015|15 MDP-2 NG":1,"2017|17 MDP-2 NG":1,"2022|22 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d1012":{"2013|13 MDP":1},"d1702":{"2014|14 MDP-2 NG":1},"d1719":{"2014|14 MDP-2 CAN":1},"d1877":{"2015|15 MDP-2 NG":1,"2016|16 MDP-2 NG":1,"2020|20 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d2467":{"2017|17 MDP/EVM":1},"d2392":{"2017|17 MDP/EVM":1},"d1718":{"2017|17 MDP-2 NG":1},"d2817":{"2018|18 MDP/EVM":1},"d2746":{"2018|18 MDP/EVM":1,"2020|20 MDP-3 NG":1,"2021|21 MDP-3 NG":1,"2022|22 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d2501":{"2018|18 MDP-2 NG":1,"2020|20 MDP-3 NG":1},"d3088":{"2020|20 MDP/EVM":1},"d3035":{"2020|20 MDP/EVM":1},"d3635":{"2022|22 MDP/EVM":1},"d3432":{"2022|22 MDP/EVM":1},"d3704":{"2023|23 MDP/EVM":1},"d3885":{"2023|23 MDP-3 NG":1},"d3491":{"2023|23 MDP-3 NG":1},"d3943":{"2024|24 MDP/EVM":1},"d4182":{"2024|24 MDP-3 NG":1},"d3942":{"2024|24 MDP-3 NG":1,"2025|25 MDP-3 NG":1},"d4198":{"2025|25 MDP/EVM":1},"d4239":{"2025|25 MDP-3 NG":1},"d4256":{"2025|25 MDP/EVM":1},"d4489":{"2025|25 MDP/EVM":1},"d4202":{"2025|25 MDP/EVM":1},"d4496":{"2026|26 MDP/EVM":1},"d4047":{"2026|26 MDP/EVM":1},"d4490":{"2026|26 MDP/EVM":1}};
 function applyPreset(items){ Object.entries(PRESET).forEach(([id,vq])=>{ const cur=items[id]||{}; items[id]={...cur,vq:{...vq,...(cur.vq||{})}}; }); }
 
 /* ---------- état ---------- */
-const S = { items:{}, custom:{}, filter:null, cat:null, q:"" };
+const S = { items:{}, custom:{}, filter:null, cat:null, q:"", shown:60, prefs:{} };
+const PAGE=60; let VIEWKEY="";
 const $ = s=>document.querySelector(s);
 const esc = s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const norm = s=>String(s??"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
@@ -15,6 +17,9 @@ const eur = n=>(n||0).toLocaleString("fr-FR",{style:"currency",currency:"EUR",ma
 const catOf = id=>CATS.find(c=>c.id===id)||{name:"Autre"};
 const ls = { get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}} };
 function allTokens(){ return CATALOG.concat(Object.values(S.custom)); }
+let NEWY=0; // année des nouveautés (la plus récente du catalogue)
+function inCat(t,c){ if(c==="nouveautes") return t.cat!=="disney"&&t.cat!=="beauval"&&parseInt(t.years,10)===NEWY; /* pièces sorties pour la première fois cette année */ return t.cat===c; }
+function isVirtual(c){ return !!(CATS.find(x=>x.id===c)||{}).virtual; }
 function st(id){ return S.items[id]||{}; }
 function units(t){ const u=st(t.id);
   if(t.v) return t.v.concat((u.xv||[]).filter(([y,r])=>!t.v.some(v=>v[0]==y&&v[1]===r))).map(([y,r,c])=>{const k=y+"|"+r; return {k,y,r,c:c||null,q:(u.vq||{})[k]||0};});
@@ -34,7 +39,7 @@ function passFilter(t){
 }
 function matches(t,q){
   if(!q) return true;
-  const hay=norm([t.ref,t.name,t.years,t.dept,t.note,t.metal,catOf(t.cat).name].join(" "));
+  const hay=norm([t.ref,t.name,t.site,t.years,t.dept,t.note,t.metal,catOf(t.cat).name].join(" "));
   return norm(q).split(/\s+/).filter(Boolean).every(w=>hay.includes(w));
 }
 function stats(list){
@@ -100,7 +105,7 @@ async function flush(){
   syncing=true; setSync("wait","Sauvegarde en cours…"); let failed=false;
   try{
     for(const id of ids){
-      if(id==="_prefs"){ const {error}=await supa.from("collection").upsert({user_id:UID,token_id:"_prefs",data:{seeded:true},updated_at:new Date().toISOString()}); if(error) throw error; }
+      if(id==="_prefs"){ const {error}=await supa.from("collection").upsert({user_id:UID,token_id:"_prefs",data:{...S.prefs,seeded:true},updated_at:new Date().toISOString()}); if(error) throw error; }
       else if(S.items[id]||S.custom[id]){
         await uploadPending(id); persistLocal();
         const data={...(S.items[id]||{})}; if(S.custom[id]) data._custom=S.custom[id];
@@ -133,6 +138,7 @@ async function pull(){
     Object.keys(items).concat(Object.keys(custom)).forEach(id=>{ const c=Q(); c[id]=1; ls.set("nico_queue",c); });
     queue("_prefs");
   } else { S.items=items; S.custom=custom; persistLocal(); }
+  S.prefs={...(ls.get("nico_prefs")||{}),...(prefs||{}),...S.prefs,seeded:true}; upgrade();
   render(); flush();
 }
 
@@ -149,6 +155,21 @@ async function checkRobot(){
     else ALERT.robot="";
     showAlert();
   }catch(e){}
+}
+
+/* ---------- mises à niveau uniques (après synchro) ---------- */
+function upgrade(){
+  let changed=false; const mark=id=>{ const c=Q(); c[id]=1; ls.set("nico_queue",c); };
+  // 1) anciennes fiches remplacées par le catalogue CJT : si Nico y avait coché quelque chose, on garde la fiche en « pièce ajoutée »
+  Object.keys(S.items).forEach(id=>{ if(LEGACY[id]&&!byId(id)){ const L=LEGACY[id]; S.custom[id]={id,cat:L.cat,name:L.name,ref:L.ref,years:L.years,note:"Ancienne fiche de l'appli"}; mark(id); changed=true; } });
+  // 2) une seule fois : on coche ce que Nico a marqué « Possédé » sur son compte CJT (sans rien décocher)
+  if(IMPORT_CJT && !S.prefs.cjt1){
+    Object.entries(CJT_OWN).forEach(([id,vq])=>{ const t=byId(id); if(!t) return; const cur=S.items[id]||{};
+      if(t.v){ const nv={...vq,...(cur.vq||{})}; S.items[id]={...cur,vq:nv}; } else if(!cur.q){ S.items[id]={...cur,q:vq._||1}; }
+      mark(id); });
+    S.prefs.cjt1=true; ls.set("nico_prefs",S.prefs); mark("_prefs"); changed=true;
+  }
+  if(changed){ persistLocal(); setTimeout(flush,300); }
 }
 
 /* ---------- rendu ---------- */
@@ -182,49 +203,61 @@ function mtileHTML(t){
   const short=esc(String(t.name).replace(/^(Disneyland( Resort)? Paris|ZooParc de Beauval)\s*[-–:]?\s*/i,"").slice(0,28));
   return `<button class="mtile${own?" own":""}" data-jt="${t.id}" aria-label="${esc(t.name)}${own?" (possédée)":" (manquante)"}">${img||`<span class="mph">${short}</span>`}${own?'<span class="mok">✓</span>':""}</button>`;
 }
-function jumpTo(sel){
+let KEEPY=false, moreObs=null;
+function watchMore(){ if(moreObs) moreObs.disconnect(); const b=$("#moreBtn"); if(!b||!("IntersectionObserver" in window)) return;
+  moreObs=new IntersectionObserver(es=>{ if(es.some(e=>e.isIntersecting)){ moreObs.disconnect(); showMore(); } },{rootMargin:"600px"}); moreObs.observe(b); }
+function showMore(){ S.shown+=PAGE; KEEPY=true; render(); }
+// ré-affichage après un clic : on garde le nombre de pièces affichées et la position
+function rerender(){ KEEPY=true; render(); }
+function jumpTo(pred){
   S.mosaic=false; render();
+  const i=(S.list||[]).findIndex(pred); if(i<0) return;
+  if(i>=S.shown){ S.shown=i+PAGE; render(); }
+  const sel=`article.card[data-id="${CSS.escape(S.list[i].id)}"]`;
   requestAnimationFrame(()=>{ const el=document.querySelector(sel); if(!el) return;
     const top=el.getBoundingClientRect().top+scrollY-($(".top").offsetHeight+12); scrollTo({top,behavior:"instant"});
     el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),1600); });
 }
 function render(){
   $("#backBtn").hidden=!S.cat;
-  const pool0=S.cat?allTokens().filter(t=>t.cat===S.cat):[], mmode=S.cat?mosaicMode(pool0):null;
+  const pool0=S.cat?allTokens().filter(t=>inCat(t,S.cat)):[], mmode=S.cat?mosaicMode(pool0):null;
   if(!mmode) S.mosaic=false;
   const mb=$("#mosaicBtn"); mb.hidden=!mmode; const mos=!!(mmode&&S.mosaic);
   mb.setAttribute("aria-pressed",String(mos)); mb.setAttribute("aria-label",mos?"Revenir à la liste":(mmode==="letter"?"Voir en mosaïque par lettre":"Voir en mosaïque par année"));
   mb.innerHTML=mos?ICON_LIST:ICON_GRID;
-  $("#title").textContent=S.cat?catOf(S.cat).name:"Médaillier de Nico";
+  $("#title").textContent=S.cat?(isVirtual(S.cat)?catOf(S.cat).name.replace("de l'année",NEWY):catOf(S.cat).name):"Médaillier de Nico";
   $("#crumb").textContent=S.cat?"Thème":"Jetons Monnaie de Paris";
   $("#q").placeholder=S.cat?"Chercher dans ce thème…":"Code, nom ou thème…";
   document.querySelectorAll(".chip[data-f]").forEach(b=>b.setAttribute("aria-pressed",String(S.filter===b.dataset.f)));
   $("#clearF").hidden=!S.filter;
   const v=$("#view");
   if(!S.cat && !S.q){ v.innerHTML=homeHTML(); renderFoot(allTokens(),"Toute la collection"); return; }
-  const pool=allTokens().filter(t=>(!S.cat||t.cat===S.cat));
+  const pool=allTokens().filter(t=>(!S.cat||inCat(t,S.cat)));
   const list=pool.filter(t=>matches(t,S.q)&&passFilter(t)).sort(mmode==="letter"?((a,b)=>a.name.localeCompare(b.name,"fr")):((a,b)=>String(a.years).localeCompare(String(b.years))||a.name.localeCompare(b.name)));
   if(mos){ v.innerHTML=mosaicHTML(list,mmode); renderFoot(pool,"Total "+catOf(S.cat).name); return; }
+  const vk=[S.cat,S.q,S.filter].join("§"); if(vk!==VIEWKEY){ VIEWKEY=vk; S.shown=PAGE; }
+  S.list=list; const part=list.slice(0,S.shown), rest=list.length-part.length;
   let h="";
   if(!S.cat) h+=`<p class="sect-title">${list.length} résultat${list.length>1?"s":""} dans tous les thèmes</p>`;
-  h+= list.length?`<div class="list">${list.map(cardHTML).join("")}</div>`:`<div class="empty">Aucune médaille ne correspond${S.filter?" avec ce filtre":""}.</div>`;
-  if(S.cat) h+=`<button class="addbtn" id="addBtn">+ Ajouter une médaille absente du catalogue</button><div id="addPanel"></div>`;
-  v.innerHTML=h;
+  h+= list.length?`<div class="list">${part.map(cardHTML).join("")}</div>${rest>0?`<button class="addbtn more" id="moreBtn">Afficher la suite (${rest} pièce${rest>1?"s":""})</button>`:""}`:`<div class="empty">Aucune médaille ne correspond${S.filter?" avec ce filtre":""}.</div>`;
+  if(S.cat&&!isVirtual(S.cat)) h+=`<button class="addbtn" id="addBtn">+ Ajouter une médaille absente du catalogue</button><div id="addPanel"></div>`;
+  const y0=scrollY; v.innerHTML=h; if(KEEPY){ scrollTo(0,y0); KEEPY=false; }
+  watchMore();
   renderFoot(S.cat?pool:list, S.cat?"Total "+catOf(S.cat).name:"Total des résultats");
 }
 function homeHTML(){
   const toks=allTokens();
   return `<p class="sect-title">Thèmes</p><div class="cats">${CATS.map(c=>{
-    const l=toks.filter(t=>t.cat===c.id&&passFilter(t)); const all=toks.filter(t=>t.cat===c.id); const s=stats(all);
+    const all=toks.filter(t=>inCat(t,c.id)); const l=S.filter?all.filter(passFilter):all; const s=stats(all);
     const pct=s.total?Math.round(s.own/s.total*100):0;
     return `<button class="cat${c.star?" star":""}" data-cat="${c.id}" style="--c1:${c.c1};--c2:${c.c2}">
       ${c.star?'<span class="badge-star">Objectif</span>':""}
       <span class="medal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${c.icon}</svg></span>
-      <b>${esc(c.name)}</b>
+      <b>${esc(c.virtual?c.name.replace("de l'année",NEWY):c.name)}</b>
       <span class="meta">${s.own} / ${s.total} ${all.some(t=>t.v)?"variantes possédées":"possédées"}</span>
       ${S.filter?`<span class="meta">${l.length} jeton${l.length>1?"s":""} ${({own:"possédé",missing:"avec un manque",dup:"avec doublon",hugo:"avec Hugo"})[S.filter]}${l.length>1&&S.filter==="own"?"s":""}</span>`:""}
       <span class="bar"><i style="width:${pct}%"></i></span></button>`;}).join("")}</div>
-    <p class="status">Catalogue mis à jour le ${esc(CATALOG_DATE)} · ${CATALOG.length} médailles${Object.keys(S.custom).length?` + ${Object.keys(S.custom).length} ajoutées par toi`:""} · Données et photos : Numista (licences Creative Commons) · Disney : liste de Nico</p>`;
+    <p class="status">Catalogue mis à jour le ${esc(CATALOG_DATE)} · ${CATALOG.length} médailles${Object.keys(S.custom).length?` + ${Object.keys(S.custom).length} ajoutées par toi`:""} · Liste : catalogue CJT de Nico${CJT_DATE?` (${esc(CJT_DATE)})`:""} · Photos : Numista (licences Creative Commons) · Disney : liste de Nico</p>`;
 }
 function faceHTML(t,side,src,ph){
   const lbl=side==="f"?"Face":"Dos";
@@ -264,16 +297,17 @@ function cardHTML(t){
   const hasPh=!!(sf||sb);
   const coin=l=>`<span class="ncoin"><span class="blank"></span><small>${l}</small></span>`;
   const dup=e.us.reduce((a,x)=>a+Math.max(0,x.q-1),0);
+  const mini=t.cat!=="disney"&&t.cat!=="beauval"; // fiches du catalogue CJT sans photo : vignette compacte
   return `<article class="card${own?" own":""}" data-id="${t.id}" data-year="${yearOf(t)}" data-letter="${letterOf(t)}">
-    ${!hasPh?`<a class="ntile" href="${numUrl(t)}" target="_blank" rel="noopener" aria-label="Voir les photos de ${esc(t.name)} sur Numista">
-        <span class="ncoins${faceOnly?" one":""}">${coin("Face")}${faceOnly?"":coin("Dos")}</span>
+    ${!hasPh?`<a class="ntile${mini?" mini":""}" href="${numUrl(t)}" target="_blank" rel="noopener" aria-label="Voir les photos de ${esc(t.name)} sur Numista">
+        <span class="ncoins${faceOnly||mini?" one":""}">${coin("Face")}${faceOnly||mini?"":coin("Dos")}</span>
         <span class="ncap">${t.n?"Voir les photos sur Numista ↗":"Chercher les photos sur Numista ↗"}</span></a>
       <div class="addrow"><button class="addph" data-photo="${t.id}" data-side="f">+ Ajouter ${faceOnly?"ma photo":"mes propres photos"}</button>${faceOnly?`<button class="addph" data-photo="${t.id}" data-side="b">+ Dos</button>`:""}</div>`
       :`<div class="faces${faceOnly?" one":""}">${picHTML(t,"f",sf)}${faceOnly?backMini(t,sb):picHTML(t,"b",sb)}</div>${creditHTML([sf,sb])}`}
     <div>
       <div class="ref">${esc(t.ref||"Sans référence JTC")}</div>
       <h3 class="name">${esc(t.name)}</h3>
-      <div class="info"><span>${esc(t.years)}</span>${t.dept?`<span>Dép. ${esc(t.dept)}</span>`:""}${t.metal?`<span>${esc(t.metal)}</span>`:""}${t.mint?`<span>Tirage ${esc(t.mint)}</span>`:""}${!S.cat?`<span>${esc(catOf(t.cat).name)}</span>`:""}</div>
+      <div class="info"><span>${esc(t.years)}</span>${t.dept?`<span>Dép. ${esc(t.dept)}</span>`:""}${t.metal?`<span>${esc(t.metal)}</span>`:""}${t.mint?`<span>Tirage ${esc(t.mint)}</span>`:""}${!S.cat||isVirtual(S.cat)?`<span>${esc(catOf(t.cat).name)}</span>`:""}</div>
       ${t.note?`<div class="note">${esc(t.note)}</div>`:""}
       <div class="links">${hasPh?`<a class="nlink" href="${numUrl(t)}" target="_blank" rel="noopener">Photos sur Numista ↗</a>`:""}</div>
     </div>
@@ -319,22 +353,23 @@ document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
   if(b.dataset.cat){ S.mosaic=false; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
   if(b.id==="mosaicBtn"){ S.mosaic=!S.mosaic; render(); scrollTo(0,0); return; }
-  if(b.dataset.jy){ const y=b.dataset.jy; jumpTo(y==="Sans année"?'article.card[data-year=""]':`article.card[data-year="${CSS.escape(y)}"]`); return; }
+  if(b.dataset.jy){ const y=b.dataset.jy; jumpTo(t=>(yearOf(t)||"Sans année")===y); return; }
   if(b.dataset.ml){ const g=document.getElementById(b.dataset.ml); if(g) scrollTo({top:g.getBoundingClientRect().top+scrollY-($(".top").offsetHeight+10),behavior:"smooth"}); return; }
-  if(b.dataset.jl){ jumpTo(`article.card[data-letter="${CSS.escape(b.dataset.jl)}"]`); return; }
-  if(b.dataset.jt){ jumpTo(`article.card[data-id="${CSS.escape(b.dataset.jt)}"]`); return; }
+  if(b.dataset.jl){ jumpTo(t=>letterOf(t)===b.dataset.jl); return; }
+  if(b.dataset.jt){ jumpTo(t=>t.id===b.dataset.jt); return; }
+  if(b.id==="moreBtn"){ showMore(); return; }
   if(b.id==="backBtn"){ S.mosaic=false; S.cat=null; S.q=""; $("#q").value=""; render(); return; }
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
   if(b.id==="clearF"){ S.filter=null; saveFilter(); render(); return; }
   if(b.dataset.vt||b.dataset.vi||b.dataset.vd){ const key=b.dataset.vt||b.dataset.vi||b.dataset.vd; const i=key.indexOf("~"); const id=key.slice(0,i), k=key.slice(i+1);
     const vq={...(st(id).vq||{})}; const q=vq[k]||0;
     vq[k]= b.dataset.vt?(q>0?0:1): b.dataset.vi? q+1 : Math.max(0,q-1);
-    OPEN.add(id); patch(id,{vq}); render(); return; }
-  if(b.dataset.own){ const id=b.dataset.own; patch(id,{q:eff(byId(id)).qty>0?0:1}); render(); return; }
-  if(b.dataset.inc){ const id=b.dataset.inc; patch(id,{q:eff(byId(id)).qty+1}); render(); return; }
-  if(b.dataset.dec){ const id=b.dataset.dec; patch(id,{q:Math.max(0,eff(byId(id)).qty-1)}); render(); return; }
+    OPEN.add(id); patch(id,{vq}); rerender(); return; }
+  if(b.dataset.own){ const id=b.dataset.own; patch(id,{q:eff(byId(id)).qty>0?0:1}); rerender(); return; }
+  if(b.dataset.inc){ const id=b.dataset.inc; patch(id,{q:eff(byId(id)).qty+1}); rerender(); return; }
+  if(b.dataset.dec){ const id=b.dataset.dec; patch(id,{q:Math.max(0,eff(byId(id)).qty-1)}); rerender(); return; }
   if(b.dataset.hu){ const key=b.dataset.hu, i=key.indexOf("~"), id=key.slice(0,i), k=key.slice(i+1);
-    const hv={...(st(id).hv||{})}; if(hv[k]) delete hv[k]; else hv[k]=1; OPEN.add(id); patch(id,{hv}); render(); return; }
+    const hv={...(st(id).hv||{})}; if(hv[k]) delete hv[k]; else hv[k]=1; OPEN.add(id); patch(id,{hv}); rerender(); return; }
   if(b.dataset.zoom){ showZoom(b.dataset.zoom,b.dataset.side); return; }
   if(b.id==="zoomClose"){ closeZoom(); return; }
   if(b.dataset.photo){ closeZoom(); NP={target:{id:b.dataset.photo,side:b.dataset.side}}; showPick(); return; }
@@ -345,7 +380,7 @@ document.addEventListener("toggle",e=>{ const d=e.target; if(d.classList&&d.clas
 document.addEventListener("change",e=>{
   const el=e.target; if(!el.dataset.k) return;
   const v=el.value.trim(); patch(el.dataset.id,{[el.dataset.k]: el.dataset.k==="rar"?(v?+v:""):v.replace(",",".")});
-  renderFoot(S.cat?allTokens().filter(t=>t.cat===S.cat):allTokens(), S.cat?"Total "+catOf(S.cat).name:"Toute la collection");
+  renderFoot(S.cat?allTokens().filter(t=>inCat(t,S.cat)):allTokens(), S.cat?"Total "+catOf(S.cat).name:"Toute la collection");
   toast("Enregistré");
 });
 let qTimer; $("#q").addEventListener("input",e=>{ clearTimeout(qTimer); qTimer=setTimeout(()=>{S.q=e.target.value.trim(); render();},150); });
@@ -411,7 +446,7 @@ function exportCrop(){
 }
 function openSheet(){
   const sh=$("#sheet");
-  const keepCat=S.cat||"";
+  const keepCat=S.cat&&!isVirtual(S.cat)?S.cat:"";
   sh.innerHTML=`<form class="in" id="npForm">
     <h2>Ajouter ma pièce</h2>
     <div class="shot"><img id="npImg" src="${NP.cropUrl||NP.url}" alt="Photo de la nouvelle pièce"><div class="row">
@@ -422,7 +457,7 @@ function openSheet(){
       <label class="field full">Code (référence FR)<input id="np-ref" placeholder="Ex. FR77-4682" autocomplete="off" autocapitalize="characters"></label>
       <div class="full" id="npMatch"></div>
       <label class="field full">Nom de la pièce<input id="np-name" required placeholder="Ex. Stitch – Joyeux Noël"></label>
-      <label class="field">Thème<select id="np-cat" required><option value="">Choisir…</option>${CATS.map(c=>`<option value="${c.id}"${c.id===keepCat?" selected":""}>${esc(c.name)}</option>`).join("")}</select></label>
+      <label class="field">Thème<select id="np-cat" required><option value="">Choisir…</option>${CATS.filter(c=>!c.virtual).map(c=>`<option value="${c.id}"${c.id===keepCat?" selected":""}>${esc(c.name)}</option>`).join("")}</select></label>
       <label class="field">Année<input id="np-year" inputmode="numeric" maxlength="4" required placeholder="${new Date().getFullYear()}" value="${new Date().getFullYear()}"></label>
       <label class="field full" id="npRevWrap" hidden>Revers / variante<select id="np-rev"></select></label>
       <label class="field full" id="npRevNewWrap" hidden>Nouveau revers<input id="np-revnew" placeholder="Ex. 26 MDP/EVM"></label>
@@ -483,8 +518,7 @@ async function saveNew(ev){
     S.items[id]={q:1,f:ref};
     saveCustom(id);
   }
-  closeSheet(); S.cat=(t?t.cat:cat); S.q=""; $("#q").value=""; render();
-  setTimeout(()=>{ const c=document.querySelector(`[data-id="${id}"]`); if(c) c.scrollIntoView({block:"center"}); },60);
+  closeSheet(); S.cat=(t?t.cat:cat); S.q=""; $("#q").value=""; jumpTo(x=>x.id===id);
   toast(t?"Ajoutée à ta collection":"Pièce ajoutée et cochée");
 }
 function shrink(file,max,q){ return new Promise((res,rej)=>{ const img=new Image(); const u=URL.createObjectURL(file);
@@ -564,7 +598,8 @@ function showAdd(){
 /* ---------- démarrage ---------- */
 async function loadCatalogue(){
   const r=await fetch("catalogue.json",{cache:"no-cache"}); const c=await r.json();
-  CATS=c.cats; CATALOG=c.tokens; PHOTOS=c.photos||{}; CATALOG_DATE=c.updated||"";
+  CATS=c.cats; CATALOG=c.tokens; PHOTOS=c.photos||{}; CATALOG_DATE=c.updated||""; LEGACY=c.legacy||{}; CJT_OWN=c.cjtOwn||{}; CJT_DATE=c.cjtDate||"";
+  NEWY=Math.max(...CATALOG.filter(t=>t.cat!=="disney"&&t.cat!=="beauval").flatMap(t=>t.v?t.v.map(v=>+v[0]):[parseInt(t.years,10)||0]));
   CATALOG.forEach(t=>{ if(t.np&&!PHOTOS[t.id]) PHOTOS[t.id]=t.np; });
 }
 async function start(){

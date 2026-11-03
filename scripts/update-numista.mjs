@@ -74,7 +74,9 @@ try {
     await consider(await searchAll(`q=disneyland&year=${y}`), "disney");
     await consider(await searchAll(`q=beauval&year=${y}`), "beauval");
   }
-  for (const y of years) await consider(await searchAll(`year=${y}`), null);
+  // Les autres thèmes viennent maintenant du catalogue CJT de Nico (export de son compte) :
+  // le robot ne cherche plus que Disney et Beauval, pour éviter les doublons.
+  if (process.env.ALL_THEMES === "1") for (const y of years) await consider(await searchAll(`year=${y}`), null);
 } catch (e) {
   if (e.message !== "BUDGET") { console.error(e); }
   else console.log("Plafond de requêtes atteint, la suite sera faite le mois prochain.");
