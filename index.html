@@ -228,11 +228,15 @@ img{max-width:100%}
 .vtog{padding:7px 8px;gap:6px}
 .stepper.sm button{width:28px}
 .stepper.sm span{min-width:22px}
-.hugo{flex:none;display:grid;justify-items:center;gap:1px;border:0;background:none;padding:0;color:var(--muted);width:34px}
-.hugo .hdot{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.72rem;font-weight:800;background:var(--surface)}
-.hugo small{font-size:.6rem;font-weight:700;letter-spacing:.03em}
-.hugo.on{color:#2f6fd0}
-.hugo.on .hdot{background:#2f6fd0;border-color:#2f6fd0;color:#fff}
+.hugo{flex:none;position:relative;width:62px;height:28px;border-radius:999px;border:0;padding:0;background:#c9ced6;color:#fff;transition:background .2s;cursor:pointer}
+.hugo .htxt{position:absolute;inset:0;display:grid;place-items:center;padding-left:18px;font-size:.7rem;font-weight:800;letter-spacing:.02em;color:#5d6876;transition:padding .2s,color .2s}
+.hugo .hknob{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s}
+.hugo.on{background:#3b82f6}
+.hugo.on .htxt{padding-left:0;padding-right:22px;color:#fff}
+.hugo.on .hknob{left:37px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hugo:not(.on){background:#3a434f}:root:not([data-theme="light"]) .hugo:not(.on) .htxt{color:#c2c9d2}}
+@media (max-width:420px){.filters{gap:5px}.chip{padding:6px 10px;font-size:.8rem}}
+.chip-hugo[aria-pressed="true"]{background:#3b82f6;border-color:#3b82f6;color:#fff}
 .own-row .hugo{margin-left:auto}
 /* --- photo en grand --- */
 .face.npic{border:0;background:transparent;padding:0;cursor:zoom-in}
@@ -273,6 +277,7 @@ img{max-width:100%}
       <button class="chip" data-f="own">Possédées</button>
       <button class="chip" data-f="missing">Manquantes</button>
       <button class="chip" data-f="dup">Doublons</button>
+      <button class="chip chip-hugo" data-f="hugo">Hugo</button>
       <button class="chip clear" id="clearF" hidden>Retirer le filtre</button>
     </div>
   </header>

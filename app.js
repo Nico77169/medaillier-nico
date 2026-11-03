@@ -29,6 +29,7 @@ function passFilter(t){
   if(S.filter==="own") return us.some(x=>x.q>0);
   if(S.filter==="missing") return us.some(x=>x.q===0);
   if(S.filter==="dup") return us.some(x=>x.q>1);
+  if(S.filter==="hugo") return Object.keys(st(t.id).hv||{}).length>0;
   return true;
 }
 function matches(t,q){
@@ -157,7 +158,7 @@ function homeHTML(){
       <span class="medal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${c.icon}</svg></span>
       <b>${esc(c.name)}</b>
       <span class="meta">${s.own} / ${s.total} ${all.some(t=>t.v)?"variantes possédées":"possédées"}</span>
-      ${S.filter?`<span class="meta">${l.length} jeton${l.length>1?"s":""} ${({own:"possédé",missing:"avec un manque",dup:"avec doublon"})[S.filter]}${l.length>1&&S.filter==="own"?"s":""}</span>`:""}
+      ${S.filter?`<span class="meta">${l.length} jeton${l.length>1?"s":""} ${({own:"possédé",missing:"avec un manque",dup:"avec doublon",hugo:"avec Hugo"})[S.filter]}${l.length>1&&S.filter==="own"?"s":""}</span>`:""}
       <span class="bar"><i style="width:${pct}%"></i></span></button>`;}).join("")}</div>
     <p class="status">Catalogue mis à jour le ${esc(CATALOG_DATE)} · ${CATALOG.length} médailles${Object.keys(S.custom).length?` + ${Object.keys(S.custom).length} ajoutées par toi`:""} · Données et photos : Numista (licences Creative Commons) · Disney : liste de Nico</p>`;
 }
@@ -174,7 +175,7 @@ function variantsHTML(t,e){
   return `<details class="vars"${n<=4||OPEN.has(t.id)?" open":""} data-vid="${t.id}"><summary><b>${own} / ${n}</b> variante${n>1?"s":""} possédée${own>1?"s":""} <span class="chev">▾</span></summary><div class="vlist">${rows}</div></details>`; }
 const OPEN=new Set();
 // Case « Hugo » : simple info cochée par ligne (variante ou pièce), sans effet sur les totaux de Nico
-function hugoBtn(t,k){ const on=!!((st(t.id).hv||{})[k]); return `<button class="hugo${on?" on":""}" data-hu="${esc(t.id+"~"+k)}" aria-pressed="${on}" aria-label="Hugo"><span class="hdot">${on?"✓":""}</span><small>Hugo</small></button>`; }
+function hugoBtn(t,k){ const on=!!((st(t.id).hv||{})[k]); return `<button class="hugo${on?" on":""}" data-hu="${esc(t.id+"~"+k)}" role="switch" aria-checked="${on}" aria-label="Hugo"><span class="htxt">Hugo</span><span class="hknob"></span></button>`; }
 function numUrl(t){ if(t.n) return "https://fr.numista.com/"+t.n;
   const m=/FR[0-9AB]{2}-\d{4}/.exec(t.ref||""); return "https://fr.numista.com/catalogue/index.php?ct=exonumia&r="+encodeURIComponent(m?m[0]:t.name); }
 function picHTML(t,k,p){
