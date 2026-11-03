@@ -221,6 +221,30 @@ img{max-width:100%}
 .sync i{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
 .sync.ok i{background:var(--ok)} .sync.wait i{background:var(--gold)} .sync.off i{background:var(--warn)}
 .logout{border:0;background:none;color:var(--muted);text-decoration:underline;font-size:.75rem;padding:0;margin-left:8px}
+
+/* --- case Hugo --- */
+.vrow{gap:6px;min-width:0}
+.vlist{min-width:0}
+.vtog{padding:7px 8px;gap:6px}
+.stepper.sm button{width:28px}
+.stepper.sm span{min-width:22px}
+.hugo{flex:none;display:grid;justify-items:center;gap:1px;border:0;background:none;padding:0;color:var(--muted);width:34px}
+.hugo .hdot{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.72rem;font-weight:800;background:var(--surface)}
+.hugo small{font-size:.6rem;font-weight:700;letter-spacing:.03em}
+.hugo.on{color:#2f6fd0}
+.hugo.on .hdot{background:#2f6fd0;border-color:#2f6fd0;color:#fff}
+.own-row .hugo{margin-left:auto}
+/* --- photo en grand --- */
+.face.npic{border:0;background:transparent;padding:0;cursor:zoom-in}
+.face img{cursor:zoom-in}
+.zoom{position:fixed;inset:0;z-index:50;background:rgba(10,12,16,.92);display:grid;place-items:center;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.zin{display:grid;gap:14px;justify-items:center;width:100%;max-width:640px}
+.zimg{width:min(92vw,72vh,620px);height:auto;aspect-ratio:1;object-fit:contain;border-radius:50%;filter:drop-shadow(0 10px 30px rgba(0,0,0,.5))}
+.zcap{color:#e8ebef;text-align:center;font-size:.95rem}
+.zcap small{display:block;color:#9aa4b1;font-size:.75rem;margin-top:4px}
+.zbtns{justify-content:center}
+.zbtns .btn.ghost{background:#2a313b;color:#e8ebef;border-color:#3a434f}
 </style>
 </head>
 <body>

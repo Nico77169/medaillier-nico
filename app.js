@@ -72,6 +72,14 @@ function persistLocal(){ ls.set("nico_items",S.items); ls.set("nico_custom",S.cu
 function saveItem(id){ persistLocal(); queue(id); }
 function saveCustom(id){ persistLocal(); queue(id); }
 function saveFilter(){ ls.set("nico_filter",S.filter); }
+function patch(id,obj){
+  const cur={...(S.items[id]||{}),...obj};
+  Object.keys(cur).forEach(k=>{ if(cur[k]===""||cur[k]==null) delete cur[k]; });
+  if(cur.vq){ Object.keys(cur.vq).forEach(k=>{ if(!cur.vq[k]) delete cur.vq[k]; }); if(!Object.keys(cur.vq).length) delete cur.vq; }
+  if(cur.hv && !Object.keys(cur.hv).length) delete cur.hv;
+  if(!cur.q && !cur.vq && !cur.xv && !cur.hv && !cur.f && !cur.b) delete S.items[id]; else S.items[id]=cur;
+  if(S.custom[id]) saveCustom(id); else saveItem(id);
+}
 function setSync(state,txt){ const el=$("#status"); el.innerHTML=`<span class="sync ${state}"><i></i>${esc(txt)}</span>${UID?'<button class="logout" id="logoutBtn">Se déconnecter</button>':""}`; }
 async function uploadPending(id){
   const it=S.items[id]; if(!it) return;
@@ -155,26 +163,28 @@ function homeHTML(){
 }
 function faceHTML(t,side,src,ph){
   const lbl=side==="f"?"Face":"Dos";
-  return `<button class="face" data-photo="${t.id}" data-side="${side}" aria-label="Photo ${lbl} de ${esc(t.name)}"><span class="lbl">${lbl}</span>${
+  return `<button class="face" ${src?`data-zoom="${t.id}"`:`data-photo="${t.id}"`} data-side="${side}" aria-label="${src?"Voir en grand":"Ajouter"} la photo ${lbl} de ${esc(t.name)}"><span class="lbl">${lbl}</span>${
     src?`<img src="${esc(src)}"${ph?` data-ph="${esc(ph)}"`:""} alt="${lbl} – ${esc(t.name)}" loading="lazy">`:`<span class="ph"><span class="blank"></span>Ta photo (facultatif)</span>`}</button>`;
 }
 function variantsHTML(t,e){
   const own=e.us.filter(x=>x.q>0).length, n=e.us.length;
   const rows=e.us.map(x=>{ const key=t.id+"~"+x.k;
     return `<div class="vrow${x.q>0?" on":""}"><button class="vtog" data-vt="${esc(key)}" aria-pressed="${x.q>0}"><span class="dot">${x.q>0?"✓":""}</span><span class="vy">${x.y}</span><span class="vr">${esc(x.r)}</span></button>
-      <div class="stepper sm"><button data-vd="${esc(key)}" aria-label="Retirer une">−</button><span>${x.q}</span><button data-vi="${esc(key)}" aria-label="Ajouter une">+</button></div></div>`; }).join("");
+      <div class="stepper sm"><button data-vd="${esc(key)}" aria-label="Retirer une">−</button><span>${x.q}</span><button data-vi="${esc(key)}" aria-label="Ajouter une">+</button></div>${hugoBtn(t,x.k)}</div>`; }).join("");
   return `<details class="vars"${n<=4||OPEN.has(t.id)?" open":""} data-vid="${t.id}"><summary><b>${own} / ${n}</b> variante${n>1?"s":""} possédée${own>1?"s":""} <span class="chev">▾</span></summary><div class="vlist">${rows}</div></details>`; }
 const OPEN=new Set();
+// Case « Hugo » : simple info cochée par ligne (variante ou pièce), sans effet sur les totaux de Nico
+function hugoBtn(t,k){ const on=!!((st(t.id).hv||{})[k]); return `<button class="hugo${on?" on":""}" data-hu="${esc(t.id+"~"+k)}" aria-pressed="${on}" aria-label="Hugo"><span class="hdot">${on?"✓":""}</span><small>Hugo</small></button>`; }
 function numUrl(t){ if(t.n) return "https://fr.numista.com/"+t.n;
   const m=/FR[0-9AB]{2}-\d{4}/.exec(t.ref||""); return "https://fr.numista.com/catalogue/index.php?ct=exonumia&r="+encodeURIComponent(m?m[0]:t.name); }
 function picHTML(t,k,p){
   const lbl=k==="f"?"Face":"Dos";
   if(p&&p.own) return faceHTML(t,k,p.src,p.ph);
-  if(p) return `<figure class="face npic"><span class="lbl">${lbl}</span><img src="${esc(p.src)}" alt="${lbl} – ${esc(t.name)}" loading="lazy"></figure>`;
+  if(p) return `<button class="face npic" data-zoom="${t.id}" data-side="${k}" aria-label="Voir en grand la photo ${lbl} de ${esc(t.name)}"><span class="lbl">${lbl}</span><img src="${esc(p.src)}" alt="${lbl} – ${esc(t.name)}" loading="lazy"></button>`;
   return `<a class="face nmini" href="${numUrl(t)}" target="_blank" rel="noopener"><span class="lbl">${lbl}</span><span class="ph"><span class="blank"></span>Voir sur Numista ↗</span></a>`;
 }
 function backMini(t,p){
-  return `<button class="backmini${p?" has":""}" data-photo="${t.id}" data-side="b" aria-label="${p?"Changer":"Ajouter"} la photo du dos">${p?`<img src="${esc(p.src)}"${p.ph?` data-ph="${esc(p.ph)}"`:""} alt="Dos – ${esc(t.name)}">`:"<span>+<br>Dos</span>"}<small>Dos</small></button>`;
+  return `<button class="backmini${p?" has":""}" ${p?`data-zoom="${t.id}"`:`data-photo="${t.id}"`} data-side="b" aria-label="${p?"Voir en grand":"Ajouter"} la photo du dos">${p?`<img src="${esc(p.src)}"${p.ph?` data-ph="${esc(p.ph)}"`:""} alt="Dos – ${esc(t.name)}">`:"<span>+<br>Dos</span>"}<small>Dos</small></button>`;
 }
 function creditHTML(ps){
   const c=[...new Set(ps.filter(p=>p&&p.by).map(p=>p.by==="Numista"?p.lic:`© ${p.by} – ${p.lic}`))];
@@ -205,6 +215,7 @@ function cardHTML(t){
     ${t.v?variantsHTML(t,e):`<div class="own-row">
       <button class="toggle" data-own="${t.id}" aria-pressed="${own}"><span class="dot">${own?"✓":""}</span>${own?"Je l'ai":"Manquante"}</button>
       <div class="stepper" aria-label="Quantité"><button data-dec="${t.id}" aria-label="Retirer une">−</button><span>${e.qty}</span><button data-inc="${t.id}" aria-label="Ajouter une">+</button></div>
+      ${hugoBtn(t,"_")}
     </div>`}
     ${S.custom[t.id]?`<button class="rm" data-rm="${t.id}">Supprimer cette médaille ajoutée</button>`:""}
   </article>`;
@@ -218,6 +229,22 @@ function renderFoot(list,label){
    <div class="kpi"><span>Doublons</span><b>${s.dup}</b></div>
    <div class="kpi"><span>Total</span><b>${s.qty}</b></div>`;
 }
+/* ---------- photo en grand ---------- */
+function showZoom(id,side){
+  const t=byId(id); if(!t) return; const e=eff(t); const np=PHOTOS[t.id]||{};
+  let src="", ph="", credit="", own=false;
+  if(e[side]){ ph=e[side]; src=ownSrc(ph); own=true; }
+  else if(np[side]){ src=np[side].src; credit=np[side].by==="Numista"?np[side].lic:`© ${np[side].by} – ${np[side].lic} · Source : Numista`; }
+  if(!src) return;
+  let z=$("#zoom"); if(!z){ z=document.createElement("div"); z.id="zoom"; z.className="zoom"; document.body.appendChild(z);
+    z.addEventListener("click",ev=>{ if(ev.target===z||ev.target.classList.contains("zimg")) closeZoom(); }); }
+  z.innerHTML=`<div class="zin"><img class="zimg" src="${esc(src)}"${ph?` data-ph="${esc(ph)}"`:""} alt="${side==="f"?"Face":"Dos"} – ${esc(t.name)}">
+    <div class="zcap"><b>${esc(t.name)}</b> · ${side==="f"?"Face":"Dos"}${credit?`<small>${esc(credit)}</small>`:""}</div>
+    <div class="row zbtns"><button class="btn ghost" data-photo="${t.id}" data-side="${side}">${own?"Changer la photo":"Mettre ma photo"}</button><button class="btn" id="zoomClose">Fermer</button></div></div>`;
+  z.hidden=false; document.body.style.overflow="hidden";
+}
+function closeZoom(){ const z=$("#zoom"); if(z){ z.hidden=true; z.innerHTML=""; } document.body.style.overflow=""; }
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeZoom(); });
 function toast(msg){ const d=document.createElement("div"); d.className="toast"; d.textContent=msg; document.body.appendChild(d); setTimeout(()=>d.remove(),2200); }
 function numUrlSafe(t){ return numUrl(t); }
 
@@ -235,7 +262,11 @@ document.addEventListener("click",e=>{
   if(b.dataset.own){ const id=b.dataset.own; patch(id,{q:eff(byId(id)).qty>0?0:1}); render(); return; }
   if(b.dataset.inc){ const id=b.dataset.inc; patch(id,{q:eff(byId(id)).qty+1}); render(); return; }
   if(b.dataset.dec){ const id=b.dataset.dec; patch(id,{q:Math.max(0,eff(byId(id)).qty-1)}); render(); return; }
-  if(b.dataset.photo){ NP={target:{id:b.dataset.photo,side:b.dataset.side}}; showPick(); return; }
+  if(b.dataset.hu){ const key=b.dataset.hu, i=key.indexOf("~"), id=key.slice(0,i), k=key.slice(i+1);
+    const hv={...(st(id).hv||{})}; if(hv[k]) delete hv[k]; else hv[k]=1; OPEN.add(id); patch(id,{hv}); render(); return; }
+  if(b.dataset.zoom){ showZoom(b.dataset.zoom,b.dataset.side); return; }
+  if(b.id==="zoomClose"){ closeZoom(); return; }
+  if(b.dataset.photo){ closeZoom(); NP={target:{id:b.dataset.photo,side:b.dataset.side}}; showPick(); return; }
   if(b.dataset.rm){ const id=b.dataset.rm; delete S.custom[id]; delete S.items[id]; saveCustom(id); render(); toast("Médaille supprimée"); return; }
   if(b.id==="addBtn"){ showAdd(); return; }
   if(b.id==="camBtn"){ $("#camIn").value=""; $("#camIn").click(); return; }
