@@ -44,7 +44,10 @@ function photo(side) {
 }
 
 const year = new Date().getFullYear();
-const years = new Date().getMonth() === 0 ? [year - 1, year] : [year];
+// Disney et Beauval : année en cours + année d'avant (une pièce de décembre peut arriver sur Numista en janvier ou plus tard)
+const prio = [year - 1, year];
+// Autres nouveautés : année en cours (+ année d'avant de janvier à mars)
+const years = new Date().getMonth() <= 2 ? [year - 1, year] : [year];
 const added = [];
 async function consider(list, catId) {
   for (const t of list) {
@@ -67,7 +70,7 @@ async function consider(list, catId) {
 }
 
 try {
-  for (const y of years) {
+  for (const y of prio) {
     await consider(await searchAll(`q=disneyland&year=${y}`), "disney");
     await consider(await searchAll(`q=beauval&year=${y}`), "beauval");
   }

@@ -66,9 +66,10 @@ async function storeBlob(blob){
 /* ---------- synchronisation ---------- */
 const CFG=window.APP_CONFIG;
 const supa=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true}});
-let UID=null, syncing=false, flushTimer=null;
+let UID=null, syncing=false, flushTimer=null, retryTimer=null;
+const EDIT={}; // heure de la dernière modif locale de chaque pièce (évite qu'une synchro en cours écrase un clic récent)
 const Q=()=>ls.get("nico_queue")||{};
-function queue(id){ const q=Q(); q[id]=1; ls.set("nico_queue",q); clearTimeout(flushTimer); flushTimer=setTimeout(flush,500); }
+function queue(id){ EDIT[id]=Date.now(); const q=Q(); q[id]=1; ls.set("nico_queue",q); clearTimeout(flushTimer); flushTimer=setTimeout(flush,500); }
 function persistLocal(){ ls.set("nico_items",S.items); ls.set("nico_custom",S.custom); }
 function saveItem(id){ persistLocal(); queue(id); }
 function saveCustom(id){ persistLocal(); queue(id); }
@@ -96,7 +97,7 @@ async function uploadPending(id){
 async function flush(){
   if(!UID||syncing) return; const q=Q(); const ids=Object.keys(q); if(!ids.length){ setSync("ok","Tout est sauvegardé en ligne"); return; }
   if(!navigator.onLine){ setSync("wait","Hors ligne : enregistré sur le téléphone, envoi au retour du réseau"); return; }
-  syncing=true; setSync("wait","Sauvegarde en cours…");
+  syncing=true; setSync("wait","Sauvegarde en cours…"); let failed=false;
   try{
     for(const id of ids){
       if(id==="_prefs"){ const {error}=await supa.from("collection").upsert({user_id:UID,token_id:"_prefs",data:{seeded:true},updated_at:new Date().toISOString()}); if(error) throw error; }
@@ -108,16 +109,18 @@ async function flush(){
       const cur=Q(); delete cur[id]; ls.set("nico_queue",cur);
     }
     setSync("ok","Tout est sauvegardé en ligne");
-  }catch(e){ console.warn(e); setSync("off","Envoi impossible pour l'instant, nouvel essai automatique"); setTimeout(flush,30000); }
-  finally{ syncing=false; if(Object.keys(Q()).length) setTimeout(flush,800); }
+  }catch(e){ console.warn(e); failed=true; setSync("off","Envoi impossible pour l'instant, nouvel essai automatique"); clearTimeout(retryTimer); retryTimer=setTimeout(flush,30000); }
+  finally{ syncing=false; if(!failed&&Object.keys(Q()).length) setTimeout(flush,800); }
 }
 async function pull(){
   if(!UID) return;
+  if(syncing){ setTimeout(pull,1500); return; }
+  const t0=Date.now();
   const {data,error}=await supa.from("collection").select("token_id,data");
   if(error){ setSync("off","Serveur injoignable : tu travailles sur la copie du téléphone"); return; }
   const items={}, custom={}; let prefs=null;
   data.forEach(r=>{ if(r.token_id==="_prefs"){ prefs=r.data; return; } const d={...r.data}; if(d._custom){ custom[r.token_id]=d._custom; delete d._custom; } if(Object.keys(d).length) items[r.token_id]=d; });
-  const q=Q();
+  const q=Q(); Object.keys(EDIT).forEach(id=>{ if(EDIT[id]>=t0-2000) q[id]=1; });
   Object.keys(q).forEach(id=>{ if(S.items[id]) items[id]=S.items[id]; else delete items[id]; if(S.custom[id]) custom[id]=S.custom[id]; else delete custom[id]; });
   if(!(prefs&&prefs.seeded) && !q._prefs){
     // premier lancement : on reprend ce qui avait été coché localement + les variantes vertes du tableau de Nico
@@ -156,7 +159,7 @@ function mtileHTML(t){
   const e=eff(t), np=PHOTOS[t.id]||{}, own=e.qty>0;
   let img="";
   if(e.f) img=`<img src="${esc(ownSrc(e.f))}" data-ph="${esc(e.f)}" alt="" loading="lazy">`;
-  else if(np.f) img=`<img src="${esc(np.f.src)}" alt="" loading="lazy">`;
+  else if(np.f) img=`<img src="${esc(String(np.f.src).replace("-original.jpg","-180.jpg"))}" alt="" loading="lazy">`;
   const short=esc(String(t.name).replace(/^(Disneyland( Resort)? Paris|ZooParc de Beauval)\s*[-–:]?\s*/i,"").slice(0,28));
   return `<button class="mtile${own?" own":""}" data-jt="${t.id}" aria-label="${esc(t.name)}${own?" (possédée)":" (manquante)"}">${img||`<span class="mph">${short}</span>`}${own?'<span class="mok">✓</span>':""}</button>`;
 }
@@ -223,6 +226,7 @@ function numUrl(t){ if(t.n) return "https://fr.numista.com/"+t.n;
 function picHTML(t,k,p){
   const lbl=k==="f"?"Face":"Dos";
   if(p&&p.own) return faceHTML(t,k,p.src,p.ph);
+  if(!p&&S.custom[t.id]) return faceHTML(t,k,null);   // pièce ajoutée par Nico : case pour sa propre photo
   if(p) return `<button class="face npic" data-zoom="${t.id}" data-side="${k}" aria-label="Voir en grand la photo ${lbl} de ${esc(t.name)}"><span class="lbl">${lbl}</span><img src="${esc(p.src)}" alt="${lbl} – ${esc(t.name)}" loading="lazy"></button>`;
   return `<a class="face nmini" href="${numUrl(t)}" target="_blank" rel="noopener"><span class="lbl">${lbl}</span><span class="ph"><span class="blank"></span>Voir sur Numista ↗</span></a>`;
 }
@@ -317,10 +321,6 @@ document.addEventListener("click",e=>{
   if(b.dataset.photo){ closeZoom(); NP={target:{id:b.dataset.photo,side:b.dataset.side}}; showPick(); return; }
   if(b.dataset.rm){ const id=b.dataset.rm; delete S.custom[id]; delete S.items[id]; saveCustom(id); render(); toast("Médaille supprimée"); return; }
   if(b.id==="addBtn"){ showAdd(); return; }
-  if(b.id==="camBtn"){ $("#camIn").value=""; $("#camIn").click(); return; }
-  if(b.id==="galBtn"){ $("#galIn").value=""; $("#galIn").click(); return; }
-  if(b.dataset.goto){ const t=byId(b.dataset.goto); S.cat=t.cat; S.q=t.name; $("#q").value=t.name; $("#scan").innerHTML=""; render(); return; }
-  if(b.id==="closeScan"){ $("#scan").innerHTML=""; return; }
 });
 document.addEventListener("toggle",e=>{ const d=e.target; if(d.classList&&d.classList.contains("vars")){ if(d.open) OPEN.add(d.dataset.vid); else OPEN.delete(d.dataset.vid);} },true);
 document.addEventListener("change",e=>{

@@ -1,5 +1,5 @@
 /* Service worker : appli utilisable hors ligne + mises à jour automatiques */
-const CACHE = "medaillier-v6";
+const CACHE = "medaillier-v7";
 const SHELL = ["./", "index.html", "app.js", "config.js", "catalogue.json", "manifest.webmanifest",
   "vendor/supabase.js", "vendor/591.supabase.js", "icons/icon-192.png", "icons/icon-512.png",
   // photos Disney et Beauval : téléchargées dès l'installation pour être visibles hors ligne
@@ -57,10 +57,16 @@ const SHELL = ["./", "index.html", "app.js", "config.js", "catalogue.json", "man
   "img/d4557_f.webp",
   "img/d4682_f.webp"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
-self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
+self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE && k !== "medaillier-photos").map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", e => {
   const req = e.request; const url = new URL(req.url);
-  if (req.method !== "GET" || url.origin !== location.origin) return; // Supabase, Numista, polices : réseau direct
+  if (req.method !== "GET") return;
+  // photos Numista (nouveautés) : gardées sur le téléphone après le premier affichage -> visibles hors ligne
+  if (url.hostname.endsWith("numista.com") && /\.(jpg|jpeg|png|webp)$/i.test(url.pathname)) {
+    e.respondWith(caches.open("medaillier-photos").then(c => c.match(req).then(r => r || fetch(req).then(n => { c.put(req, n.clone()); return n; }))));
+    return;
+  }
+  if (url.origin !== location.origin) return; // Supabase : réseau direct
   const fresh = req.mode === "navigate" || /\.(html|js|json|webmanifest)$/.test(url.pathname) || url.pathname.endsWith("/");
   if (fresh) {
     // réseau d'abord (pour recevoir les mises à jour), copie locale si pas de réseau
