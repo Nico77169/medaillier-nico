@@ -134,14 +134,22 @@ async function pull(){
 const ICON_GRID='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.6"/><circle cx="12" cy="6" r="2.6"/><circle cx="18" cy="6" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="12" cy="12" r="2.6"/><circle cx="18" cy="12" r="2.6"/><circle cx="6" cy="18" r="2.6"/><circle cx="12" cy="18" r="2.6"/><circle cx="18" cy="18" r="2.6"/></svg>';
 const ICON_LIST='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
 function yearOf(t){ const y=parseInt(String(t.years||""),10); return isNaN(y)?"":String(y); }
-function mosaicHTML(list){
+function letterOf(t){ const c=String(t.name||"").normalize("NFD").replace(/[̀-ͯ]/g,"").trim().charAt(0).toUpperCase(); return /[A-Z]/.test(c)?c:"#"; }
+/* Règle auto : <10 pièces = pas de mosaïque ; >=80 % sur une même année = par lettre ; sinon par année */
+function mosaicMode(pool){
+  if(pool.length<10) return null;
+  const cnt={}; pool.forEach(t=>{ const y=yearOf(t)||"?"; cnt[y]=(cnt[y]||0)+1; });
+  return Math.max(...Object.values(cnt))/pool.length>=0.8 ? "letter" : "year";
+}
+function mosaicHTML(list,mode){
   if(!list.length) return `<div class="empty">Aucune médaille ne correspond${S.filter?" avec ce filtre":""}.</div>`;
-  const groups=new Map();
-  list.forEach(t=>{ const y=yearOf(t)||"Sans année"; if(!groups.has(y)) groups.set(y,[]); groups.get(y).push(t); });
-  const keys=[...groups.keys()].sort((a,b)=>(a==="Sans année")-(b==="Sans année")||a.localeCompare(b));
-  return `<p class="mhint">Touche une année ou une pièce pour y aller dans la liste.</p>`+keys.map(y=>{
-    const ts=groups.get(y), own=ts.filter(t=>eff(t).qty>0).length;
-    return `<section class="mgroup"><button class="myear" data-jy="${esc(y)}"><b>${esc(y)}</b><span>${own} / ${ts.length} possédée${own>1?"s":""}</span><i aria-hidden="true">›</i></button>
+  const byL=mode==="letter", none=byL?"#":"Sans année", groups=new Map();
+  list.forEach(t=>{ const k=byL?letterOf(t):(yearOf(t)||none); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(t); });
+  const keys=[...groups.keys()].sort((a,b)=>(a===none)-(b===none)||a.localeCompare(b));
+  const idx=byL?`<nav class="mabc">${keys.map(k=>`<button data-ml="ml-${k==="#"?"0":k}">${esc(k)}</button>`).join("")}</nav>`:"";
+  return `<p class="mhint">Touche ${byL?"une lettre":"une année"} ou une pièce pour y aller dans la liste.</p>`+idx+keys.map(k=>{
+    const ts=groups.get(k), own=ts.filter(t=>eff(t).qty>0).length;
+    return `<section class="mgroup"${byL?` id="ml-${k==="#"?"0":k}"`:""}><button class="myear" data-j${byL?"l":"y"}="${esc(k)}"><b>${esc(k)}</b><span>${own} / ${ts.length} possédée${own>1?"s":""}</span><i aria-hidden="true">›</i></button>
       <div class="mgrid">${ts.map(mtileHTML).join("")}</div></section>`; }).join("");
 }
 function mtileHTML(t){
@@ -160,8 +168,10 @@ function jumpTo(sel){
 }
 function render(){
   $("#backBtn").hidden=!S.cat;
-  const mb=$("#mosaicBtn"); mb.hidden=!S.cat; const mos=!!(S.cat&&S.mosaic);
-  mb.setAttribute("aria-pressed",String(mos)); mb.setAttribute("aria-label",mos?"Revenir à la liste":"Voir en mosaïque par année");
+  const pool0=S.cat?allTokens().filter(t=>t.cat===S.cat):[], mmode=S.cat?mosaicMode(pool0):null;
+  if(!mmode) S.mosaic=false;
+  const mb=$("#mosaicBtn"); mb.hidden=!mmode; const mos=!!(mmode&&S.mosaic);
+  mb.setAttribute("aria-pressed",String(mos)); mb.setAttribute("aria-label",mos?"Revenir à la liste":(mmode==="letter"?"Voir en mosaïque par lettre":"Voir en mosaïque par année"));
   mb.innerHTML=mos?ICON_LIST:ICON_GRID;
   $("#title").textContent=S.cat?catOf(S.cat).name:"Médaillier de Nico";
   $("#crumb").textContent=S.cat?"Thème":"Jetons Monnaie de Paris";
@@ -171,8 +181,8 @@ function render(){
   const v=$("#view");
   if(!S.cat && !S.q){ v.innerHTML=homeHTML(); renderFoot(allTokens(),"Toute la collection"); return; }
   const pool=allTokens().filter(t=>(!S.cat||t.cat===S.cat));
-  const list=pool.filter(t=>matches(t,S.q)&&passFilter(t)).sort((a,b)=>String(a.years).localeCompare(String(b.years))||a.name.localeCompare(b.name));
-  if(mos){ v.innerHTML=mosaicHTML(list); renderFoot(pool,"Total "+catOf(S.cat).name); return; }
+  const list=pool.filter(t=>matches(t,S.q)&&passFilter(t)).sort(mmode==="letter"?((a,b)=>a.name.localeCompare(b.name,"fr")):((a,b)=>String(a.years).localeCompare(String(b.years))||a.name.localeCompare(b.name)));
+  if(mos){ v.innerHTML=mosaicHTML(list,mmode); renderFoot(pool,"Total "+catOf(S.cat).name); return; }
   let h="";
   if(!S.cat) h+=`<p class="sect-title">${list.length} résultat${list.length>1?"s":""} dans tous les thèmes</p>`;
   h+= list.length?`<div class="list">${list.map(cardHTML).join("")}</div>`:`<div class="empty">Aucune médaille ne correspond${S.filter?" avec ce filtre":""}.</div>`;
@@ -231,7 +241,7 @@ function cardHTML(t){
   const hasPh=!!(sf||sb);
   const coin=l=>`<span class="ncoin"><span class="blank"></span><small>${l}</small></span>`;
   const dup=e.us.reduce((a,x)=>a+Math.max(0,x.q-1),0);
-  return `<article class="card${own?" own":""}" data-id="${t.id}" data-year="${yearOf(t)}">
+  return `<article class="card${own?" own":""}" data-id="${t.id}" data-year="${yearOf(t)}" data-letter="${letterOf(t)}">
     ${!hasPh?`<a class="ntile" href="${numUrl(t)}" target="_blank" rel="noopener" aria-label="Voir les photos de ${esc(t.name)} sur Numista">
         <span class="ncoins${faceOnly?" one":""}">${coin("Face")}${faceOnly?"":coin("Dos")}</span>
         <span class="ncap">${t.n?"Voir les photos sur Numista ↗":"Chercher les photos sur Numista ↗"}</span></a>
@@ -287,6 +297,8 @@ document.addEventListener("click",e=>{
   if(b.dataset.cat){ S.mosaic=false; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
   if(b.id==="mosaicBtn"){ S.mosaic=!S.mosaic; render(); scrollTo(0,0); return; }
   if(b.dataset.jy){ const y=b.dataset.jy; jumpTo(y==="Sans année"?'article.card[data-year=""]':`article.card[data-year="${CSS.escape(y)}"]`); return; }
+  if(b.dataset.ml){ const g=document.getElementById(b.dataset.ml); if(g) scrollTo({top:g.getBoundingClientRect().top+scrollY-($(".top").offsetHeight+10),behavior:"smooth"}); return; }
+  if(b.dataset.jl){ jumpTo(`article.card[data-letter="${CSS.escape(b.dataset.jl)}"]`); return; }
   if(b.dataset.jt){ jumpTo(`article.card[data-id="${CSS.escape(b.dataset.jt)}"]`); return; }
   if(b.id==="backBtn"){ S.mosaic=false; S.cat=null; S.q=""; $("#q").value=""; render(); return; }
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
@@ -321,7 +333,7 @@ let qTimer; $("#q").addEventListener("input",e=>{ clearTimeout(qTimer); qTimer=s
 const byId=id=>allTokens().find(t=>t.id===id);
 document.addEventListener("click",e=>{ if(e.target.id==="logoutBtn"){ supa.auth.signOut().then(()=>location.reload()); } });
 // photo Numista distante introuvable -> lien vers Numista
-document.addEventListener("error",e=>{ const i=e.target; if(i.tagName==="IMG"&&i.closest(".npic")){ const f=i.closest(".npic"); const a=document.createElement("a"); a.className="face nmini"; a.target="_blank"; a.rel="noopener"; const t=byId(f.closest(".card")?.dataset.id); a.href=t?numUrl(t):"https://fr.numista.com"; a.innerHTML='<span class="ph"><span class="blank"></span>Voir sur Numista ↗</span>'; f.replaceWith(a); } },true);
+document.addEventListener("error",e=>{ const i=e.target; if(i.tagName==="IMG"&&i.parentElement&&i.parentElement.classList.contains("mtile")){ const t=byId(i.parentElement.dataset.jt); const sp=document.createElement("span"); sp.className="mph"; sp.textContent=t?String(t.name).slice(0,28):""; i.replaceWith(sp); return; } if(i.tagName==="IMG"&&i.closest(".npic")){ const f=i.closest(".npic"); const a=document.createElement("a"); a.className="face nmini"; a.target="_blank"; a.rel="noopener"; const t=byId(f.closest(".card")?.dataset.id); a.href=t?numUrl(t):"https://fr.numista.com"; a.innerHTML='<span class="ph"><span class="blank"></span>Voir sur Numista ↗</span>'; f.replaceWith(a); } },true);
 
 /* ---------- Ajouter ma pièce ---------- */
 let NP=null;
