@@ -258,6 +258,7 @@ function homeHTML(){
       <span class="meta">${s.own} / ${s.total} ${all.some(t=>t.v)?"variantes possédées":"possédées"}</span>
       ${S.filter?`<span class="meta">${l.length} jeton${l.length>1?"s":""} ${({own:"possédé",missing:"avec un manque",dup:"avec doublon",hugo:"avec Hugo"})[S.filter]}${l.length>1&&S.filter==="own"?"s":""}</span>`:""}
       <span class="bar"><i style="width:${pct}%"></i></span></button>`;}).join("")}</div>
+    <button class="addbtn" id="helpBtn">💡 Astuces : déplacer une pièce mal rangée…</button>
     <p class="status">Catalogue mis à jour le ${esc(CATALOG_DATE)} · ${CATALOG.length} médailles${Object.keys(S.custom).length?` + ${Object.keys(S.custom).length} ajoutées par toi`:""} · Liste : catalogue CJT de Nico${CJT_DATE?` (${esc(CJT_DATE)})`:""} · Photos : Numista (licences Creative Commons) · Disney : liste de Nico</p>`;
 }
 function faceHTML(t,side,src,ph){
@@ -359,6 +360,7 @@ document.addEventListener("click",e=>{
   if(b.dataset.jl){ jumpTo(t=>letterOf(t)===b.dataset.jl); return; }
   if(b.dataset.jt){ jumpTo(t=>t.id===b.dataset.jt); return; }
   if(b.id==="moreBtn"){ showMore(); return; }
+  if(b.id==="helpBtn"){ showHelp(); return; }
   if(b.id==="backBtn"){ S.mosaic=false; S.cat=null; S.q=""; $("#q").value=""; render(); return; }
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
   if(b.id==="clearF"){ S.filter=null; saveFilter(); render(); return; }
@@ -401,6 +403,20 @@ document.addEventListener("pointerup",cancelLP); document.addEventListener("poin
 document.addEventListener("pointermove",e=>{ if(LP&&Math.hypot(e.clientX-LP.x,e.clientY-LP.y)>12) cancelLP(); });
 document.addEventListener("scroll",cancelLP,{passive:true});
 document.addEventListener("contextmenu",e=>{ if(e.target.closest(".ref[data-mv]")) e.preventDefault(); });
+function showHelp(){
+  const sh=$("#sheet");
+  sh.innerHTML=`<div class="in"><h2>Astuces</h2>
+    <h3 class="htitle">Déplacer une pièce mal rangée</h3>
+    <ol class="steps"><li>Ouvre le thème où se trouve la pièce.</li>
+      <li>Sur sa fiche, <b>garde le doigt appuyé 2 secondes sur le code doré</b> (ex. « JTC FR95-0344 »). Il devient orange pendant l'appui.</li>
+      <li>Choisis le <b>nouveau thème</b>, puis <b>Déplacer</b> et <b>Oui, déplacer</b>.</li>
+      <li>Le code affiche alors « · déplacée ».</li></ol>
+    <p class="note">Pour annuler : même appui long, puis <b>Remettre dans « … »</b>.</p>
+    <h3 class="htitle">Mosaïque</h3>
+    <p class="note">Dans un thème, le bouton rond en haut à droite affiche les pièces en mosaïque. Touche une année, une lettre ou une pièce pour y aller dans la liste.</p>
+    <div class="row"><button class="btn" type="button" id="helpClose">Fermer</button></div></div>`;
+  sh.hidden=false; $("#sheetBg").hidden=false; sh.scrollTop=0; $("#helpClose").onclick=closeSheet;
+}
 function showMove(id){
   const t=byId(id); if(!t) return; const cur=catT(t), orig=t.cat;
   const sh=$("#sheet");
