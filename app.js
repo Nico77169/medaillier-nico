@@ -271,7 +271,8 @@ function variantsHTML(t,e){
   const rows=e.us.map(x=>{ const key=t.id+"~"+x.k;
     return `<div class="vrow${x.q>0?" on":""}"><button class="vtog" data-vt="${esc(key)}" aria-pressed="${x.q>0}"><span class="dot">${x.q>0?"✓":""}</span>${x.y||x.r?`${x.y?`<span class="vy">${x.y}</span>`:""}${x.r?`<span class="vr">${esc(x.r)}</span>`:""}`:`<span class="vr">Sans année</span>`}</button>
       <div class="stepper sm"><button data-vd="${esc(key)}" aria-label="Retirer une">−</button><span>${x.q}</span><button data-vi="${esc(key)}" aria-label="Ajouter une">+</button></div>${hugoBtn(t,x.k)}</div>`; }).join("");
-  return `<details class="vars"${n<=4||OPEN.has(t.id)?" open":""} data-vid="${t.id}"><summary><b>${own} / ${n}</b> variante${n>1?"s":""} possédée${own>1?"s":""} <span class="chev">▾</span></summary><div class="vlist">${rows}</div></details>`; }
+  if(n===1) return `<div class="vars single"><div class="vlist">${rows}</div></div>`; // une seule ligne : pas de menu à ouvrir
+  return `<details class="vars"${OPEN.has(t.id)?" open":""} data-vid="${t.id}"><summary><b>${own} / ${n}</b> variante${n>1?"s":""} possédée${n>1?"s":""} <span class="chev">▾</span></summary><div class="vlist">${rows}</div></details>`; }
 const OPEN=new Set();
 // Case « Hugo » : simple info cochée par ligne (variante ou pièce), sans effet sur les totaux de Nico
 function hugoBtn(t,k){ const on=!!((st(t.id).hv||{})[k]); return `<button class="hugo${on?" on":""}" data-hu="${esc(t.id+"~"+k)}" role="switch" aria-checked="${on}" aria-label="Hugo"><span class="htxt">Hugo</span><span class="hknob"></span></button>`; }
@@ -354,7 +355,7 @@ function numUrlSafe(t){ return numUrl(t); }
 /* ---------- interactions ---------- */
 document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
-  if(b.dataset.cat){ S.mosaic=false; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
+  if(b.dataset.cat){ OPEN.clear(); S.mosaic=false; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
   if(b.id==="mosaicBtn"){ S.mosaic=!S.mosaic; render(); scrollTo(0,0); return; }
   if(b.dataset.jy){ const y=b.dataset.jy; jumpTo(t=>(yearOf(t)||"Sans année")===y); return; }
   if(b.dataset.ml){ const g=document.getElementById(b.dataset.ml); if(g) scrollTo({top:g.getBoundingClientRect().top+scrollY-($(".top").offsetHeight+10),behavior:"smooth"}); return; }
@@ -362,7 +363,7 @@ document.addEventListener("click",e=>{
   if(b.dataset.jt){ jumpTo(t=>t.id===b.dataset.jt); return; }
   if(b.id==="moreBtn"){ showMore(); return; }
   if(b.id==="helpBtn"){ showHelp(); return; }
-  if(b.id==="backBtn"){ S.mosaic=false; S.cat=null; S.q=""; $("#q").value=""; render(); return; }
+  if(b.id==="backBtn"){ OPEN.clear(); S.mosaic=false; S.cat=null; S.q=""; $("#q").value=""; render(); return; }
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
   if(b.id==="clearF"){ S.filter=null; saveFilter(); render(); return; }
   if(b.dataset.vt||b.dataset.vi||b.dataset.vd){ const key=b.dataset.vt||b.dataset.vi||b.dataset.vd; const i=key.indexOf("~"); const id=key.slice(0,i), k=key.slice(i+1);
