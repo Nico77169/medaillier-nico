@@ -288,6 +288,20 @@ function picHTML(t,k,p){
 function backMini(t,p){
   return `<button class="backmini${p?" has":""}" ${p?`data-zoom="${t.id}"`:`data-photo="${t.id}"`} data-side="b" aria-label="${p?"Voir en grand":"Ajouter"} la photo du dos">${p?`<img src="${esc(p.src)}"${p.ph?` data-ph="${esc(p.ph)}"`:""} alt="Dos – ${esc(t.name)}">`:"<span>+<br>Dos</span>"}<small>Dos</small></button>`;
 }
+// petit rond « + » : prend la taille d'une pièce seulement quand une photo est mise
+function plusMini(t,side,cls=""){ const l=side==="f"?"Face":"Dos";
+  return `<button class="backmini${cls}" data-photo="${t.id}" data-side="${side}" aria-label="Ajouter la photo ${side==="f"?"de la face":"du dos"}"><span>+<br>${l}</span></button>`; }
+function photoBlock(t,e,sf,sb,faceOnly){
+  const nl=`<a class="nlink" href="${numUrl(t)}" target="_blank" rel="noopener">${t.n?"Voir les photos sur Numista":"Chercher les photos sur Numista"} ↗</a>`;
+  if(!sf&&!sb) return `<div class="phrow">${plusMini(t,"f"," inrow")}${plusMini(t,"b"," inrow")}${nl}</div>`;
+  const repl=(!e.f&&sf)||(!e.b&&sb&&!faceOnly)?`<div class="addrow">${!e.f&&sf?`<button class="addph" data-photo="${t.id}" data-side="f">+ Ma photo (face)</button>`:""}${!e.b&&sb&&!faceOnly?`<button class="addph" data-photo="${t.id}" data-side="b">+ Ma photo (dos)</button>`:""}</div>`:"";
+  let faces;
+  if(faceOnly) faces=sf?`<div class="faces one">${picHTML(t,"f",sf)}${backMini(t,sb)}</div>`:`<div class="phrow">${plusMini(t,"f"," inrow")}${backMini(t,sb).replace('class="backmini','class="backmini inrow')}${nl}</div>`;
+  else if(sf&&sb) faces=`<div class="faces">${picHTML(t,"f",sf)}${picHTML(t,"b",sb)}</div>`;
+  else if(sf) faces=`<div class="faces one">${picHTML(t,"f",sf)}${plusMini(t,"b")}</div>`;
+  else faces=`<div class="faces one">${picHTML(t,"b",sb)}${plusMini(t,"f"," left")}</div>`;
+  return faces+creditHTML([sf,sb])+repl;
+}
 function creditHTML(ps){
   const c=[...new Set(ps.filter(p=>p&&p.by).map(p=>p.by==="Numista"?p.lic:`© ${p.by} – ${p.lic}`))];
   return c.length?`<div class="credit">Photo${c.length>1?"s":""} ${c.map(esc).join(" · ")} · Source : Numista</div>`:"";
@@ -302,11 +316,7 @@ function cardHTML(t){
   const dup=e.us.reduce((a,x)=>a+Math.max(0,x.q-1),0);
   const mini=catT(t)!=="disney"&&catT(t)!=="beauval"; // fiches du catalogue CJT sans photo : vignette compacte
   return `<article class="card${own?" own":""}" data-id="${t.id}" data-year="${yearOf(t)}" data-letter="${letterOf(t)}">
-    ${!hasPh?`<a class="ntile${mini?" mini":""}" href="${numUrl(t)}" target="_blank" rel="noopener" aria-label="Voir les photos de ${esc(t.name)} sur Numista">
-        <span class="ncoins${faceOnly||mini?" one":""}">${coin("Face")}${faceOnly||mini?"":coin("Dos")}</span>
-        <span class="ncap">${t.n?"Voir les photos sur Numista ↗":"Chercher les photos sur Numista ↗"}</span></a>
-      <div class="addrow"><button class="addph" data-photo="${t.id}" data-side="f">+ Ajouter ma photo</button><button class="addph" data-photo="${t.id}" data-side="b">+ Dos</button></div>`
-      :`<div class="faces${faceOnly?" one":""}">${picHTML(t,"f",sf)}${faceOnly?backMini(t,sb):picHTML(t,"b",sb)}</div>${creditHTML([sf,sb])}${!faceOnly&&!(e.f&&e.b)?`<div class="addrow">${e.f?"":`<button class="addph" data-photo="${t.id}" data-side="f">+ Ma photo (face)</button>`}${e.b?"":`<button class="addph" data-photo="${t.id}" data-side="b">+ Ma photo (dos)</button>`}</div>`:""}`}
+    ${photoBlock(t,e,sf,sb,faceOnly)}
     <div>
       <div class="ref" data-mv="${t.id}">${esc(t.ref||"Sans référence JTC")}${st(t.id).mv?' <span class="moved">· déplacée</span>':""}</div>
       <h3 class="name">${esc(t.name)}</h3>
