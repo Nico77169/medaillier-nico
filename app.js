@@ -24,7 +24,7 @@ function isVirtual(c){ return !!(CATS.find(x=>x.id===c)||{}).virtual; }
 function st(id){ return S.items[id]||{}; }
 function units(t){ const u=st(t.id);
   if(t.v) return t.v.concat((u.xv||[]).filter(([y,r])=>!t.v.some(v=>v[0]==y&&v[1]===r))).map(([y,r,c])=>{const k=y+"|"+r; return {k,y,r,c:c||null,q:(u.vq||{})[k]||0};});
-  return [{k:"_",q:u.q||0,c:null}]; }
+  return [{k:"_",y:yearOf(t),r:t.rev||"",q:u.q||0,c:null}]; }
 function eff(t){ const u=st(t.id); const us=units(t); return {
   us, qty:us.reduce((a,x)=>a+x.q,0), paid:num(u.paid), val: u.val!=null&&u.val!==""?num(u.val):(t.value??null),
   rar: u.rar||t.rar||"", shop: u.shop!=null&&u.shop!==""?u.shop:(t.shop==null?"":(t.shop?"oui":"non")), f:u.f, b:u.b }; }
@@ -269,7 +269,7 @@ function faceHTML(t,side,src,ph){
 function variantsHTML(t,e){
   const own=e.us.filter(x=>x.q>0).length, n=e.us.length;
   const rows=e.us.map(x=>{ const key=t.id+"~"+x.k;
-    return `<div class="vrow${x.q>0?" on":""}"><button class="vtog" data-vt="${esc(key)}" aria-pressed="${x.q>0}"><span class="dot">${x.q>0?"✓":""}</span><span class="vy">${x.y}</span><span class="vr">${esc(x.r)}</span></button>
+    return `<div class="vrow${x.q>0?" on":""}"><button class="vtog" data-vt="${esc(key)}" aria-pressed="${x.q>0}"><span class="dot">${x.q>0?"✓":""}</span>${x.y||x.r?`${x.y?`<span class="vy">${x.y}</span>`:""}${x.r?`<span class="vr">${esc(x.r)}</span>`:""}`:`<span class="vr">Sans année</span>`}</button>
       <div class="stepper sm"><button data-vd="${esc(key)}" aria-label="Retirer une">−</button><span>${x.q}</span><button data-vi="${esc(key)}" aria-label="Ajouter une">+</button></div>${hugoBtn(t,x.k)}</div>`; }).join("");
   return `<details class="vars"${n<=4||OPEN.has(t.id)?" open":""} data-vid="${t.id}"><summary><b>${own} / ${n}</b> variante${n>1?"s":""} possédée${own>1?"s":""} <span class="chev">▾</span></summary><div class="vlist">${rows}</div></details>`; }
 const OPEN=new Set();
@@ -314,7 +314,7 @@ function cardHTML(t){
       <div class="links">${hasPh?`<a class="nlink" href="${numUrl(t)}" target="_blank" rel="noopener">Photos sur Numista ↗</a>`:""}</div>
     </div>
     ${dup?`<div class="pills"><span class="pill ok">${dup} doublon${dup>1?"s":""}</span></div>`:""}
-    ${t.v?variantsHTML(t,e):`<div class="own-row">
+    ${true?variantsHTML(t,e):`<div class="own-row">
       <button class="toggle" data-own="${t.id}" aria-pressed="${own}"><span class="dot">${own?"✓":""}</span>${own?"Je l'ai":"Manquante"}</button>
       <div class="stepper" aria-label="Quantité"><button data-dec="${t.id}" aria-label="Retirer une">−</button><span>${e.qty}</span><button data-inc="${t.id}" aria-label="Ajouter une">+</button></div>
       ${hugoBtn(t,"_")}
@@ -332,7 +332,8 @@ function renderFoot(list,label){
    <div class="kpi"><span>Total</span><b>${s.qty}</b></div>`;
 }
 /* ---------- photo en grand ---------- */
-function showZoom(id,side){
+let ZOOMY=null;
+function showZoom(id,side){ ZOOMY=scrollY;
   const t=byId(id); if(!t) return; const e=eff(t); const np=PHOTOS[t.id]||{};
   let src="", ph="", credit="", own=false;
   if(e[side]){ ph=e[side]; src=ownSrc(ph); own=true; }
@@ -345,7 +346,7 @@ function showZoom(id,side){
     <div class="row zbtns"><button class="btn ghost" data-photo="${t.id}" data-side="${side}">${own?"Changer la photo":"Mettre ma photo"}</button><button class="btn" id="zoomClose">Fermer</button></div></div>`;
   z.hidden=false; document.body.style.overflow="hidden";
 }
-function closeZoom(){ const z=$("#zoom"); if(z){ z.hidden=true; z.innerHTML=""; } document.body.style.overflow=""; }
+function closeZoom(){ const z=$("#zoom"); if(z){ z.hidden=true; z.innerHTML=""; } document.body.style.overflow=""; ZOOMY=null; }
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeZoom(); });
 function toast(msg){ const d=document.createElement("div"); d.className="toast"; d.textContent=msg; document.body.appendChild(d); setTimeout(()=>d.remove(),2200); }
 function numUrlSafe(t){ return numUrl(t); }
@@ -365,6 +366,7 @@ document.addEventListener("click",e=>{
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
   if(b.id==="clearF"){ S.filter=null; saveFilter(); render(); return; }
   if(b.dataset.vt||b.dataset.vi||b.dataset.vd){ const key=b.dataset.vt||b.dataset.vi||b.dataset.vd; const i=key.indexOf("~"); const id=key.slice(0,i), k=key.slice(i+1);
+    if(k==="_"){ const q=st(id).q||0; patch(id,{q: b.dataset.vt?(q>0?0:1): b.dataset.vi? q+1 : Math.max(0,q-1)}); rerender(); return; }
     const vq={...(st(id).vq||{})}; const q=vq[k]||0;
     vq[k]= b.dataset.vt?(q>0?0:1): b.dataset.vi? q+1 : Math.max(0,q-1);
     OPEN.add(id); patch(id,{vq}); rerender(); return; }
@@ -375,7 +377,7 @@ document.addEventListener("click",e=>{
     const hv={...(st(id).hv||{})}; if(hv[k]) delete hv[k]; else hv[k]=1; OPEN.add(id); patch(id,{hv}); rerender(); return; }
   if(b.dataset.zoom){ showZoom(b.dataset.zoom,b.dataset.side); return; }
   if(b.id==="zoomClose"){ closeZoom(); return; }
-  if(b.dataset.photo){ closeZoom(); NP={target:{id:b.dataset.photo,side:b.dataset.side}}; showPick(); return; }
+  if(b.dataset.photo){ const y=ZOOMY!=null?ZOOMY:scrollY; closeZoom(); NP={target:{id:b.dataset.photo,side:b.dataset.side},y}; showPick(); return; }
   if(b.dataset.rm){ const id=b.dataset.rm; delete S.custom[id]; delete S.items[id]; saveCustom(id); render(); toast("Médaille supprimée"); return; }
   if(b.id==="addBtn"){ showAdd(); return; }
 });
@@ -608,7 +610,8 @@ async function showCamera(){
 }
 async function gotBlob(blob){
   NP.blob=blob; if(NP.cropUrl) URL.revokeObjectURL(NP.cropUrl); NP.cropUrl=URL.createObjectURL(blob);
-  if(NP.target){ const {id,side}=NP.target; const ref=await storeBlob(blob); patch(id,{[side]:ref}); closeSheet(); render(); toast("Photo enregistrée"); return; }
+  if(NP.target){ const {id,side}=NP.target, y=NP.y; const ref=await storeBlob(blob); patch(id,{[side]:ref}); closeSheet(); render();
+    const back=()=>scrollTo(0,y||0); back(); requestAnimationFrame(back); setTimeout(back,150); toast("Photo enregistrée"); return; }
   openSheet();
 }
 function showPick(){
