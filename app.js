@@ -24,7 +24,8 @@ function isVirtual(c){ return !!(CATS.find(x=>x.id===c)||{}).virtual; }
 function st(id){ return S.items[id]||{}; }
 function units(t){ const u=st(t.id);
   if(t.v) return t.v.concat((u.xv||[]).filter(([y,r])=>!t.v.some(v=>v[0]==y&&v[1]===r))).map(([y,r,c])=>{const k=y+"|"+r; return {k,y,r,c:c||null,q:(u.vq||{})[k]||0};});
-  return [{k:"_",y:yearOf(t),r:t.rev||"",q:u.q||0,c:null}]; }
+  return [{k:"_",y:yearOf(t),r:refCode(t),q:u.q||0,c:null}]; }
+function refCode(t){ const m=/[A-Z]{2}[0-9AB]{2}-\d{4}/.exec(t.ref||""); return m?m[0]:String(t.ref||"").replace(/^JTC\s*/,"").trim(); }
 function eff(t){ const u=st(t.id); const us=units(t); return {
   us, qty:us.reduce((a,x)=>a+x.q,0), paid:num(u.paid), val: u.val!=null&&u.val!==""?num(u.val):(t.value??null),
   rar: u.rar||t.rar||"", shop: u.shop!=null&&u.shop!==""?u.shop:(t.shop==null?"":(t.shop?"oui":"non")), f:u.f, b:u.b }; }
