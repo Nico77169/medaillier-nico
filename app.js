@@ -281,7 +281,7 @@ function numUrl(t){ if(t.n) return "https://fr.numista.com/"+t.n;
 function picHTML(t,k,p){
   const lbl=k==="f"?"Face":"Dos";
   if(p&&p.own) return faceHTML(t,k,p.src,p.ph);
-  if(!p&&S.custom[t.id]) return faceHTML(t,k,null);   // pièce ajoutée par Nico : case pour sa propre photo
+  if(!p) return faceHTML(t,k,null);   // pas de photo de ce côté : case pour mettre sa propre photo
   if(p) return `<button class="face npic" data-zoom="${t.id}" data-side="${k}" aria-label="Voir en grand la photo ${lbl} de ${esc(t.name)}"><span class="lbl">${lbl}</span><img src="${esc(p.src)}" alt="${lbl} – ${esc(t.name)}" loading="lazy"></button>`;
   return `<a class="face nmini" href="${numUrl(t)}" target="_blank" rel="noopener"><span class="lbl">${lbl}</span><span class="ph"><span class="blank"></span>Voir sur Numista ↗</span></a>`;
 }
@@ -305,8 +305,8 @@ function cardHTML(t){
     ${!hasPh?`<a class="ntile${mini?" mini":""}" href="${numUrl(t)}" target="_blank" rel="noopener" aria-label="Voir les photos de ${esc(t.name)} sur Numista">
         <span class="ncoins${faceOnly||mini?" one":""}">${coin("Face")}${faceOnly||mini?"":coin("Dos")}</span>
         <span class="ncap">${t.n?"Voir les photos sur Numista ↗":"Chercher les photos sur Numista ↗"}</span></a>
-      <div class="addrow"><button class="addph" data-photo="${t.id}" data-side="f">+ Ajouter ${faceOnly?"ma photo":"mes propres photos"}</button>${faceOnly?`<button class="addph" data-photo="${t.id}" data-side="b">+ Dos</button>`:""}</div>`
-      :`<div class="faces${faceOnly?" one":""}">${picHTML(t,"f",sf)}${faceOnly?backMini(t,sb):picHTML(t,"b",sb)}</div>${creditHTML([sf,sb])}`}
+      <div class="addrow"><button class="addph" data-photo="${t.id}" data-side="f">+ Ajouter ma photo</button><button class="addph" data-photo="${t.id}" data-side="b">+ Dos</button></div>`
+      :`<div class="faces${faceOnly?" one":""}">${picHTML(t,"f",sf)}${faceOnly?backMini(t,sb):picHTML(t,"b",sb)}</div>${creditHTML([sf,sb])}${!faceOnly&&!(e.f&&e.b)?`<div class="addrow">${e.f?"":`<button class="addph" data-photo="${t.id}" data-side="f">+ Ma photo (face)</button>`}${e.b?"":`<button class="addph" data-photo="${t.id}" data-side="b">+ Ma photo (dos)</button>`}</div>`:""}`}
     <div>
       <div class="ref" data-mv="${t.id}">${esc(t.ref||"Sans référence JTC")}${st(t.id).mv?' <span class="moved">· déplacée</span>':""}</div>
       <h3 class="name">${esc(t.name)}</h3>
