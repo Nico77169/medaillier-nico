@@ -18,7 +18,8 @@ const catOf = id=>CATS.find(c=>c.id===id)||{name:"Autre"};
 const ls = { get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}} };
 function allTokens(){ return CATALOG.concat(Object.values(S.custom)); }
 let NEWY=0; // année des nouveautés (la plus récente du catalogue)
-function inCat(t,c){ if(c==="nouveautes") return t.cat!=="disney"&&t.cat!=="beauval"&&parseInt(t.years,10)===NEWY; /* pièces sorties pour la première fois cette année */ return t.cat===c; }
+function catT(t){ return (S.items[t.id]&&S.items[t.id].mv)||t.cat; } // thème choisi par Nico s'il a déplacé la pièce
+function inCat(t,c){ const k=catT(t); if(c==="nouveautes") return k!=="disney"&&k!=="beauval"&&parseInt(t.years,10)===NEWY; /* pièces sorties pour la première fois cette année */ return k===c; }
 function isVirtual(c){ return !!(CATS.find(x=>x.id===c)||{}).virtual; }
 function st(id){ return S.items[id]||{}; }
 function units(t){ const u=st(t.id);
@@ -39,7 +40,7 @@ function passFilter(t){
 }
 function matches(t,q){
   if(!q) return true;
-  const hay=norm([t.ref,t.name,t.site,t.years,t.dept,t.note,t.metal,catOf(t.cat).name].join(" "));
+  const hay=norm([t.ref,t.name,t.site,t.years,t.dept,t.note,t.metal,catOf(catT(t)).name].join(" "));
   return norm(q).split(/\s+/).filter(Boolean).every(w=>hay.includes(w));
 }
 function stats(list){
@@ -84,7 +85,7 @@ function patch(id,obj){
   Object.keys(cur).forEach(k=>{ if(cur[k]===""||cur[k]==null) delete cur[k]; });
   if(cur.vq){ Object.keys(cur.vq).forEach(k=>{ if(!cur.vq[k]) delete cur.vq[k]; }); if(!Object.keys(cur.vq).length) delete cur.vq; }
   if(cur.hv && !Object.keys(cur.hv).length) delete cur.hv;
-  if(!cur.q && !cur.vq && !cur.xv && !cur.hv && !cur.f && !cur.b) delete S.items[id]; else S.items[id]=cur;
+  if(!cur.q && !cur.vq && !cur.xv && !cur.hv && !cur.f && !cur.b && !cur.mv) delete S.items[id]; else S.items[id]=cur;
   if(S.custom[id]) saveCustom(id); else saveItem(id);
 }
 function setSync(state,txt){ const el=$("#status"); el.innerHTML=`<span class="sync ${state}"><i></i>${esc(txt)}</span>${UID?'<button class="logout" id="logoutBtn">Se déconnecter</button>':""}`; }
@@ -297,7 +298,7 @@ function cardHTML(t){
   const hasPh=!!(sf||sb);
   const coin=l=>`<span class="ncoin"><span class="blank"></span><small>${l}</small></span>`;
   const dup=e.us.reduce((a,x)=>a+Math.max(0,x.q-1),0);
-  const mini=t.cat!=="disney"&&t.cat!=="beauval"; // fiches du catalogue CJT sans photo : vignette compacte
+  const mini=catT(t)!=="disney"&&catT(t)!=="beauval"; // fiches du catalogue CJT sans photo : vignette compacte
   return `<article class="card${own?" own":""}" data-id="${t.id}" data-year="${yearOf(t)}" data-letter="${letterOf(t)}">
     ${!hasPh?`<a class="ntile${mini?" mini":""}" href="${numUrl(t)}" target="_blank" rel="noopener" aria-label="Voir les photos de ${esc(t.name)} sur Numista">
         <span class="ncoins${faceOnly||mini?" one":""}">${coin("Face")}${faceOnly||mini?"":coin("Dos")}</span>
@@ -305,9 +306,9 @@ function cardHTML(t){
       <div class="addrow"><button class="addph" data-photo="${t.id}" data-side="f">+ Ajouter ${faceOnly?"ma photo":"mes propres photos"}</button>${faceOnly?`<button class="addph" data-photo="${t.id}" data-side="b">+ Dos</button>`:""}</div>`
       :`<div class="faces${faceOnly?" one":""}">${picHTML(t,"f",sf)}${faceOnly?backMini(t,sb):picHTML(t,"b",sb)}</div>${creditHTML([sf,sb])}`}
     <div>
-      <div class="ref">${esc(t.ref||"Sans référence JTC")}</div>
+      <div class="ref" data-mv="${t.id}">${esc(t.ref||"Sans référence JTC")}${st(t.id).mv?' <span class="moved">· déplacée</span>':""}</div>
       <h3 class="name">${esc(t.name)}</h3>
-      <div class="info"><span>${esc(t.years)}</span>${t.dept?`<span>Dép. ${esc(t.dept)}</span>`:""}${t.metal?`<span>${esc(t.metal)}</span>`:""}${t.mint?`<span>Tirage ${esc(t.mint)}</span>`:""}${!S.cat||isVirtual(S.cat)?`<span>${esc(catOf(t.cat).name)}</span>`:""}</div>
+      <div class="info"><span>${esc(t.years)}</span>${t.dept?`<span>Dép. ${esc(t.dept)}</span>`:""}${t.metal?`<span>${esc(t.metal)}</span>`:""}${t.mint?`<span>Tirage ${esc(t.mint)}</span>`:""}${!S.cat||isVirtual(S.cat)?`<span>${esc(catOf(catT(t)).name)}</span>`:""}</div>
       ${t.note?`<div class="note">${esc(t.note)}</div>`:""}
       <div class="links">${hasPh?`<a class="nlink" href="${numUrl(t)}" target="_blank" rel="noopener">Photos sur Numista ↗</a>`:""}</div>
     </div>
@@ -388,6 +389,34 @@ const byId=id=>allTokens().find(t=>t.id===id);
 document.addEventListener("click",e=>{ if(e.target.id==="logoutBtn"){ supa.auth.signOut().then(()=>location.reload()); } });
 // photo Numista distante introuvable -> lien vers Numista
 document.addEventListener("error",e=>{ const i=e.target; if(i.tagName==="IMG"&&i.parentElement&&i.parentElement.classList.contains("mtile")){ const t=byId(i.parentElement.dataset.jt); const sp=document.createElement("span"); sp.className="mph"; sp.textContent=t?String(t.name).slice(0,28):""; i.replaceWith(sp); return; } if(i.tagName==="IMG"&&i.closest(".npic")){ const f=i.closest(".npic"); const a=document.createElement("a"); a.className="face nmini"; a.target="_blank"; a.rel="noopener"; const t=byId(f.closest(".card")?.dataset.id); a.href=t?numUrl(t):"https://fr.numista.com"; a.innerHTML='<span class="ph"><span class="blank"></span>Voir sur Numista ↗</span>'; f.replaceWith(a); } },true);
+
+/* ---------- Déplacer une pièce mal rangée ----------
+   Volontairement caché pour éviter les erreurs : appui long (2 s) sur le code de la pièce, puis double confirmation. */
+let LP=null;
+document.addEventListener("pointerdown",e=>{ const r=e.target.closest(".ref[data-mv]"); if(!r) return;
+  LP={id:r.dataset.mv,x:e.clientX,y:e.clientY,el:r,t:setTimeout(()=>{ r.classList.remove("hold"); LP=null; if(navigator.vibrate) try{navigator.vibrate(30)}catch(_){} showMove(r.dataset.mv); },2000)};
+  r.classList.add("hold"); });
+const cancelLP=()=>{ if(LP){ clearTimeout(LP.t); LP.el.classList.remove("hold"); LP=null; } };
+document.addEventListener("pointerup",cancelLP); document.addEventListener("pointercancel",cancelLP);
+document.addEventListener("pointermove",e=>{ if(LP&&Math.hypot(e.clientX-LP.x,e.clientY-LP.y)>12) cancelLP(); });
+document.addEventListener("scroll",cancelLP,{passive:true});
+document.addEventListener("contextmenu",e=>{ if(e.target.closest(".ref[data-mv]")) e.preventDefault(); });
+function showMove(id){
+  const t=byId(id); if(!t) return; const cur=catT(t), orig=t.cat;
+  const sh=$("#sheet");
+  sh.innerHTML=`<div class="in"><h2>Déplacer cette pièce</h2>
+    <p class="note"><b>${esc(t.name)}</b><br>Thème actuel : ${esc(catOf(cur).name)}${cur!==orig?` (thème d'origine : ${esc(catOf(orig).name)})`:""}</p>
+    <label class="field full">Nouveau thème<select id="mvCat">${CATS.filter(c=>!c.virtual&&c.id!==cur).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></label>
+    <div class="row" id="mvStep"><button class="btn" type="button" id="mvGo">Déplacer</button><button class="btn ghost" type="button" id="mvCancel">Annuler</button></div>
+    ${cur!==orig?`<button type="button" class="linkbtn" id="mvBack">Remettre dans « ${esc(catOf(orig).name)} »</button>`:""}</div>`;
+  sh.hidden=false; $("#sheetBg").hidden=false; sh.scrollTop=0;
+  $("#mvCancel").onclick=closeSheet;
+  const doMove=to=>{ patch(id,{mv:to===orig?"":to}); closeSheet(); rerender(); toast(`Pièce déplacée dans « ${catOf(to).name} »`); };
+  if($("#mvBack")) $("#mvBack").onclick=()=>doMove(orig);
+  $("#mvGo").onclick=()=>{ const to=$("#mvCat").value;
+    $("#mvStep").innerHTML=`<p class="note full" style="margin:0">Sûr ? La pièce ira dans <b>${esc(catOf(to).name)}</b>.</p><button class="btn" type="button" id="mvYes">Oui, déplacer</button><button class="btn ghost" type="button" id="mvNo">Non</button>`;
+    $("#mvYes").onclick=()=>doMove(to); $("#mvNo").onclick=closeSheet; };
+}
 
 /* ---------- Ajouter ma pièce ---------- */
 let NP=null;
@@ -518,7 +547,7 @@ async function saveNew(ev){
     S.items[id]={q:1,f:ref};
     saveCustom(id);
   }
-  closeSheet(); S.cat=(t?t.cat:cat); S.q=""; $("#q").value=""; jumpTo(x=>x.id===id);
+  closeSheet(); S.cat=(t?catT(t):cat); S.q=""; $("#q").value=""; jumpTo(x=>x.id===id);
   toast(t?"Ajoutée à ta collection":"Pièce ajoutée et cochée");
 }
 function shrink(file,max,q){ return new Promise((res,rej)=>{ const img=new Image(); const u=URL.createObjectURL(file);
