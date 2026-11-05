@@ -183,7 +183,7 @@ function yearOf(t){ const y=parseInt(String(t.years||""),10); return isNaN(y)?""
 function letterOf(t){ const c=String(t.name||"").normalize("NFD").replace(/[̀-ͯ]/g,"").trim().charAt(0).toUpperCase(); return /[A-Z]/.test(c)?c:"#"; }
 /* Règle auto : <10 pièces = pas de mosaïque ; >=80 % sur une même année = par lettre ; sinon par année */
 function mosaicMode(pool){
-  if(pool.length<10) return null;
+  if(!pool.length) return null;
   const cnt={}; pool.forEach(t=>{ const y=yearOf(t)||"?"; cnt[y]=(cnt[y]||0)+1; });
   return Math.max(...Object.values(cnt))/pool.length>=0.8 ? "letter" : "year";
 }
@@ -194,7 +194,7 @@ function mosaicHTML(list,mode){
   const keys=[...groups.keys()].sort((a,b)=>(a===none)-(b===none)||a.localeCompare(b));
   const idx=byL?`<nav class="mabc">${keys.map(k=>`<button data-ml="ml-${k==="#"?"0":k}">${esc(k)}</button>`).join("")}</nav>`:"";
   // une ligne par année : étiquette à gauche (année + compte), pièces à droite
-  return `<p class="mhint">Touche ${byL?"une lettre":"une année"} ou une pièce pour y aller dans la liste.</p>`+idx+keys.map(k=>{
+  return `<p class="mhint">Touche une pièce pour ouvrir sa fiche, ou ${byL?"une lettre":"une année"} pour la voir dans la liste.</p>`+idx+keys.map(k=>{
     const ts=groups.get(k), own=ts.filter(t=>eff(t).qty>0).length;
     return `<section class="mrow"${byL?` id="ml-${k==="#"?"0":k}"`:""}><button class="mlab${own===ts.length?" full":""}" data-j${byL?"l":"y"}="${esc(k)}" aria-label="${esc(k)} : ${own} sur ${ts.length} possédée${own>1?"s":""}"><b>${esc(k==="Sans année"?"?":k)}</b><small>${own}/${ts.length}</small></button><div class="mgrid four">${ts.map(mtileHTML).join("")}</div></section>`; }).join("");
 }
@@ -221,7 +221,8 @@ function jumpTo(pred){
     const top=el.getBoundingClientRect().top+scrollY-($(".top").offsetHeight+12); scrollTo({top,behavior:"instant"});
     el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),1600); });
 }
-function render(){
+function render(){ renderMain(); if(PIECE&&$("#sheet .piece")) renderPiece(); }
+function renderMain(){
   $("#backBtn").hidden=!S.cat;
   const pool0=S.cat?allTokens().filter(t=>inCat(t,S.cat)):[], mmode=S.cat?mosaicMode(pool0):null;
   if(!mmode) S.mosaic=false;
@@ -375,12 +376,14 @@ function numUrlSafe(t){ return numUrl(t); }
 /* ---------- interactions ---------- */
 document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
-  if(b.dataset.cat){ OPEN.clear(); S.mosaic=false; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
+  if(b.dataset.cat){ OPEN.clear(); S.mosaic=true; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
   if(b.id==="mosaicBtn"){ S.mosaic=!S.mosaic; render(); scrollTo(0,0); return; }
   if(b.dataset.jy){ const y=b.dataset.jy; jumpTo(t=>(yearOf(t)||"Sans année")===y); return; }
   if(b.dataset.ml){ const g=document.getElementById(b.dataset.ml); if(g) scrollTo({top:g.getBoundingClientRect().top+scrollY-($(".top").offsetHeight+10),behavior:"smooth"}); return; }
   if(b.dataset.jl){ jumpTo(t=>letterOf(t)===b.dataset.jl); return; }
-  if(b.dataset.jt){ jumpTo(t=>t.id===b.dataset.jt); return; }
+  if(b.dataset.jt){ openPiece(b.dataset.jt); return; }
+  if(b.id==="pieceClose"){ closePiece(); return; }
+  if(b.id==="pieceList"){ const id=PIECE; closePiece(); jumpTo(t=>t.id===id); return; }
   if(b.id==="moreBtn"){ showMore(); return; }
   if(b.id==="helpBtn"){ showHelp(); return; }
   if(b.id==="backBtn"){ OPEN.clear(); S.mosaic=false; S.cat=null; S.q=""; $("#q").value=""; render(); return; }
@@ -461,8 +464,19 @@ function showMove(id){
 let NP=null;
 const normRef=v=>{ const m=/(FR|[A-Z]{2})\s*-?\s*([0-9AB]{2})\s*-?\s*(\d{1,4})/i.exec(v||""); return m?(m[1].toUpperCase()+m[2].toUpperCase()+"-"+m[3].padStart(4,"0")):""; };
 function findByRef(code){ if(!code) return null; return allTokens().find(t=>normRef(t.ref)===code)||null; }
-function closeSheet(){ stopCam(); $("#sheet").hidden=true; $("#sheetBg").hidden=true; $("#sheet").innerHTML=""; }
-$("#sheetBg").addEventListener("click",closeSheet);
+function closeSheet(){ stopCam(); $("#sheet").hidden=true; $("#sheetBg").hidden=true; $("#sheet").innerHTML="";
+  if(PIECE) renderPiece(); } // après une photo, un déplacement… on revient sur la fiche de la pièce
+$("#sheetBg").addEventListener("click",()=>{ if($("#sheet .piece")) closePiece(); else closeSheet(); });
+/* ---------- fiche d'une pièce ouverte depuis la mosaïque ---------- */
+let PIECE=null;
+function openPiece(id){ PIECE=id; OPEN.add(id); renderPiece(true); } // dans la fiche, les variantes sont déjà ouvertes
+function renderPiece(first){
+  const t=byId(PIECE); if(!t){ PIECE=null; closeSheet(); return; } // pièce supprimée : on ferme
+  const sh=$("#sheet"), y=first?0:sh.scrollTop;
+  sh.innerHTML=`<div class="in piece"><div class="phead"><button class="btn ghost" type="button" id="pieceList">Voir dans la liste</button><button class="btn" type="button" id="pieceClose">Fermer</button></div>${cardHTML(t)}</div>`;
+  sh.hidden=false; $("#sheetBg").hidden=false; sh.scrollTop=y;
+}
+function closePiece(){ PIECE=null; closeSheet(); }
 /* cadrage rond */
 let CR=null;
 function showCrop(){
@@ -586,7 +600,7 @@ async function saveNew(ev){
     S.items[id]={q:1,f:ref};
     saveCustom(id);
   }
-  closeSheet(); S.cat=(t?catT(t):cat); S.q=""; $("#q").value=""; jumpTo(x=>x.id===id);
+  closeSheet(); S.cat=(t?catT(t):cat); S.q=""; $("#q").value=""; S.mosaic=true; render(); openPiece(id);
   toast(t?"Ajoutée à ta collection":"Pièce ajoutée et cochée");
 }
 function shrink(file,max,q){ return new Promise((res,rej)=>{ const img=new Image(); const u=URL.createObjectURL(file);
