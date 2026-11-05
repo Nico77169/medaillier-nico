@@ -62,7 +62,7 @@ self.addEventListener("fetch", e => {
   const req = e.request; const url = new URL(req.url);
   if (req.method !== "GET") return;
   // photos Numista (nouveautés) : gardées sur le téléphone après le premier affichage -> visibles hors ligne
-  if ((url.hostname.endsWith("numista.com") && /\.(jpg|jpeg|png|webp)$/i.test(url.pathname)) || url.hostname.endsWith("wikimedia.org")) {
+  if ((url.hostname.endsWith("numista.com") && /\.(jpg|jpeg|png|webp)$/i.test(url.pathname))) {
     e.respondWith(caches.open("medaillier-photos").then(c => c.match(req).then(r => r || fetch(req).then(n => { c.put(req, n.clone()); return n; }))));
     return;
   }

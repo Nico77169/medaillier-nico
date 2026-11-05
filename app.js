@@ -240,6 +240,7 @@ function renderMain(){
   const pool=allTokens().filter(t=>(!S.cat||inCat(t,S.cat)));
   const list=pool.filter(t=>matches(t,S.q)&&passFilter(t)).sort(mmode==="letter"?((a,b)=>a.name.localeCompare(b.name,"fr")):((a,b)=>String(a.years).localeCompare(String(b.years))||a.name.localeCompare(b.name)));
   if(mos){ v.innerHTML=mosaicHTML(list,mmode); renderFoot(pool,"Total "+catOf(S.cat).name); return; }
+  if(!S.cat&&S.q){ const dm=matchDeps(S.q).map(c=>c.id); if(dm.length){ const first=t=>dm.includes(catT(t))||(t.dept&&dm.includes("d"+t.dept))?0:1; list.sort((a,b)=>first(a)-first(b)); } } // pièces du département tapé en premier
   const vk=[S.cat,S.q,S.filter].join("§"); if(vk!==VIEWKEY){ VIEWKEY=vk; S.shown=PAGE; }
   S.list=list; const part=list.slice(0,S.shown), rest=list.length-part.length;
   let h="";
@@ -256,7 +257,7 @@ function catMeta(all){ const l=S.filter?all.filter(passFilter):all, s=stats(all)
 function groupByCat(){ const g={}; allTokens().forEach(t=>{ const k=catT(t); (g[k]=g[k]||[]).push(t); }); return g; }
 // ronds des départements (accueil et recherche) : blason en transparence sous le numéro, anneau = progression
 function depTiles(cats,groups){ return cats.map(c=>{ const all=groups[c.id]||[]; if(!all.length) return ""; const m=catMeta(all); if(S.filter&&!m.l.length) return "";
-  return `<button class="dep" data-cat="${c.id}" style="--c1:${c.c1};--c2:${c.c2};--p:${m.pct}" aria-label="${esc(c.num)} ${esc(c.name)} : ${m.s.own} sur ${m.s.total} possédées"><span class="dnum${c.img?" has":""}">${c.img?`<img class="dimg" src="${esc(c.img)}" alt="" loading="lazy" onerror="this.remove()">`:""}<b>${esc(c.num)}</b></span><span class="dname">${esc(c.name)}</span></button>`; }).join(""); }
+  return `<button class="dep" data-cat="${c.id}" style="--c1:${c.c1};--c2:${c.c2};--p:${m.pct}" aria-label="${esc(c.num)} ${esc(c.name)} : ${m.s.own} sur ${m.s.total} possédées"><span class="dnum"><b>${esc(c.num)}</b></span><span class="dname">${esc(c.name)}</span></button>`; }).join(""); }
 // « 77 », « 7 », « 2a », « seine »… -> départements dont le numéro ou le nom correspond
 function matchDeps(q){ const n=norm(q).trim(); if(!n) return [];
   const num=/^\d{1,3}$|^2[ab]$/.test(n);
@@ -274,7 +275,7 @@ function homeHTML(){
   return `<p class="sect-title">Thèmes</p><div class="cats">${big}</div>
     <p class="sect-title">Départements</p><div class="deps">${deps||'<div class="empty">Aucun département avec ce filtre.</div>'}</div>
     <button class="addbtn" id="helpBtn">💡 Astuces : déplacer une pièce mal rangée…</button>
-    <p class="status">Catalogue mis à jour le ${esc(CATALOG_DATE)} · ${CATALOG.length} médailles${Object.keys(S.custom).length?` + ${Object.keys(S.custom).length} ajoutées par toi`:""} · Liste : catalogue CJT de Nico${CJT_DATE?` (${esc(CJT_DATE)})`:""} · Photos : Numista (licences Creative Commons) · Blasons : Wikimedia Commons · Disney : liste de Nico</p>`;
+    <p class="status">Catalogue mis à jour le ${esc(CATALOG_DATE)} · ${CATALOG.length} médailles${Object.keys(S.custom).length?` + ${Object.keys(S.custom).length} ajoutées par toi`:""} · Liste : catalogue CJT de Nico${CJT_DATE?` (${esc(CJT_DATE)})`:""} · Photos : Numista (licences Creative Commons) · Disney : liste de Nico</p>`;
 }
 function faceHTML(t,side,src,ph){
   const lbl=side==="f"?"Face":"Dos";
@@ -446,8 +447,6 @@ function showHelp(){
     <p class="note">Pour annuler : même appui long, puis <b>Remettre dans « … »</b>.</p>
     <h3 class="htitle">Mosaïque</h3>
     <p class="note">Dans un thème, le bouton rond en haut à droite affiche les pièces en mosaïque. Touche une année, une lettre ou une pièce pour y aller dans la liste.</p>
-    <details class="credits"><summary>Crédits des blasons des départements</summary><p class="note">Blasons tirés de Wikimedia Commons, sous licence libre :</p>
-      <ul>${CATS.filter(c=>c.img).map(c=>`<li>${esc(c.num)} ${esc(c.name)} — ${esc(c.imgLic||"")} — <a href="${esc(c.imgPage)}" target="_blank" rel="noopener">source</a></li>`).join("")}</ul></details>
     <div class="row"><button class="btn" type="button" id="helpClose">Fermer</button></div></div>`;
   sh.hidden=false; $("#sheetBg").hidden=false; sh.scrollTop=0; $("#helpClose").onclick=closeSheet;
 }
