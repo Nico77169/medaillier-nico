@@ -1,5 +1,5 @@
 /* Service worker : appli utilisable hors ligne + mises à jour automatiques */
-const CACHE = "medaillier-v9";
+const CACHE = "medaillier-v10";
 const SHELL = ["./", "index.html", "app.js", "config.js", "catalogue.json", "manifest.webmanifest",
   "vendor/supabase.js", "vendor/591.supabase.js", "icons/icon-192.png", "icons/icon-512.png",
   // photos Disney et Beauval : téléchargées dès l'installation pour être visibles hors ligne
@@ -62,7 +62,7 @@ self.addEventListener("fetch", e => {
   const req = e.request; const url = new URL(req.url);
   if (req.method !== "GET") return;
   // photos Numista (nouveautés) : gardées sur le téléphone après le premier affichage -> visibles hors ligne
-  if (url.hostname.endsWith("numista.com") && /\.(jpg|jpeg|png|webp)$/i.test(url.pathname)) {
+  if ((url.hostname.endsWith("numista.com") && /\.(jpg|jpeg|png|webp)$/i.test(url.pathname)) || url.hostname.endsWith("wikimedia.org")) {
     e.respondWith(caches.open("medaillier-photos").then(c => c.match(req).then(r => r || fetch(req).then(n => { c.put(req, n.clone()); return n; }))));
     return;
   }
