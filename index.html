@@ -275,9 +275,6 @@ img{max-width:100%}
 .htitle{font-size:1rem;margin:14px 0 6px}.steps{margin:0 0 8px;padding-left:20px;display:grid;gap:6px;line-height:1.4}
 .vars.single .vlist{padding-top:2px}
 .phrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.backmini.inrow{position:static}.backmini.left{right:auto;left:-60px}
-.deps{display:grid;gap:8px}.dep{display:grid;grid-template-columns:48px 1fr;gap:12px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:8px 12px}
-.dnum{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1.05rem;color:#fff;background:radial-gradient(circle at 35% 30%,var(--c1),var(--c2));text-shadow:0 1px 1px rgba(0,0,0,.3)}
-.dtxt{display:grid;gap:4px;min-width:0}.dtxt b{font-size:.98rem}.dtxt .bar{margin-top:2px}
 .lnk{display:flex;flex-wrap:wrap;gap:6px 14px}.links{display:flex;flex-wrap:wrap;gap:6px 14px}
 .mhead{aspect-ratio:1;border-radius:14px;border:2px solid var(--gold);background:var(--gold-soft);color:var(--ink);display:grid;place-content:center;gap:2px;padding:0;text-align:center;scroll-margin-top:150px}
 .mhead b{font-size:1.02rem;font-weight:800;letter-spacing:-.01em}.mhead small{font-size:.7rem;font-weight:700;color:var(--muted)}.mhead.full{border-color:var(--ok);background:var(--ok-soft)}
@@ -286,6 +283,11 @@ img{max-width:100%}
 .mgrid.four{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .sheet .piece{gap:10px}.phead{display:flex;justify-content:space-between;gap:10px;position:sticky;top:-16px;z-index:2;background:var(--surface);padding:4px 0 8px}
 .sheet .piece .card{border:0;padding:0;background:none}.toast{z-index:60!important}
+.deps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px 8px}
+.dep{display:grid;justify-items:center;gap:4px;border:0;background:none;padding:0;color:var(--ink);min-width:0}
+.dnum{width:100%;max-width:64px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1.05rem;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35);
+  background:radial-gradient(circle at 35% 30%,var(--c1),var(--c2)) padding-box,conic-gradient(var(--ok) calc(var(--p)*1%),var(--line) 0) border-box;border:3px solid transparent}
+.dname{font-size:.66rem;font-weight:600;line-height:1.15;text-align:center;max-width:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;color:var(--muted)}
 </style>
 </head>
 <body>

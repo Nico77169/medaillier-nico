@@ -263,8 +263,7 @@ function homeHTML(){
       <span class="bar"><i style="width:${m.pct}%"></i></span></button>`; }).join("");
   const deps=CATS.filter(c=>c.dep&&(groups[c.id]||[]).length).map(c=>{ const all=groups[c.id]; const m=meta(c,all);
     if(S.filter&&!m.l.length) return "";
-    return `<button class="dep" data-cat="${c.id}" style="--c1:${c.c1};--c2:${c.c2}"><span class="dnum">${esc(c.num)}</span>
-      <span class="dtxt"><b>${esc(c.name)}</b><span class="meta">${m.s.own} / ${m.s.total} variante${m.s.total>1?"s":""} possédée${m.s.total>1?"s":""}${S.filter?` · ${m.l.length} jeton${m.l.length>1?"s":""}`:""}</span><span class="bar"><i style="width:${m.pct}%"></i></span></span></button>`; }).join("");
+    return `<button class="dep" data-cat="${c.id}" style="--c1:${c.c1};--c2:${c.c2};--p:${m.pct}" aria-label="${esc(c.num)} ${esc(c.name)} : ${m.s.own} sur ${m.s.total} possédées"><span class="dnum">${esc(c.num)}</span><span class="dname">${esc(c.name)}</span></button>`; }).join("");
   return `<p class="sect-title">Thèmes</p><div class="cats">${big}</div>
     <p class="sect-title">Départements</p><div class="deps">${deps||'<div class="empty">Aucun département avec ce filtre.</div>'}</div>
     <button class="addbtn" id="helpBtn">💡 Astuces : déplacer une pièce mal rangée…</button>
