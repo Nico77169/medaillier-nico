@@ -711,4 +711,18 @@ function showLogin(){
 window.addEventListener("online",flush);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ checkRobot(); if(UID) pull(); } });
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+/* ---------- bouton « retour » du téléphone : revient à l'écran précédent au lieu de fermer l'appli ---------- */
+let ARMED=false;
+const zoomOpen=()=>{ const z=$("#zoom"); return !!(z&&!z.hidden); };
+function atRoot(){ return !S.cat && !S.q && $("#sheet").hidden && !zoomOpen(); }
+function arm(){ if(!ARMED && !atRoot()){ try{ history.pushState({medaillier:1},""); ARMED=true; }catch(e){} } }
+function goBack(){
+  if(zoomOpen()){ closeZoom(); return; }
+  if(!$("#sheet").hidden){ if($("#sheet .piece")) closePiece(); else closeSheet(); return; }
+  if(S.q){ S.q=""; $("#q").value=""; render(); return; }
+  if(S.cat && !S.mosaic){ S.mosaic=true; render(); scrollTo(0,0); return; }   // liste -> mosaïque
+  if(S.cat){ OPEN.clear(); S.mosaic=false; S.cat=null; render(); scrollTo(0,0); return; } // thème -> accueil
+}
+window.addEventListener("popstate",()=>{ ARMED=false; goBack(); setTimeout(arm,0); });
+new MutationObserver(()=>arm()).observe(document.body,{subtree:true,attributes:true,attributeFilter:["hidden"],childList:true});
 start();
