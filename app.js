@@ -193,10 +193,10 @@ function mosaicHTML(list,mode){
   list.forEach(t=>{ const k=byL?letterOf(t):(yearOf(t)||none); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(t); });
   const keys=[...groups.keys()].sort((a,b)=>(a===none)-(b===none)||a.localeCompare(b));
   const idx=byL?`<nav class="mabc">${keys.map(k=>`<button data-ml="ml-${k==="#"?"0":k}">${esc(k)}</button>`).join("")}</nav>`:"";
-  return `<p class="mhint">Touche ${byL?"une lettre":"une année"} ou une pièce pour y aller dans la liste.</p>`+idx+keys.map(k=>{
+  // grille continue : une pastille « année » (ou « lettre ») au début de chaque groupe, puis ses pièces
+  return `<p class="mhint">Touche ${byL?"une lettre":"une année"} ou une pièce pour y aller dans la liste.</p>`+idx+`<div class="mgrid flow">`+keys.map(k=>{
     const ts=groups.get(k), own=ts.filter(t=>eff(t).qty>0).length;
-    return `<section class="mgroup"${byL?` id="ml-${k==="#"?"0":k}"`:""}><button class="myear" data-j${byL?"l":"y"}="${esc(k)}"><b>${esc(k)}</b><span>${own} / ${ts.length} possédée${own>1?"s":""}</span><i aria-hidden="true">›</i></button>
-      <div class="mgrid">${ts.map(mtileHTML).join("")}</div></section>`; }).join("");
+    return `<button class="mhead${own===ts.length?" full":""}"${byL?` id="ml-${k==="#"?"0":k}"`:""} data-j${byL?"l":"y"}="${esc(k)}" aria-label="${esc(k)} : ${own} sur ${ts.length} possédée${own>1?"s":""}"><b>${esc(k==="Sans année"?"?":k)}</b><small>${own}/${ts.length}</small></button>`+ts.map(mtileHTML).join(""); }).join("")+`</div>`;
 }
 function mtileHTML(t){
   const e=eff(t), np=PHOTOS[t.id]||{}, own=e.qty>0;
