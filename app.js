@@ -18,7 +18,9 @@ const catOf = id=>CATS.find(c=>c.id===id)||{name:"Autre"};
 const ls = { get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}} };
 function allTokens(){ return CATALOG.concat(Object.values(S.custom)); }
 let NEWY=0; // année des nouveautés (la plus récente du catalogue)
-function catT(t){ return (S.items[t.id]&&S.items[t.id].mv)||t.cat; } // thème choisi par Nico s'il a déplacé la pièce
+function hasCat(c){ return CATS.some(x=>x.id===c); }
+function catT(t){ const mv=S.items[t.id]&&S.items[t.id].mv; if(mv&&hasCat(mv)) return mv; if(hasCat(t.cat)) return t.cat;
+  if(t.dept&&hasCat("d"+t.dept)) return "d"+t.dept; return "autres"; } // anciennes catégories -> département ou « Sans département » // thème choisi par Nico s'il a déplacé la pièce
 function inCat(t,c){ const k=catT(t); if(c==="nouveautes") return k!=="disney"&&k!=="beauval"&&parseInt(t.years,10)===NEWY; /* pièces sorties pour la première fois cette année */ return k===c; }
 function isVirtual(c){ return !!(CATS.find(x=>x.id===c)||{}).virtual; }
 function st(id){ return S.items[id]||{}; }
@@ -227,7 +229,8 @@ function render(){
   mb.setAttribute("aria-pressed",String(mos)); mb.setAttribute("aria-label",mos?"Revenir à la liste":(mmode==="letter"?"Voir en mosaïque par lettre":"Voir en mosaïque par année"));
   mb.innerHTML=mos?ICON_LIST:ICON_GRID;
   $("#title").textContent=S.cat?(isVirtual(S.cat)?catOf(S.cat).name.replace("de l'année",NEWY):catOf(S.cat).name):"Médaillier de Nico";
-  $("#crumb").textContent=S.cat?"Thème":"Jetons Monnaie de Paris";
+  const cc=S.cat?catOf(S.cat):null;
+  $("#crumb").textContent=S.cat?(cc.dep&&/^\d|^2[AB]/.test(cc.num||"")&&cc.id!=="dom"?"Département "+cc.num:(cc.dep?"Catégorie":"Thème")):"Jetons Monnaie de Paris";
   $("#q").placeholder=S.cat?"Chercher dans ce thème…":"Code, nom ou thème…";
   document.querySelectorAll(".chip[data-f]").forEach(b=>b.setAttribute("aria-pressed",String(S.filter===b.dataset.f)));
   $("#clearF").hidden=!S.filter;
@@ -247,17 +250,22 @@ function render(){
   renderFoot(S.cat?pool:list, S.cat?"Total "+catOf(S.cat).name:"Total des résultats");
 }
 function homeHTML(){
-  const toks=allTokens();
-  return `<p class="sect-title">Thèmes</p><div class="cats">${CATS.map(c=>{
-    const all=toks.filter(t=>inCat(t,c.id)); const l=S.filter?all.filter(passFilter):all; const s=stats(all);
-    const pct=s.total?Math.round(s.own/s.total*100):0;
+  const groups={}; allTokens().forEach(t=>{ const k=catT(t); (groups[k]=groups[k]||[]).push(t); });
+  const meta=(c,all)=>{ const l=S.filter?all.filter(passFilter):all, s=stats(all), pct=s.total?Math.round(s.own/s.total*100):0;
+    return {l,s,pct,f:S.filter?`<span class="meta">${l.length} jeton${l.length>1?"s":""} ${({own:"possédé",missing:"avec un manque",dup:"avec doublon",hugo:"avec Hugo"})[S.filter]}${l.length>1&&S.filter==="own"?"s":""}</span>`:""}; };
+  const big=CATS.filter(c=>!c.dep).map(c=>{ const all=groups[c.id]||[]; const m=meta(c,all);
     return `<button class="cat${c.star?" star":""}" data-cat="${c.id}" style="--c1:${c.c1};--c2:${c.c2}">
       ${c.star?'<span class="badge-star">Objectif</span>':""}
       <span class="medal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${c.icon}</svg></span>
-      <b>${esc(c.virtual?c.name.replace("de l'année",NEWY):c.name)}</b>
-      <span class="meta">${s.own} / ${s.total} ${all.some(t=>t.v)?"variantes possédées":"possédées"}</span>
-      ${S.filter?`<span class="meta">${l.length} jeton${l.length>1?"s":""} ${({own:"possédé",missing:"avec un manque",dup:"avec doublon",hugo:"avec Hugo"})[S.filter]}${l.length>1&&S.filter==="own"?"s":""}</span>`:""}
-      <span class="bar"><i style="width:${pct}%"></i></span></button>`;}).join("")}</div>
+      <b>${esc(c.name)}</b>
+      <span class="meta">${m.s.own} / ${m.s.total} ${all.some(t=>t.v)?"variantes possédées":"possédées"}</span>${m.f}
+      <span class="bar"><i style="width:${m.pct}%"></i></span></button>`; }).join("");
+  const deps=CATS.filter(c=>c.dep&&(groups[c.id]||[]).length).map(c=>{ const all=groups[c.id]; const m=meta(c,all);
+    if(S.filter&&!m.l.length) return "";
+    return `<button class="dep" data-cat="${c.id}" style="--c1:${c.c1};--c2:${c.c2}"><span class="dnum">${esc(c.num)}</span>
+      <span class="dtxt"><b>${esc(c.name)}</b><span class="meta">${m.s.own} / ${m.s.total} variante${m.s.total>1?"s":""} possédée${m.s.total>1?"s":""}${S.filter?` · ${m.l.length} jeton${m.l.length>1?"s":""}`:""}</span><span class="bar"><i style="width:${m.pct}%"></i></span></span></button>`; }).join("");
+  return `<p class="sect-title">Thèmes</p><div class="cats">${big}</div>
+    <p class="sect-title">Départements</p><div class="deps">${deps||'<div class="empty">Aucun département avec ce filtre.</div>'}</div>
     <button class="addbtn" id="helpBtn">💡 Astuces : déplacer une pièce mal rangée…</button>
     <p class="status">Catalogue mis à jour le ${esc(CATALOG_DATE)} · ${CATALOG.length} médailles${Object.keys(S.custom).length?` + ${Object.keys(S.custom).length} ajoutées par toi`:""} · Liste : catalogue CJT de Nico${CJT_DATE?` (${esc(CJT_DATE)})`:""} · Photos : Numista (licences Creative Commons) · Disney : liste de Nico</p>`;
 }
@@ -276,6 +284,8 @@ function variantsHTML(t,e){
 const OPEN=new Set();
 // Case « Hugo » : simple info cochée par ligne (variante ou pièce), sans effet sur les totaux de Nico
 function hugoBtn(t,k){ const on=!!((st(t.id).hv||{})[k]); return `<button class="hugo${on?" on":""}" data-hu="${esc(t.id+"~"+k)}" role="switch" aria-checked="${on}" aria-label="Hugo"><span class="htxt">Hugo</span><span class="hknob"></span></button>`; }
+function cjtUrl(t){ const m=/[A-Z]{2}[0-9AB]{2}-(\d{4})/.exec(t.ref||""); return m?"https://www.collection-jetons-touristiques.com/jeton/"+parseInt(m[1],10):""; }
+function cjtLink(t){ const u=cjtUrl(t); return u?`<a class="nlink" href="${u}" target="_blank" rel="noopener">Fiche CJT ↗</a>`:""; }
 function numUrl(t){ if(t.n) return "https://fr.numista.com/"+t.n;
   const m=/FR[0-9AB]{2}-\d{4}/.exec(t.ref||""); return "https://fr.numista.com/catalogue/index.php?ct=exonumia&r="+encodeURIComponent(m?m[0]:t.name); }
 function picHTML(t,k,p){
@@ -293,10 +303,10 @@ function plusMini(t,side,cls=""){ const l=side==="f"?"Face":"Dos";
   return `<button class="backmini${cls}" data-photo="${t.id}" data-side="${side}" aria-label="Ajouter la photo ${side==="f"?"de la face":"du dos"}"><span>+<br>${l}</span></button>`; }
 function photoBlock(t,e,sf,sb,faceOnly){
   const nl=`<a class="nlink" href="${numUrl(t)}" target="_blank" rel="noopener">${t.n?"Voir les photos sur Numista":"Chercher les photos sur Numista"} ↗</a>`;
-  if(!sf&&!sb) return `<div class="phrow">${plusMini(t,"f"," inrow")}${plusMini(t,"b"," inrow")}${nl}</div>`;
+  if(!sf&&!sb) return `<div class="phrow">${plusMini(t,"f"," inrow")}${plusMini(t,"b"," inrow")}<span class="lnk">${nl}${cjtLink(t)}</span></div>`;
   const repl=(!e.f&&sf)||(!e.b&&sb&&!faceOnly)?`<div class="addrow">${!e.f&&sf?`<button class="addph" data-photo="${t.id}" data-side="f">+ Ma photo (face)</button>`:""}${!e.b&&sb&&!faceOnly?`<button class="addph" data-photo="${t.id}" data-side="b">+ Ma photo (dos)</button>`:""}</div>`:"";
   let faces;
-  if(faceOnly) faces=sf?`<div class="faces one">${picHTML(t,"f",sf)}${backMini(t,sb)}</div>`:`<div class="phrow">${plusMini(t,"f"," inrow")}${backMini(t,sb).replace('class="backmini','class="backmini inrow')}${nl}</div>`;
+  if(faceOnly) faces=sf?`<div class="faces one">${picHTML(t,"f",sf)}${backMini(t,sb)}</div>`:`<div class="phrow">${plusMini(t,"f"," inrow")}${backMini(t,sb).replace('class="backmini','class="backmini inrow')}<span class="lnk">${nl}${cjtLink(t)}</span></div>`;
   else if(sf&&sb) faces=`<div class="faces">${picHTML(t,"f",sf)}${picHTML(t,"b",sb)}</div>`;
   else if(sf) faces=`<div class="faces one">${picHTML(t,"f",sf)}${plusMini(t,"b")}</div>`;
   else faces=`<div class="faces one">${picHTML(t,"b",sb)}${plusMini(t,"f"," left")}</div>`;
@@ -322,7 +332,7 @@ function cardHTML(t){
       <h3 class="name">${esc(t.name)}</h3>
       <div class="info"><span>${esc(t.years)}</span>${t.dept?`<span>Dép. ${esc(t.dept)}</span>`:""}${t.metal?`<span>${esc(t.metal)}</span>`:""}${t.mint?`<span>Tirage ${esc(t.mint)}</span>`:""}${!S.cat||isVirtual(S.cat)?`<span>${esc(catOf(catT(t)).name)}</span>`:""}</div>
       ${t.note?`<div class="note">${esc(t.note)}</div>`:""}
-      <div class="links">${hasPh?`<a class="nlink" href="${numUrl(t)}" target="_blank" rel="noopener">Photos sur Numista ↗</a>`:""}</div>
+      <div class="links">${!((!sf&&!sb)||(faceOnly&&!sf))?`<a class="nlink" href="${numUrl(t)}" target="_blank" rel="noopener">Photos sur Numista ↗</a>${cjtLink(t)}`:""}</div>
     </div>
     ${dup?`<div class="pills"><span class="pill ok">${dup} doublon${dup>1?"s":""}</span></div>`:""}
     ${true?variantsHTML(t,e):`<div class="own-row">
