@@ -231,7 +231,7 @@ function render(){
   $("#title").textContent=S.cat?(isVirtual(S.cat)?catOf(S.cat).name.replace("de l'année",NEWY):catOf(S.cat).name):"Médaillier de Nico";
   const cc=S.cat?catOf(S.cat):null;
   $("#crumb").textContent=S.cat?(cc.dep&&/^\d|^2[AB]/.test(cc.num||"")&&cc.id!=="dom"?"Département "+cc.num:(cc.dep?"Catégorie":"Thème")):"Jetons Monnaie de Paris";
-  $("#q").placeholder=S.cat?"Chercher dans ce thème…":"Code, nom ou thème…";
+  $("#q").placeholder=S.cat?(catOf(S.cat).dep?"Chercher dans ce département…":"Chercher dans ce thème…"):"Code, nom, lieu ou département…";
   document.querySelectorAll(".chip[data-f]").forEach(b=>b.setAttribute("aria-pressed",String(S.filter===b.dataset.f)));
   $("#clearF").hidden=!S.filter;
   const v=$("#view");
