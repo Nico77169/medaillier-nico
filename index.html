@@ -284,7 +284,7 @@ img{max-width:100%}
 .sheet .piece{gap:10px}.phead{display:flex;justify-content:space-between;gap:10px;position:sticky;top:-16px;z-index:2;background:var(--surface);padding:4px 0 8px}
 .sheet .piece .card{border:0;padding:0;background:none}.toast{z-index:60!important}
 .deps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px 8px}
-.dep{display:grid;justify-items:center;gap:4px;border:0;background:none;padding:0;color:var(--ink);min-width:0}
+.dep{--p:0;display:grid;justify-items:center;gap:4px;border:0;background:none;padding:0;color:var(--ink);min-width:0}
 .dnum{width:100%;max-width:64px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1.05rem;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35);
   background:radial-gradient(circle at 35% 30%,var(--c1),var(--c2)) padding-box,conic-gradient(var(--ok) calc(var(--p)*1%),var(--line) 0) border-box;border:3px solid transparent}
 .dname{font-size:.66rem;font-weight:600;line-height:1.15;text-align:center;max-width:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;color:var(--muted)}
@@ -337,7 +337,7 @@ img{max-width:100%}
 <section class="sheet" id="sheet" hidden aria-label="Ajouter ma pièce"></section>
 <footer class="foot"><div class="in" id="foot"></div></footer>
 <script src="vendor/supabase.js"></script>
-<script src="config.js"></script>
-<script src="app.js"></script>
+<script src="config.js?v=11"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>

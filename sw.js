@@ -1,6 +1,6 @@
 /* Service worker : appli utilisable hors ligne + mises à jour automatiques */
-const CACHE = "medaillier-v10";
-const SHELL = ["./", "index.html", "app.js", "config.js", "catalogue.json", "manifest.webmanifest",
+const CACHE = "medaillier-v11";
+const SHELL = ["./", "index.html", "app.js?v=11", "config.js?v=11", "catalogue.json", "manifest.webmanifest",
   "vendor/supabase.js", "vendor/591.supabase.js", "icons/icon-192.png", "icons/icon-512.png",
   // photos Disney et Beauval : téléchargées dès l'installation pour être visibles hors ligne
   "img/b232877_b.webp",
@@ -70,7 +70,7 @@ self.addEventListener("fetch", e => {
   const fresh = req.mode === "navigate" || /\.(html|js|json|webmanifest)$/.test(url.pathname) || url.pathname.endsWith("/");
   if (fresh) {
     // réseau d'abord (pour recevoir les mises à jour), copie locale si pas de réseau
-    e.respondWith(fetch(req).then(r => { const c = r.clone(); caches.open(CACHE).then(k => k.put(req, c)); return r; })
+    e.respondWith(fetch(req, { cache: "no-store" }).then(r => { const c = r.clone(); caches.open(CACHE).then(k => k.put(req, c)); return r; })
       .catch(() => caches.match(req).then(r => r || caches.match("index.html"))));
   } else {
     // images et icônes : copie locale d'abord
