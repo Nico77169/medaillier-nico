@@ -25,8 +25,8 @@ function inCat(t,c){ const k=catT(t); if(c==="nouveautes") return k!=="disney"&&
 function isVirtual(c){ return !!(CATS.find(x=>x.id===c)||{}).virtual; }
 function st(id){ return S.items[id]||{}; }
 function units(t){ const u=st(t.id);
-  if(t.v) return t.v.concat((u.xv||[]).filter(([y,r])=>!t.v.some(v=>v[0]==y&&v[1]===r))).map(([y,r,c])=>{const k=y+"|"+r; return {k,y,r,c:c||null,q:(u.vq||{})[k]||0};});
-  return [{k:"_",y:yearOf(t),r:t.rev||"",q:u.q||0,c:null}]; }
+  if(t.v) return t.v.concat((u.xv||[]).filter(([y,r])=>!t.v.some(v=>v[0]==y&&v[1]===r))).map(([y,r,c])=>{const k=y+"|"+r; return {k,y,r,c:c||null,q:(u.vq||{})[k]||0,p:!!(u.pv||{})[k]};});
+  return [{k:"_",y:yearOf(t),r:t.rev||"",q:u.q||0,c:null,p:!!(u.pv||{})._}]; }
 function eff(t){ const u=st(t.id); const us=units(t); return {
   us, qty:us.reduce((a,x)=>a+x.q,0), paid:num(u.paid), val: u.val!=null&&u.val!==""?num(u.val):(t.value??null),
   rar: u.rar||t.rar||"", shop: u.shop!=null&&u.shop!==""?u.shop:(t.shop==null?"":(t.shop?"oui":"non")), f:u.f, b:u.b }; }
@@ -87,7 +87,8 @@ function patch(id,obj){
   Object.keys(cur).forEach(k=>{ if(cur[k]===""||cur[k]==null) delete cur[k]; });
   if(cur.vq){ Object.keys(cur.vq).forEach(k=>{ if(!cur.vq[k]) delete cur.vq[k]; }); if(!Object.keys(cur.vq).length) delete cur.vq; }
   if(cur.hv && !Object.keys(cur.hv).length) delete cur.hv;
-  if(!cur.q && !cur.vq && !cur.xv && !cur.hv && !cur.f && !cur.b && !cur.mv) delete S.items[id]; else S.items[id]=cur;
+  if(cur.pv && !Object.keys(cur.pv).length) delete cur.pv;
+  if(!cur.q && !cur.vq && !cur.xv && !cur.hv && !cur.f && !cur.b && !cur.mv && !cur.pv) delete S.items[id]; else S.items[id]=cur;
   if(S.custom[id]) saveCustom(id); else saveItem(id);
 }
 function setSync(state,txt){ const el=$("#status"); el.innerHTML=`<span class="sync ${state}"><i></i>${esc(txt)}</span>${UID?'<button class="logout" id="logoutBtn">Se déconnecter</button>':""}`; }
@@ -209,14 +210,14 @@ function mosaicHTML(list,mode){
     return `<section class="mrow"${byL?` id="ml-${k==="#"?"0":k}"`:""}><button class="mlab${own===ts.length?" full":""}" data-j${byL?"l":"y"}="${esc(k)}" aria-label="${esc(k)} : ${own} sur ${ts.length} possédée${own>1?"s":""}"><b>${esc(k==="Sans année"?"?":k)}</b><small>${own}/${ts.length}</small></button><div class="mgrid four">${ts.map(mtileHTML).join("")}</div></section>`; }).join("");
 }
 function mtileHTML(t){
-  const e=eff(t), np=PHOTOS[t.id]||{}, own=e.qty>0;
+  const e=eff(t), np=PHOTOS[t.id]||{}, own=e.qty>0, pend=!own&&units(t).some(x=>x.p);
   let img="";
   if(e.f) img=`<img src="${esc(ownSrc(e.f))}" data-ph="${esc(e.f)}" alt="" loading="lazy">`;
   else if(np.f) img=`<img src="${esc(String(np.f.src).replace("-original.jpg","-180.jpg"))}" alt="" loading="lazy">`;
   const short=esc(String(t.name).replace(/^(Disneyland( Resort)? Paris|ZooParc de Beauval)\s*[-–:]?\s*/i,"").slice(0,28));
-  return `<button class="mtile${own?" own":""}" data-jt="${t.id}" aria-label="${esc(t.name)}${own?" (possédée)":" (manquante)"}">${img||`<span class="mph">${short}</span>`}${own?'<span class="mok">✓</span>':""}</button>`;
+  return `<button class="mtile${own?" own":""}${pend?" pend":""}" data-jt="${t.id}" aria-label="${esc(t.name)}${own?" (possédée)":pend?" (en attente)":" (manquante)"}">${img||`<span class="mph">${short}</span>`}${own?'<span class="mok">✓</span>':pend?'<span class="mok mpend">⏳</span>':""}</button>`;
 }
-let KEEPY=false, moreObs=null;
+let KEEPY=false, moreObs=null, LASTTAP={};
 function watchMore(){ if(moreObs) moreObs.disconnect(); const b=$("#moreBtn"); if(!b||!("IntersectionObserver" in window)) return;
   moreObs=new IntersectionObserver(es=>{ if(es.some(e=>e.isIntersecting)){ moreObs.disconnect(); showMore(); } },{rootMargin:"600px"}); moreObs.observe(b); }
 function showMore(){ S.shown+=PAGE; KEEPY=true; render(); }
@@ -295,7 +296,8 @@ function faceHTML(t,side,src,ph){
 function variantsHTML(t,e){
   const own=e.us.filter(x=>x.q>0).length, n=e.us.length;
   const rows=e.us.map(x=>{ const key=t.id+"~"+x.k;
-    return `<div class="vrow${x.q>0?" on":""}"><button class="vtog" data-vt="${esc(key)}" aria-pressed="${x.q>0}"><span class="dot">${x.q>0?"✓":""}</span>${x.y||x.r?`${x.y?`<span class="vy">${x.y}</span>`:""}${x.r?`<span class="vr">${esc(x.r)}</span>`:""}`:`<span class="vr">Sans année</span>`}</button>
+    const pend=x.q<=0&&x.p;
+    return `<div class="vrow${x.q>0?" on":""}${pend?" pend":""}"><button class="vtog" data-vt="${esc(key)}" aria-pressed="${x.q>0}"><span class="dot">${x.q>0?"✓":pend?"⏳":""}</span>${pend?'<span class="vpend">En attente</span>':""}${x.y||x.r?`${x.y?`<span class="vy">${x.y}</span>`:""}${x.r?`<span class="vr">${esc(x.r)}</span>`:""}`:`<span class="vr">Sans année</span>`}</button>
       <div class="stepper sm"><button data-vd="${esc(key)}" aria-label="Retirer une">−</button><span>${x.q}</span><button data-vi="${esc(key)}" aria-label="Ajouter une">+</button></div>${hugoBtn(t,x.k)}</div>`; }).join("");
   if(n===1) return `<div class="vars single"><div class="vlist">${rows}</div></div>`; // une seule ligne : pas de menu à ouvrir
   return `<details class="vars"${OPEN.has(t.id)?" open":""} data-vid="${t.id}"><summary><b>${own} / ${n}</b> variante${n>1?"s":""} possédée${n>1?"s":""} <span class="chev">▾</span></summary><div class="vlist">${rows}</div></details>`; }
@@ -406,7 +408,18 @@ document.addEventListener("click",e=>{
   if(b.id==="backBtn"){ OPEN.clear(); S.mosaic=false; S.cat=null; S.q=""; $("#q").value=""; render(); return; }
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
   if(b.id==="clearF"){ S.filter=null; saveFilter(); render(); return; }
-  if(b.dataset.vt||b.dataset.vi||b.dataset.vd){ const key=b.dataset.vt||b.dataset.vi||b.dataset.vd; const i=key.indexOf("~"); const id=key.slice(0,i), k=key.slice(i+1);
+  // double appui sur une ligne = « En attente » (orange) ; le 1er appui est annulé
+  if(b.dataset.vt){ const key=b.dataset.vt, i=key.indexOf("~"), id=key.slice(0,i), k=key.slice(i+1), now=Date.now();
+    if(LASTTAP.key===key && now-LASTTAP.t<400){ const u=st(id); const restore=k==="_"?{q:LASTTAP.q}:{vq:{...(u.vq||{}),[k]:LASTTAP.q}};
+      const pv={...(u.pv||{})}; if(LASTTAP.p) delete pv[k]; else pv[k]=1; // inverse l'état « En attente » d'avant le 1er appui
+      if(pv[k]) { if(k==="_") restore.q=0; else restore.vq[k]=0; }
+      LASTTAP={}; OPEN.add(id); patch(id,{...restore,pv}); rerender(); return; }
+    const u=st(id); LASTTAP={key,t:now,q:k==="_"?(u.q||0):((u.vq||{})[k]||0),p:!!(u.pv||{})[k]};
+    // simple appui : possédée oui/non (et on retire « En attente » si on la coche)
+    if(k==="_"){ const q=u.q||0, pv={...(u.pv||{})}; if(!q) delete pv._; patch(id,{q:q>0?0:1,pv}); rerender(); return; }
+    const vq={...(u.vq||{})}, pv={...(u.pv||{})}; const q=vq[k]||0; vq[k]=q>0?0:1; if(vq[k]) delete pv[k];
+    OPEN.add(id); patch(id,{vq,pv}); rerender(); return; }
+  if(b.dataset.vi||b.dataset.vd){ const key=b.dataset.vi||b.dataset.vd; const i=key.indexOf("~"); const id=key.slice(0,i), k=key.slice(i+1);
     if(k==="_"){ const q=st(id).q||0; patch(id,{q: b.dataset.vt?(q>0?0:1): b.dataset.vi? q+1 : Math.max(0,q-1)}); rerender(); return; }
     const vq={...(st(id).vq||{})}; const q=vq[k]||0;
     vq[k]= b.dataset.vt?(q>0?0:1): b.dataset.vi? q+1 : Math.max(0,q-1);
@@ -455,6 +468,8 @@ function showHelp(){
       <li>Choisis le <b>nouveau thème</b>, puis <b>Déplacer</b> et <b>Oui, déplacer</b>.</li>
       <li>Le code affiche alors « · déplacée ».</li></ol>
     <p class="note">Pour annuler : même appui long, puis <b>Remettre dans « … »</b>.</p>
+    <h3 class="htitle">Pièce en attente</h3>
+    <p class="note"><b>Double appui</b> sur une ligne (année + revers) : elle passe en <b>orange « En attente »</b> (commandée, en cours d'échange…). Elle ne compte pas encore comme possédée. Un simple appui ensuite la coche en vert ; un nouveau double appui enlève « En attente ».</p>
     <h3 class="htitle">Mosaïque</h3>
     <p class="note">Dans un thème, le bouton rond en haut à droite affiche les pièces en mosaïque. Touche une année, une lettre ou une pièce pour y aller dans la liste.</p>
     <div class="row"><button class="btn" type="button" id="helpClose">Fermer</button></div></div>`;

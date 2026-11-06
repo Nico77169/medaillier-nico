@@ -293,6 +293,9 @@ img{max-width:100%}
 .dnum.has{background:radial-gradient(circle at 35% 30%,var(--surface),var(--bg)) padding-box,conic-gradient(var(--ok) calc(var(--p)*1%),var(--line) 0) border-box}
 .dnum.has b{color:var(--ink);text-shadow:0 0 3px var(--surface),0 0 6px var(--surface),0 0 10px var(--surface)}
 .credits{font-size:.8rem}.credits ul{margin:6px 0 0;padding-left:18px;display:grid;gap:3px;color:var(--muted)}
+.vtog{touch-action:manipulation}.vrow.pend .vtog{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}.vrow.pend .vtog .dot{border-color:var(--warn);background:var(--warn-soft);font-size:.62rem}
+.vrow.pend .vtog{flex-wrap:wrap;row-gap:2px}.vpend{order:9;flex-basis:100%;padding-left:28px;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--warn)}
+.mtile.pend{opacity:1;filter:none;box-shadow:0 0 0 3px var(--warn)}.mok.mpend{background:var(--warn)}
 </style>
 </head>
 <body>
@@ -337,7 +340,7 @@ img{max-width:100%}
 <section class="sheet" id="sheet" hidden aria-label="Ajouter ma pièce"></section>
 <footer class="foot"><div class="in" id="foot"></div></footer>
 <script src="vendor/supabase.js"></script>
-<script src="config.js?v=13"></script>
-<script src="app.js?v=13"></script>
+<script src="config.js?v=14"></script>
+<script src="app.js?v=14"></script>
 </body>
 </html>
