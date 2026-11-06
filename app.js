@@ -25,8 +25,9 @@ function inCat(t,c){ const k=catT(t); if(c==="nouveautes") return k!=="disney"&&
 function isVirtual(c){ return !!(CATS.find(x=>x.id===c)||{}).virtual; }
 function st(id){ return S.items[id]||{}; }
 function units(t){ const u=st(t.id);
-  if(t.v) return t.v.concat((u.xv||[]).filter(([y,r])=>!t.v.some(v=>v[0]==y&&v[1]===r))).map(([y,r,c])=>{const k=y+"|"+r; return {k,y,r,c:c||null,q:(u.vq||{})[k]||0,p:!!(u.pv||{})[k]};});
-  return [{k:"_",y:yearOf(t),r:t.rev||"",q:u.q||0,c:null,p:!!(u.pv||{})._}]; }
+  if(t.v) return t.v.concat((u.xv||[]).filter(([y,r])=>!t.v.some(v=>v[0]==y&&v[1]===r)).map(x=>[x[0],x[1],null,1])).map(([y,r,c,a])=>{const k=y+"|"+r; return {k,y,r,c:c||null,q:(u.vq||{})[k]||0,p:!!(u.pv||{})[k],added:!!a};});
+  return [{k:"_",y:yearOf(t),r:t.rev||"",q:u.q||0,c:null,p:!!(u.pv||{})._}]
+    .concat((u.xv||[]).map(([y,r])=>{const k=y+"|"+r; return {k,y,r,c:null,q:(u.vq||{})[k]||0,p:!!(u.pv||{})[k],added:true};})); }
 function eff(t){ const u=st(t.id); const us=units(t); return {
   us, qty:us.reduce((a,x)=>a+x.q,0), paid:num(u.paid), val: u.val!=null&&u.val!==""?num(u.val):(t.value??null),
   rar: u.rar||t.rar||"", shop: u.shop!=null&&u.shop!==""?u.shop:(t.shop==null?"":(t.shop?"oui":"non")), f:u.f, b:u.b }; }
@@ -233,7 +234,8 @@ function jumpTo(pred){
     const top=el.getBoundingClientRect().top+scrollY-($(".top").offsetHeight+12); scrollTo({top,behavior:"instant"});
     el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),1600); });
 }
-function render(){ renderMain(); if(PIECE&&$("#sheet .piece")) renderPiece(); }
+function saveView(){ ls.set("nico_view",{cat:S.cat,mosaic:!!S.mosaic,add:!!S.addOpen,piece:PIECE||null,t:Date.now()}); }
+function render(){ renderMain(); if(PIECE&&$("#sheet .piece")) renderPiece(); saveView(); }
 function renderMain(){
   $("#backBtn").hidden=!S.cat;
   const pool0=S.cat?allTokens().filter(t=>inCat(t,S.cat)):[], mmode=S.cat?mosaicMode(pool0):null;
@@ -251,7 +253,7 @@ function renderMain(){
   if(!S.cat && !S.q){ v.innerHTML=homeHTML(); renderFoot(allTokens(),"Toute la collection"); return; }
   const pool=allTokens().filter(t=>(!S.cat||inCat(t,S.cat)));
   const list=pool.filter(t=>matches(t,S.q)&&passFilter(t)).sort(mmode==="letter"?((a,b)=>a.name.localeCompare(b.name,"fr")):((a,b)=>String(a.years).localeCompare(String(b.years))||a.name.localeCompare(b.name)));
-  if(mos){ v.innerHTML=mosaicHTML(list,mmode); renderFoot(pool,"Total "+catOf(S.cat).name); return; }
+  if(mos&&!S.addOpen){ v.innerHTML=mosaicHTML(list,mmode); renderFoot(pool,"Total "+catOf(S.cat).name); return; }
   if(!S.cat&&S.q){ const dm=matchDeps(S.q).map(c=>c.id); if(dm.length){ const first=t=>dm.includes(catT(t))||(t.dept&&dm.includes("d"+t.dept))?0:1; list.sort((a,b)=>first(a)-first(b)); } } // pièces du département tapé en premier
   const vk=[S.cat,S.q,S.filter].join("§"); if(vk!==VIEWKEY){ VIEWKEY=vk; S.shown=PAGE; }
   S.list=list; const part=list.slice(0,S.shown), rest=list.length-part.length;
@@ -259,8 +261,9 @@ function renderMain(){
   if(!S.cat){ const dm=matchDeps(S.q); if(dm.length) h+=`<p class="sect-title">Département${dm.length>1?"s":""}</p><div class="deps">${depTiles(dm,groupByCat())}</div>`;
     h+=`<p class="sect-title">${list.length} pièce${list.length>1?"s":""} trouvée${list.length>1?"s":""}</p>`; }
   h+= list.length?`<div class="list">${part.map(cardHTML).join("")}</div>${rest>0?`<button class="addbtn more" id="moreBtn">Afficher la suite (${rest} pièce${rest>1?"s":""})</button>`:""}`:`<div class="empty">Aucune médaille ne correspond${S.filter?" avec ce filtre":""}.</div>`;
-  if(S.cat&&!isVirtual(S.cat)) h+=`<button class="addbtn" id="addBtn">+ Ajouter une médaille absente du catalogue</button><div id="addPanel"></div>`;
+  if(S.cat&&!isVirtual(S.cat)) h+=S.addOpen?`<div id="addPanel">${addFormHTML()}</div>`:`<button class="addbtn" id="addBtn">+ Ajouter une médaille absente du catalogue</button><div id="addPanel"></div>`;
   const y0=scrollY; v.innerHTML=h; if(KEEPY){ scrollTo(0,y0); KEEPY=false; }
+  bindAdd();
   watchMore();
   renderFoot(S.cat?pool:list, S.cat?"Total "+catOf(S.cat).name:"Total des résultats");
 }
@@ -299,9 +302,10 @@ function variantsHTML(t,e){
   const rows=e.us.map(x=>{ const key=t.id+"~"+x.k;
     const pend=x.q<=0&&x.p;
     return `<div class="vrow${x.q>0?" on":""}${pend?" pend":""}"><button class="vtog" data-vt="${esc(key)}" aria-pressed="${x.q>0}"><span class="dot">${x.q>0?"✓":pend?"⏳":""}</span>${pend?'<span class="vpend">En attente</span>':""}${x.y||x.r?`${x.y?`<span class="vy">${x.y}</span>`:""}${x.r?`<span class="vr">${esc(x.r)}</span>`:""}`:`<span class="vr">Sans année</span>`}</button>
-      <div class="stepper sm"><button data-vd="${esc(key)}" aria-label="Retirer une">−</button><span>${x.q}</span><button data-vi="${esc(key)}" aria-label="Ajouter une">+</button></div>${hugoBtn(t,x.k)}</div>`; }).join("");
-  if(n===1) return `<div class="vars single"><div class="vlist">${rows}</div></div>`; // une seule ligne : pas de menu à ouvrir
-  return `<details class="vars"${OPEN.has(t.id)?" open":""} data-vid="${t.id}"><summary><b>${own} / ${n}</b> variante${n>1?"s":""} possédée${n>1?"s":""} <span class="chev">▾</span></summary><div class="vlist">${rows}</div></details>`; }
+      <div class="stepper sm"><button data-vd="${esc(key)}" aria-label="Retirer une">−</button><span>${x.q}</span><button data-vi="${esc(key)}" aria-label="Ajouter une">+</button></div>${hugoBtn(t,x.k)}${x.added?`<button class="xrm" data-xr="${esc(key)}" aria-label="Retirer cette ligne ajoutée">×</button>`:""}</div>`; }).join("");
+  const addY=`<button class="addyr" data-ay="${t.id}">+ Ajouter une année ou un revers</button>`;
+  if(n===1) return `<div class="vars single"><div class="vlist">${rows}${addY}</div></div>`; // une seule ligne : pas de menu à ouvrir
+  return `<details class="vars"${OPEN.has(t.id)?" open":""} data-vid="${t.id}"><summary><b>${own} / ${n}</b> variante${n>1?"s":""} possédée${n>1?"s":""} <span class="chev">▾</span></summary><div class="vlist">${rows}${addY}</div></details>`; }
 const OPEN=new Set();
 // Case « Hugo » : simple info cochée par ligne (variante ou pièce), sans effet sur les totaux de Nico
 function hugoBtn(t,k){ const on=!!((st(t.id).hv||{})[k]); return `<button class="hugo${on?" on":""}" data-hu="${esc(t.id+"~"+k)}" role="switch" aria-checked="${on}" aria-label="Hugo"><span class="htxt">Hugo</span><span class="hknob"></span></button>`; }
@@ -351,7 +355,7 @@ function cardHTML(t){
     <div>
       <div class="ref" data-mv="${t.id}">${esc(t.ref||"Sans référence JTC")}${st(t.id).mv?' <span class="moved">· déplacée</span>':""}</div>
       <h3 class="name">${esc(t.name)}</h3>
-      <div class="info"><span>${esc(t.years)}</span>${t.dept?`<span>Dép. ${esc(t.dept)}</span>`:""}${t.metal?`<span>${esc(t.metal)}</span>`:""}${t.mint?`<span>Tirage ${esc(t.mint)}</span>`:""}${!S.cat||isVirtual(S.cat)?`<span>${esc(catOf(catT(t)).name)}</span>`:""}</div>
+      <div class="info"><span>${esc(yearsLabel(t,e))}</span>${t.dept?`<span>Dép. ${esc(t.dept)}</span>`:""}${t.metal?`<span>${esc(t.metal)}</span>`:""}${t.mint?`<span>Tirage ${esc(t.mint)}</span>`:""}${!S.cat||isVirtual(S.cat)?`<span>${esc(catOf(catT(t)).name)}</span>`:""}</div>
       ${t.note?`<div class="note">${esc(t.note)}</div>`:""}
       <div class="links">${!((!sf&&!sb)||(faceOnly&&!sf))?`<a class="nlink" href="${numUrl(t)}" target="_blank" rel="noopener">Photos sur Numista ↗</a>${cjtLink(t)}`:""}</div>
     </div>
@@ -364,6 +368,8 @@ function cardHTML(t){
     ${S.custom[t.id]?`<button class="rm" data-rm="${t.id}">Supprimer cette médaille ajoutée</button>`:""}
   </article>`;
 }
+// années affichées : celles du catalogue + celles ajoutées par Nico
+function yearsLabel(t,e){ const ys=[...new Set(e.us.map(x=>+x.y).filter(Boolean))].sort((a,b)=>a-b); if(!ys.length) return t.years||""; return ys.length===1?String(ys[0]):ys[0]+"-"+ys[ys.length-1]; }
 function renderFoot(list,label){
   const s=stats(list); const gain=s.value-s.spent;
   $("#foot").setAttribute("aria-label",label);
@@ -397,7 +403,7 @@ function numUrlSafe(t){ return numUrl(t); }
 /* ---------- interactions ---------- */
 document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
-  if(b.dataset.cat){ OPEN.clear(); S.mosaic=true; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
+  if(b.dataset.cat){ OPEN.clear(); S.mosaic=true; S.addOpen=false; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
   if(b.id==="mosaicBtn"){ S.mosaic=!S.mosaic; render(); scrollTo(0,0); return; }
   if(b.dataset.jy){ const y=b.dataset.jy; jumpTo(t=>(yearOf(t)||"Sans année")===y); return; }
   if(b.dataset.ml){ const g=document.getElementById(b.dataset.ml); if(g) scrollTo({top:g.getBoundingClientRect().top+scrollY-($(".top").offsetHeight+10),behavior:"smooth"}); return; }
@@ -407,7 +413,7 @@ document.addEventListener("click",e=>{
   if(b.id==="pieceList"){ const id=PIECE; closePiece(); jumpTo(t=>t.id===id); return; }
   if(b.id==="moreBtn"){ showMore(); return; }
   if(b.id==="helpBtn"){ showHelp(); return; }
-  if(b.id==="backBtn"){ OPEN.clear(); S.mosaic=false; S.cat=null; S.q=""; $("#q").value=""; render(); return; }
+  if(b.id==="backBtn"){ OPEN.clear(); S.mosaic=false; S.addOpen=false; S.cat=null; S.q=""; $("#q").value=""; render(); return; }
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
   if(b.id==="clearF"){ S.filter=null; saveFilter(); render(); return; }
   // double appui sur une ligne = « En attente » (orange) ; le 1er appui est annulé
@@ -437,6 +443,11 @@ document.addEventListener("click",e=>{
   if(b.dataset.photo){ const y=ZOOMY!=null?ZOOMY:scrollY; closeZoom(); NP={target:{id:b.dataset.photo,side:b.dataset.side},y}; showPick(); return; }
   if(b.dataset.rm){ const id=b.dataset.rm; delete S.custom[id]; delete S.items[id]; saveCustom(id); render(); toast("Médaille supprimée"); return; }
   if(b.id==="addBtn"){ showAdd(); return; }
+  if(b.dataset.ay){ showAddYear(b.dataset.ay); return; }
+  if(b.dataset.xr){ const key=b.dataset.xr, i=key.indexOf("~"), id=key.slice(0,i), k=key.slice(i+1);
+    if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Sûr ?"; b.classList.add("sure"); setTimeout(()=>{ if(b.isConnected){ b.dataset.sure=""; b.textContent="×"; b.classList.remove("sure"); } },3000); return; }
+    const u=st(id); const xv=(u.xv||[]).filter(([y,r])=>(y+"|"+r)!==k); const vq={...(u.vq||{})}; delete vq[k]; const hv={...(u.hv||{})}; delete hv[k]; const pv={...(u.pv||{})}; delete pv[k];
+    OPEN.add(id); patch(id,{xv:xv.length?xv:"",vq,hv,pv}); rerender(); toast("Ligne retirée"); return; }
 });
 document.addEventListener("toggle",e=>{ const d=e.target; if(d.classList&&d.classList.contains("vars")){ if(d.open) OPEN.add(d.dataset.vid); else OPEN.delete(d.dataset.vid);} },true);
 document.addEventListener("change",e=>{
@@ -473,12 +484,45 @@ function showHelp(){
     <p class="note">Pour annuler : même appui long, puis <b>Remettre dans « … »</b>.</p>
     <h3 class="htitle">Pièce en attente</h3>
     <p class="note"><b>Double appui</b> sur une ligne (année + revers) : elle passe en <b>orange « En attente »</b> (commandée, en cours d'échange…). Elle ne compte pas encore comme possédée. Un simple appui ensuite la coche en vert ; un nouveau double appui enlève « En attente ». Le filtre <b>En attente</b> en haut les retrouve toutes, et le compteur <b>Attente</b> en bas les compte.</p>
+    <h3 class="htitle">Année ou revers manquant</h3>
+    <p class="note">Dans la fiche d'une pièce, touche <b>+ Ajouter une année ou un revers</b> sous ses lignes. L'année suivante et le revers sont proposés (ex. 2013 · 13 MDP-2), tu corriges si besoin. Une ligne que tu as ajoutée a un petit <b>×</b> pour la retirer (2 appuis).</p>
+    <h3 class="htitle">Saisie gardée</h3>
+    <p class="note">Si tu quittes l'appli en pleine saisie (pour chercher une info), tu retrouves le formulaire et ce que tu avais écrit en revenant.</p>
     <h3 class="htitle">Mosaïque</h3>
     <p class="note">Un thème ou un département s'ouvre en mosaïque. Touche une pièce pour ouvrir sa fiche, ou une année pour aller dans la liste. Le bouton ☰ en haut à droite passe de la mosaïque à la liste et inversement.</p>
     <h3 class="htitle">Recherche</h3>
     <p class="note">Tape un code (ex. FR77-0295), un nom, un lieu ou un numéro de département (ex. 77) : le département s'affiche en premier, puis ses pièces.</p>
     <div class="row"><button class="btn" type="button" id="helpClose">Fermer</button></div></div>`;
   sh.hidden=false; $("#sheetBg").hidden=false; sh.scrollTop=0; $("#helpClose").onclick=closeSheet;
+}
+function showAddYear(id,d){
+  const t=byId(id); if(!t) return; d=d||{};
+  const last=units(t).filter(x=>x.r).slice(-1)[0];
+  const maxY=Math.max(0,...units(t).map(x=>+x.y||0)); const y0=d.year||String(maxY?Math.min(maxY+1,new Date().getFullYear()):new Date().getFullYear()); // année suivante proposée
+  const sugg=r=>{ if(!last||!last.r) return ""; const m=/^\d\d\s+(.*)$/.exec(last.r); return m?(String(r).slice(2)+" "+m[1]):last.r; };
+  const sh=$("#sheet");
+  sh.innerHTML=`<form class="in" id="yrForm"><h2>Ajouter une année ou un revers</h2>
+    <p class="note"><b>${esc(t.name)}</b><br>Lignes existantes : ${units(t).map(x=>esc([x.y,x.r].filter(Boolean).join(" "))).join(" · ")}</p>
+    <div class="fields">
+      <label class="field">Année<input id="yr-year" inputmode="numeric" maxlength="4" required value="${esc(y0)}"></label>
+      <label class="field full">Revers (comme sur la pièce)<input id="yr-rev" placeholder="${esc(sugg(y0)||"Ex. 13 MDP-2")}" value="${esc(d.rev!=null?d.rev:sugg(y0))}"></label>
+      <label class="check full"><input type="checkbox" id="yr-own" ${d.own===false?"":"checked"}> Je l'ai (cochée tout de suite)</label>
+    </div>
+    <div class="row"><button class="btn" type="submit">Ajouter la ligne</button><button class="btn ghost" type="button" id="yrCancel">Annuler</button></div></form>`;
+  sh.hidden=false; $("#sheetBg").hidden=false; sh.scrollTop=0;
+  let touched=d.rev!=null;
+  const save=()=>DRAFT.set({kind:"yr",id,year:$("#yr-year").value,rev:$("#yr-rev").value,own:$("#yr-own").checked});
+  $("#yr-rev").addEventListener("input",()=>{ touched=true; });
+  $("#yr-year").addEventListener("input",()=>{ const y=$("#yr-year").value; if(!touched&&/^\d{4}$/.test(y)) $("#yr-rev").value=sugg(y); });
+  $("#yrForm").addEventListener("input",save); save();
+  $("#yrCancel").onclick=()=>{ DRAFT.clear(); closeSheet(); };
+  $("#yrForm").onsubmit=ev=>{ ev.preventDefault();
+    const y=$("#yr-year").value.trim(), r=$("#yr-rev").value.trim();
+    if(!/^\d{4}$/.test(y)){ toast("Mets l'année sur 4 chiffres"); return; }
+    const k=y+"|"+r; if(units(t).some(x=>String(x.y)===y&&x.r===r)){ toast("Cette ligne existe déjà"); return; }
+    const u=st(id); const upd={xv:(u.xv||[]).concat([[+y,r]])};
+    if($("#yr-own").checked) upd.vq={...(u.vq||{}),[k]:1};
+    OPEN.add(id); patch(id,upd); DRAFT.clear(); closeSheet(); rerender(); toast("Ligne ajoutée"); };
 }
 function showMove(id){
   const t=byId(id); if(!t) return; const cur=catT(t), orig=t.cat;
@@ -503,17 +547,17 @@ const normRef=v=>{ const m=/(FR|[A-Z]{2})\s*-?\s*([0-9AB]{2})\s*-?\s*(\d{1,4})/i
 function findByRef(code){ if(!code) return null; return allTokens().find(t=>normRef(t.ref)===code)||null; }
 function closeSheet(){ stopCam(); $("#sheet").hidden=true; $("#sheetBg").hidden=true; $("#sheet").innerHTML="";
   if(PIECE) renderPiece(); } // après une photo, un déplacement… on revient sur la fiche de la pièce
-$("#sheetBg").addEventListener("click",()=>{ if($("#sheet .piece")) closePiece(); else closeSheet(); });
+$("#sheetBg").addEventListener("click",()=>{ if($("#sheet .piece")) closePiece(); else { if($("#npForm")||$("#yrForm")) DRAFT.clear(); closeSheet(); } });
 /* ---------- fiche d'une pièce ouverte depuis la mosaïque ---------- */
 let PIECE=null;
-function openPiece(id){ PIECE=id; OPEN.add(id); renderPiece(true); } // dans la fiche, les variantes sont déjà ouvertes
+function openPiece(id){ PIECE=id; OPEN.add(id); renderPiece(true); saveView(); } // dans la fiche, les variantes sont déjà ouvertes
 function renderPiece(first){
   const t=byId(PIECE); if(!t){ PIECE=null; closeSheet(); return; } // pièce supprimée : on ferme
   const sh=$("#sheet"), y=first?0:sh.scrollTop;
   sh.innerHTML=`<div class="in piece"><div class="phead"><button class="btn ghost" type="button" id="pieceList">Voir dans la liste</button><button class="btn" type="button" id="pieceClose">Fermer</button></div>${cardHTML(t)}</div>`;
   sh.hidden=false; $("#sheetBg").hidden=false; sh.scrollTop=y;
 }
-function closePiece(){ PIECE=null; closeSheet(); }
+function closePiece(){ PIECE=null; closeSheet(); saveView(); }
 /* cadrage rond */
 let CR=null;
 function showCrop(){
@@ -588,12 +632,16 @@ function openSheet(){
   $("#npRetake").onclick=()=>{ NP.form=readForm(); showCamera(); };
   document.querySelectorAll('#sheet label[for="newCam"],#sheet label[for="newGal"]').forEach(l=>l.addEventListener("click",()=>{ NP.form=readForm(); }));
   if(NP.form) writeForm(NP.form);
-  $("#npCancel").onclick=closeSheet;
+  const saveDraft=()=>DRAFT.set({kind:"np",form:readForm(),rev:$("#np-rev").value,revnew:$("#np-revnew").value});
+  $("#npForm").addEventListener("input",saveDraft); $("#npForm").addEventListener("change",saveDraft); saveDraft();
+  $("#npCancel").onclick=()=>{ DRAFT.clear(); closeSheet(); };
   $("#np-ref").addEventListener("input",refreshMatch);
   $("#np-year").addEventListener("input",refreshRev);
   $("#np-rev").addEventListener("change",()=>{ $("#npRevNewWrap").hidden=$("#np-rev").value!=="__new"; });
   $("#npForm").addEventListener("submit",saveNew);
   refreshMatch();
+  if(NP.rev&&[...$("#np-rev").options].some(o=>o.value===NP.rev)){ $("#np-rev").value=NP.rev; $("#npRevNewWrap").hidden=NP.rev!=="__new"; }
+  if(NP.revnew) $("#np-revnew").value=NP.revnew;
 }
 function readForm(){ const g=id=>{const e=$(id); return e?e.value:"";}; return {ref:g("#np-ref"),name:g("#np-name"),cat:g("#np-cat"),year:g("#np-year")}; }
 function writeForm(f){ $("#np-ref").value=f.ref||""; $("#np-name").value=f.name||""; if(f.cat) $("#np-cat").value=f.cat; if(f.year) $("#np-year").value=f.year; }
@@ -637,7 +685,7 @@ async function saveNew(ev){
     S.items[id]={q:1,f:ref};
     saveCustom(id);
   }
-  closeSheet(); S.cat=(t?catT(t):cat); S.q=""; $("#q").value=""; S.mosaic=true; render(); openPiece(id);
+  DRAFT.clear(); closeSheet(); S.cat=(t?catT(t):cat); S.q=""; $("#q").value=""; S.mosaic=true; render(); openPiece(id);
   toast(t?"Ajoutée à ta collection":"Pièce ajoutée et cochée");
 }
 function shrink(file,max,q){ return new Promise((res,rej)=>{ const img=new Image(); const u=URL.createObjectURL(file);
@@ -684,7 +732,14 @@ async function gotBlob(blob){
   NP.blob=blob; if(NP.cropUrl) URL.revokeObjectURL(NP.cropUrl); NP.cropUrl=URL.createObjectURL(blob);
   if(NP.target){ const {id,side}=NP.target, y=NP.y; const ref=await storeBlob(blob); patch(id,{[side]:ref}); closeSheet(); render();
     const back=()=>scrollTo(0,y||0); back(); requestAnimationFrame(back); setTimeout(back,150); toast("Photo enregistrée"); return; }
+  idb.put("draft:np",blob).catch(()=>{});
   openSheet();
+}
+async function restoreDraft(){
+  const d=DRAFT.get(); if(!d) return;
+  if(d.kind==="np"){ const blob=await idb.get("draft:np").catch(()=>null); if(!blob){ DRAFT.clear(); return; }
+    NP={blob,cropUrl:URL.createObjectURL(blob),form:d.form,rev:d.rev,revnew:d.revnew}; openSheet(); }
+  if(d.kind==="yr"&&byId(d.id)) showAddYear(d.id,d);
 }
 function showPick(){
   const sh=$("#sheet");
@@ -700,20 +755,30 @@ $("#fab").addEventListener("click",()=>{ NP={}; showPick(); });
   NP=NP||{}; if(NP.url) URL.revokeObjectURL(NP.url); NP.file=f; NP.url=URL.createObjectURL(f); showCrop(); e.target.value=""; }));
 
 /* ---------- ajout manuel ---------- */
-function showAdd(){
-  $("#addPanel").innerHTML=`<form class="panel" id="addForm"><h2>Nouvelle médaille – ${esc(catOf(S.cat).name)}</h2>
+const DRAFT={ get(){ return ls.get("nico_draft"); }, set(d){ ls.set("nico_draft",d); }, clear(){ try{localStorage.removeItem("nico_draft")}catch(e){} idb.put("draft:np",null).catch(()=>{}); } };
+function showAdd(){ S.addOpen=true; saveView(); rerender(); setTimeout(()=>{ const f=$("#add-name"); if(f){ f.scrollIntoView({block:"center"}); } },50); }
+function addFormHTML(){
+  const d=DRAFT.get(); const v=d&&d.kind==="add"&&d.cat===S.cat?d:{};
+  return `<form class="panel" id="addForm"><h2>Nouvelle médaille – ${esc(catOf(S.cat).name)}</h2>
+   <p class="note">Ta saisie est gardée si tu quittes l'appli pour chercher une info.</p>
    <div class="fields">
-    <label class="field full">Nom<input id="add-name" required placeholder="Ex. Stitch 2026"></label>
-    <label class="field">Référence officielle<input id="add-ref" placeholder="Ex. FR77-4500"></label>
-    <label class="field">Année(s)<input id="add-years" inputmode="numeric" placeholder="2026"></label>
-    <label class="field full">Note<input id="add-note" placeholder="Variante, tirage…"></label></div>
+    <label class="field full">Nom<input id="add-name" required placeholder="Ex. Stitch 2026" value="${esc(v.name||"")}"></label>
+    <label class="field">Référence officielle<input id="add-ref" placeholder="Ex. FR77-4500" value="${esc(v.ref||"")}"></label>
+    <label class="field">Année(s)<input id="add-years" inputmode="numeric" placeholder="2026" value="${esc(v.years||"")}"></label>
+    <label class="field full">Note<input id="add-note" placeholder="Variante, tirage…" value="${esc(v.note||"")}"></label></div>
    <div class="row"><button class="btn" type="submit">Ajouter</button><button class="btn ghost" type="button" id="cancelAdd">Annuler</button></div></form>`;
-  $("#cancelAdd").onclick=()=>$("#addPanel").innerHTML="";
-  $("#addForm").onsubmit=ev=>{ ev.preventDefault();
+}
+function bindAdd(){
+  const f=$("#addForm"); if(!f) return;
+  const save=()=>DRAFT.set({kind:"add",cat:S.cat,name:$("#add-name").value,ref:$("#add-ref").value,years:$("#add-years").value,note:$("#add-note").value});
+  f.addEventListener("input",save);
+  $("#cancelAdd").onclick=()=>{ S.addOpen=false; DRAFT.clear(); saveView(); rerender(); };
+  f.onsubmit=ev=>{ ev.preventDefault();
     const id="c"+Date.now().toString(36);
     S.custom[id]={id,cat:S.cat,name:$("#add-name").value.trim(),ref:$("#add-ref").value.trim(),years:$("#add-years").value.trim(),note:$("#add-note").value.trim()};
-    saveCustom(id); render(); toast("Médaille ajoutée"); };
+    S.addOpen=false; DRAFT.clear(); saveView(); saveCustom(id); render(); toast("Médaille ajoutée"); };
 }
+
 
 /* ---------- démarrage ---------- */
 async function loadCatalogue(){
@@ -725,7 +790,12 @@ async function loadCatalogue(){
 async function start(){
   S.filter=ls.get("nico_filter")||null; S.items=ls.get("nico_items")||{}; S.custom=ls.get("nico_custom")||{};
   try{ await loadCatalogue(); }catch(e){ $("#view").innerHTML='<div class="empty">Impossible de charger le catalogue. Vérifie ta connexion et relance l\'appli.</div>'; return; }
+  // retour au même écran seulement si l'appli a été quittée il y a moins de 30 min (sinon on repart de l'accueil)
+  let vw=ls.get("nico_view"); if(vw&&!(Date.now()-(vw.t||0)<30*60e3)) vw=null;
+  if(vw&&vw.cat&&hasCat(vw.cat)){ S.cat=vw.cat; S.mosaic=vw.mosaic; S.addOpen=vw.add; }
   render(); checkRobot();
+  if(vw&&vw.piece&&byId(vw.piece)) openPiece(vw.piece);
+  restoreDraft();
   const {data:{session}}=await supa.auth.getSession();
   if(!session){ showLogin(); return; }
   UID=session.user.id; setSync("wait","Synchronisation…"); pull();
@@ -744,11 +814,12 @@ if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch
 /* ---------- bouton « retour » du téléphone : revient à l'écran précédent au lieu de fermer l'appli ---------- */
 let ARMED=false;
 const zoomOpen=()=>{ const z=$("#zoom"); return !!(z&&!z.hidden); };
-function atRoot(){ return !S.cat && !S.q && $("#sheet").hidden && !zoomOpen(); }
+function atRoot(){ return !S.cat && !S.q && $("#sheet").hidden && !zoomOpen() && !S.addOpen; }
 function arm(){ if(!ARMED && !atRoot()){ try{ history.pushState({medaillier:1},""); ARMED=true; }catch(e){} } }
 function goBack(){
   if(zoomOpen()){ closeZoom(); return; }
-  if(!$("#sheet").hidden){ if($("#sheet .piece")) closePiece(); else closeSheet(); return; }
+  if(!$("#sheet").hidden){ if($("#sheet .piece")) closePiece(); else { if($("#npForm")||$("#yrForm")) DRAFT.clear(); closeSheet(); } return; }
+  if(S.addOpen){ S.addOpen=false; DRAFT.clear(); render(); return; }
   if(S.q){ S.q=""; $("#q").value=""; render(); return; }
   if(S.cat && !S.mosaic){ S.mosaic=true; render(); scrollTo(0,0); return; }   // liste -> mosaïque
   if(S.cat){ OPEN.clear(); S.mosaic=false; S.cat=null; render(); scrollTo(0,0); return; } // thème -> accueil
