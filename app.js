@@ -301,8 +301,8 @@ function variantsHTML(t,e){
   const own=e.us.filter(x=>x.q>0).length, n=e.us.length;
   const rows=e.us.map(x=>{ const key=t.id+"~"+x.k;
     const pend=x.q<=0&&x.p;
-    return `<div class="vrow${x.q>0?" on":""}${pend?" pend":""}"><button class="vtog" data-vt="${esc(key)}" aria-pressed="${x.q>0}"><span class="dot">${x.q>0?"✓":pend?"⏳":""}</span>${pend?'<span class="vpend">En attente</span>':""}${x.y||x.r?`${x.y?`<span class="vy">${x.y}</span>`:""}${x.r?`<span class="vr">${esc(x.r)}</span>`:""}`:`<span class="vr">Sans année</span>`}</button>
-      <div class="stepper sm"><button data-vd="${esc(key)}" aria-label="Retirer une">−</button><span>${x.q}</span><button data-vi="${esc(key)}" aria-label="Ajouter une">+</button></div>${hugoBtn(t,x.k)}${x.added?`<button class="xrm" data-xr="${esc(key)}" aria-label="Retirer cette ligne ajoutée">×</button>`:""}</div>`; }).join("");
+    return `<div class="vrow${x.q>0?" on":""}${pend?" pend":""}"><button class="vtog" data-vt="${esc(key)}"${x.added?' data-xa="1"':""} aria-pressed="${x.q>0}"><span class="dot">${x.q>0?"✓":pend?"⏳":""}</span>${pend?'<span class="vpend">En attente</span>':""}${x.y||x.r?`${x.y?`<span class="vy">${x.y}</span>`:""}${x.r?`<span class="vr">${esc(x.r)}</span>`:""}`:`<span class="vr">Sans année</span>`}</button>
+      <div class="stepper sm"><button data-vd="${esc(key)}" aria-label="Retirer une">−</button><span>${x.q}</span><button data-vi="${esc(key)}" aria-label="Ajouter une">+</button></div>${hugoBtn(t,x.k)}</div>`; }).join("");
   const addY=`<button class="addyr" data-ay="${t.id}">+ Ajouter une année ou un revers</button>`;
   if(n===1) return `<div class="vars single"><div class="vlist">${rows}${addY}</div></div>`; // une seule ligne : pas de menu à ouvrir
   return `<details class="vars"${OPEN.has(t.id)?" open":""} data-vid="${t.id}"><summary><b>${own} / ${n}</b> variante${n>1?"s":""} possédée${n>1?"s":""} <span class="chev">▾</span></summary><div class="vlist">${rows}${addY}</div></details>`; }
@@ -417,6 +417,7 @@ document.addEventListener("click",e=>{
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
   if(b.id==="clearF"){ S.filter=null; saveFilter(); render(); return; }
   // double appui sur une ligne = « En attente » (orange) ; le 1er appui est annulé
+  if(b.dataset.vt&&NOCLICK){ NOCLICK=false; return; }
   if(b.dataset.vt){ const key=b.dataset.vt, i=key.indexOf("~"), id=key.slice(0,i), k=key.slice(i+1), now=Date.now();
     if(LASTTAP.key===key && now-LASTTAP.t<400){ const u=st(id); const restore=k==="_"?{q:LASTTAP.q}:{vq:{...(u.vq||{}),[k]:LASTTAP.q}};
       const pv={...(u.pv||{})}; if(LASTTAP.p) delete pv[k]; else pv[k]=1; // inverse l'état « En attente » d'avant le 1er appui
@@ -444,10 +445,7 @@ document.addEventListener("click",e=>{
   if(b.dataset.rm){ const id=b.dataset.rm; delete S.custom[id]; delete S.items[id]; saveCustom(id); render(); toast("Médaille supprimée"); return; }
   if(b.id==="addBtn"){ showAdd(); return; }
   if(b.dataset.ay){ showAddYear(b.dataset.ay); return; }
-  if(b.dataset.xr){ const key=b.dataset.xr, i=key.indexOf("~"), id=key.slice(0,i), k=key.slice(i+1);
-    if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Sûr ?"; b.classList.add("sure"); setTimeout(()=>{ if(b.isConnected){ b.dataset.sure=""; b.textContent="×"; b.classList.remove("sure"); } },3000); return; }
-    const u=st(id); const xv=(u.xv||[]).filter(([y,r])=>(y+"|"+r)!==k); const vq={...(u.vq||{})}; delete vq[k]; const hv={...(u.hv||{})}; delete hv[k]; const pv={...(u.pv||{})}; delete pv[k];
-    OPEN.add(id); patch(id,{xv:xv.length?xv:"",vq,hv,pv}); rerender(); toast("Ligne retirée"); return; }
+
 });
 document.addEventListener("toggle",e=>{ const d=e.target; if(d.classList&&d.classList.contains("vars")){ if(d.open) OPEN.add(d.dataset.vid); else OPEN.delete(d.dataset.vid);} },true);
 document.addEventListener("change",e=>{
@@ -464,7 +462,42 @@ document.addEventListener("error",e=>{ const i=e.target; if(i.tagName==="IMG"&&i
 
 /* ---------- Déplacer une pièce mal rangée ----------
    Volontairement caché pour éviter les erreurs : appui long (2 s) sur le code de la pièce, puis double confirmation. */
-let LP=null;
+let LP=null, NOCLICK=false, LPV=null;
+/* Appui long (2 s) sur une ligne AJOUTÉE par Nico (année/revers) : la modifier ou la supprimer. Les lignes du catalogue ne réagissent pas. */
+document.addEventListener("pointerdown",e=>{ const r=e.target.closest('.vtog[data-xa="1"]'); if(!r) return;
+  const key=r.dataset.vt; LPV={x:e.clientX,y:e.clientY,el:r,t:setTimeout(()=>{ r.classList.remove("hold"); LPV=null; NOCLICK=true; setTimeout(()=>{NOCLICK=false;},700);
+    if(navigator.vibrate) try{navigator.vibrate(30)}catch(_){} showEditLine(key); },2000)}; r.classList.add("hold"); });
+const cancelLPV=()=>{ if(LPV){ clearTimeout(LPV.t); LPV.el.classList.remove("hold"); LPV=null; } };
+document.addEventListener("pointerup",cancelLPV); document.addEventListener("pointercancel",cancelLPV);
+document.addEventListener("pointermove",e=>{ if(LPV&&Math.hypot(e.clientX-LPV.x,e.clientY-LPV.y)>12) cancelLPV(); });
+document.addEventListener("scroll",cancelLPV,{passive:true,capture:true});
+document.addEventListener("contextmenu",e=>{ if(e.target.closest('.vtog[data-xa="1"]')) e.preventDefault(); });
+function showEditLine(key){
+  const i=key.indexOf("~"), id=key.slice(0,i), k=key.slice(i+1), t=byId(id); if(!t) return;
+  const [y0,...rr]=k.split("|"), r0=rr.join("|");
+  const sh=$("#sheet");
+  sh.innerHTML=`<form class="in" id="elForm"><h2>Modifier cette ligne</h2>
+    <p class="note"><b>${esc(t.name)}</b><br>Ligne que tu as ajoutée : ${esc(y0)} ${esc(r0)}</p>
+    <div class="fields">
+      <label class="field">Année<input id="el-year" inputmode="numeric" maxlength="4" required value="${esc(y0)}"></label>
+      <label class="field full">Revers<input id="el-rev" value="${esc(r0)}"></label></div>
+    <div class="row"><button class="btn" type="submit">Enregistrer</button><button class="btn ghost" type="button" id="elCancel">Annuler</button></div>
+    <div class="row" id="elDelWrap"><button type="button" class="linkbtn danger" id="elDel">Supprimer cette ligne</button></div></form>`;
+  sh.hidden=false; $("#sheetBg").hidden=false; sh.scrollTop=0;
+  $("#elCancel").onclick=closeSheet;
+  const rekey=(obj,from,to)=>{ const o={...(obj||{})}; if(from in o){ if(to) o[to]=o[from]; delete o[from]; } return o; };
+  const apply=to=>{ const u=st(id); let xv=(u.xv||[]).filter(([y,r])=>(y+"|"+r)!==k);
+    if(to){ const [ny,...nr]=to.split("|"); xv=xv.concat([[+ny,nr.join("|")]]); }
+    OPEN.add(id); patch(id,{xv:xv.length?xv:"",vq:rekey(u.vq,k,to),hv:rekey(u.hv,k,to),pv:rekey(u.pv,k,to)}); closeSheet(); rerender(); };
+  $("#elForm").onsubmit=ev=>{ ev.preventDefault();
+    const y=$("#el-year").value.trim(), r=$("#el-rev").value.trim();
+    if(!/^\d{4}$/.test(y)){ toast("Mets l'année sur 4 chiffres"); return; }
+    const to=y+"|"+r; if(to===k){ closeSheet(); return; }
+    if(units(t).some(x=>x.k===to)){ toast("Cette ligne existe déjà"); return; }
+    apply(to); toast("Ligne modifiée"); };
+  $("#elDel").onclick=()=>{ $("#elDelWrap").innerHTML=`<p class="note full" style="margin:0">Sûr ? La ligne ${esc(y0)} ${esc(r0)} sera supprimée.</p><button type="button" class="btn" id="elYes">Oui, supprimer</button><button type="button" class="btn ghost" id="elNo">Non</button>`;
+    $("#elYes").onclick=()=>{ apply(null); toast("Ligne supprimée"); }; $("#elNo").onclick=closeSheet; };
+}
 document.addEventListener("pointerdown",e=>{ const r=e.target.closest(".ref[data-mv]"); if(!r) return;
   LP={id:r.dataset.mv,x:e.clientX,y:e.clientY,el:r,t:setTimeout(()=>{ r.classList.remove("hold"); LP=null; if(navigator.vibrate) try{navigator.vibrate(30)}catch(_){} showMove(r.dataset.mv); },2000)};
   r.classList.add("hold"); });
@@ -485,7 +518,7 @@ function showHelp(){
     <h3 class="htitle">Pièce en attente</h3>
     <p class="note"><b>Double appui</b> sur une ligne (année + revers) : elle passe en <b>orange « En attente »</b> (commandée, en cours d'échange…). Elle ne compte pas encore comme possédée. Un simple appui ensuite la coche en vert ; un nouveau double appui enlève « En attente ». Le filtre <b>En attente</b> en haut les retrouve toutes, et le compteur <b>Attente</b> en bas les compte.</p>
     <h3 class="htitle">Année ou revers manquant</h3>
-    <p class="note">Dans la fiche d'une pièce, touche <b>+ Ajouter une année ou un revers</b> sous ses lignes. L'année suivante et le revers sont proposés (ex. 2013 · 13 MDP-2), tu corriges si besoin. Une ligne que tu as ajoutée a un petit <b>×</b> pour la retirer (2 appuis).</p>
+    <p class="note">Dans la fiche d'une pièce, touche <b>+ Ajouter une année ou un revers</b> sous ses lignes. L'année suivante et le revers sont proposés (ex. 2013 · 13 MDP-2), tu corriges si besoin. Pour <b>corriger ou supprimer</b> une ligne que tu as ajoutée : <b>garde le doigt 2 secondes dessus</b> (elle devient orange), puis Modifier ou Supprimer. Les lignes du catalogue ne sont pas modifiables.</p>
     <h3 class="htitle">Saisie gardée</h3>
     <p class="note">Si tu quittes l'appli en pleine saisie (pour chercher une info), tu retrouves le formulaire et ce que tu avais écrit en revenant.</p>
     <h3 class="htitle">Mosaïque</h3>
