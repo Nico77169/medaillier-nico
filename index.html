@@ -48,7 +48,7 @@ button{cursor:pointer}
 .search input{flex:1;min-width:0;border:0;background:transparent;padding:8px 0;outline:none}
 .iconbtn{width:40px;height:40px;border-radius:10px;border:0;background:var(--gold-soft);color:var(--gold);display:grid;place-items:center;flex:none}
 .iconbtn svg{width:20px;height:20px}
-.filters{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:.85rem;font-weight:600;white-space:nowrap}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .chip.clear{color:var(--warn);border-style:dashed}
@@ -146,7 +146,7 @@ details.more summary::-webkit-details-marker{display:none}
 /* Totaux en bas */
 .foot{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);
   padding:6px max(12px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
-.foot .in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 84px 1fr 1fr;gap:4px;align-items:center}
+.foot .in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:1.5fr 1.5fr 92px 1fr 1fr 1fr;gap:4px;align-items:center}
 .foot .gap{grid-column:3}
 .kpi{display:grid;gap:0;min-width:0;text-align:center;line-height:1.15}
 .kpi span{font-size:.56rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -296,6 +296,10 @@ img{max-width:100%}
 .vtog{touch-action:manipulation}.vrow.pend .vtog{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}.vrow.pend .vtog .dot{border-color:var(--warn);background:var(--warn-soft);font-size:.62rem}
 .vrow.pend .vtog{flex-wrap:wrap;row-gap:2px}.vpend{order:9;flex-basis:100%;padding-left:28px;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--warn)}
 .mtile.pend{opacity:1;filter:none;box-shadow:0 0 0 3px var(--warn)}.mok.mpend{background:var(--warn)}
+.kpend b{color:var(--warn)}
+@media (max-width:420px){.filters{gap:4px}.chip{padding:6px 9px;font-size:.78rem}}
+@media (max-width:420px){.foot .kpi span{letter-spacing:0;font-size:.54rem}.foot .in{gap:2px}}
+@media (max-width:380px){.foot .kpi span{font-size:.47rem}.foot .in{grid-template-columns:1.5fr 1.5fr 86px 1fr 1fr 1fr}}
 </style>
 </head>
 <body>
@@ -325,6 +329,7 @@ img{max-width:100%}
     <div class="filters" role="group" aria-label="Filtre">
       <button class="chip" data-f="own">Possédées</button>
       <button class="chip" data-f="missing">Manquantes</button>
+      <button class="chip" data-f="pend">En attente</button>
       <button class="chip" data-f="dup">Doublons</button>
       <button class="chip chip-hugo" data-f="hugo">Hugo</button>
       <button class="chip clear" id="clearF" hidden>Retirer le filtre</button>

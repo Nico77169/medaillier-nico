@@ -38,6 +38,7 @@ function passFilter(t){
   if(S.filter==="missing") return us.some(x=>x.q===0);
   if(S.filter==="dup") return us.some(x=>x.q>1);
   if(S.filter==="hugo") return Object.keys(st(t.id).hv||{}).length>0;
+  if(S.filter==="pend") return units(t).some(x=>x.p&&x.q<=0);
   return true;
 }
 function matches(t,q){
@@ -46,9 +47,9 @@ function matches(t,q){
   return norm(q).split(/\s+/).filter(Boolean).every(w=>hay.includes(w));
 }
 function stats(list){
-  let total=0,own=0,qty=0,dup=0,spent=0,value=0;
-  list.forEach(t=>{const e=eff(t); e.us.forEach(x=>{ total++; if(x.q>0){own++; qty+=x.q; dup+=x.q-1; value+=(x.c??e.val??0)*x.q;} }); spent+=(e.paid||0)*e.qty;});
-  return {total,own,missing:total-own,qty,dup,spent,value};
+  let total=0,own=0,qty=0,dup=0,spent=0,value=0,pend=0;
+  list.forEach(t=>{const e=eff(t); e.us.forEach(x=>{ total++; if(x.q>0){own++; qty+=x.q; dup+=x.q-1; value+=(x.c??e.val??0)*x.q;} else if(x.p) pend++; }); spent+=(e.paid||0)*e.qty;});
+  return {total,own,missing:total-own,qty,dup,spent,value,pend};
 }
 
 /* ---------- photos perso : stockage local (IndexedDB) + en ligne (Supabase Storage) ---------- */
@@ -264,7 +265,7 @@ function renderMain(){
   renderFoot(S.cat?pool:list, S.cat?"Total "+catOf(S.cat).name:"Total des résultats");
 }
 function catMeta(all){ const l=S.filter?all.filter(passFilter):all, s=stats(all), pct=s.total?Math.round(s.own/s.total*100):0;
-  return {l,s,pct,f:S.filter?`<span class="meta">${l.length} jeton${l.length>1?"s":""} ${({own:"possédé",missing:"avec un manque",dup:"avec doublon",hugo:"avec Hugo"})[S.filter]}${l.length>1&&S.filter==="own"?"s":""}</span>`:""}; }
+  return {l,s,pct,f:S.filter?`<span class="meta">${l.length} jeton${l.length>1?"s":""} ${({own:"possédé",missing:"avec un manque",dup:"avec doublon",hugo:"avec Hugo",pend:"en attente"})[S.filter]}${l.length>1&&S.filter==="own"?"s":""}</span>`:""}; }
 function groupByCat(){ const g={}; allTokens().forEach(t=>{ const k=catT(t); (g[k]=g[k]||[]).push(t); }); return g; }
 // ronds des départements (accueil et recherche) : blason en transparence sous le numéro, anneau = progression
 function depTiles(cats,groups){ return cats.map(c=>{ const all=groups[c.id]||[]; if(!all.length) return ""; const m=catMeta(all); if(S.filter&&!m.l.length) return "";
@@ -367,9 +368,10 @@ function renderFoot(list,label){
   const s=stats(list); const gain=s.value-s.spent;
   $("#foot").setAttribute("aria-label",label);
   $("#foot").innerHTML=`<div class="kpi"><span>Obtenues</span><b>${s.own}<small style="font-size:.7em;color:var(--muted)">/${s.total}</small></b></div>
-   <div class="kpi"><span>Manquantes</span><b>${s.missing}</b></div>
+   <div class="kpi"><span>Manque</span><b>${s.missing}</b></div>
    <span class="gap" aria-hidden="true"></span>
-   <div class="kpi"><span>Doublons</span><b>${s.dup}</b></div>
+   <div class="kpi kpend"><span>Attente</span><b>${s.pend}</b></div>
+   <div class="kpi"><span>Doubles</span><b>${s.dup}</b></div>
    <div class="kpi"><span>Total</span><b>${s.qty}</b></div>`;
 }
 /* ---------- photo en grand ---------- */
@@ -469,7 +471,7 @@ function showHelp(){
       <li>Le code affiche alors « · déplacée ».</li></ol>
     <p class="note">Pour annuler : même appui long, puis <b>Remettre dans « … »</b>.</p>
     <h3 class="htitle">Pièce en attente</h3>
-    <p class="note"><b>Double appui</b> sur une ligne (année + revers) : elle passe en <b>orange « En attente »</b> (commandée, en cours d'échange…). Elle ne compte pas encore comme possédée. Un simple appui ensuite la coche en vert ; un nouveau double appui enlève « En attente ».</p>
+    <p class="note"><b>Double appui</b> sur une ligne (année + revers) : elle passe en <b>orange « En attente »</b> (commandée, en cours d'échange…). Elle ne compte pas encore comme possédée. Un simple appui ensuite la coche en vert ; un nouveau double appui enlève « En attente ». Le filtre <b>En attente</b> en haut les retrouve toutes, et le compteur <b>Attente</b> en bas les compte.</p>
     <h3 class="htitle">Mosaïque</h3>
     <p class="note">Dans un thème, le bouton rond en haut à droite affiche les pièces en mosaïque. Touche une année, une lettre ou une pièce pour y aller dans la liste.</p>
     <div class="row"><button class="btn" type="button" id="helpClose">Fermer</button></div></div>`;
