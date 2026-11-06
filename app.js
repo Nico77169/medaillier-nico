@@ -173,7 +173,7 @@ function upgrade(){
     const backup={};
     Object.entries(S.items).forEach(([id,u])=>{ if(u.q||u.vq){ backup[id]={q:u.q||0,vq:u.vq||null};
       const cur={...u}; delete cur.q; delete cur.vq; S.items[id]=cur;
-      if(!cur.xv&&!cur.hv&&!cur.f&&!cur.b&&!cur.mv) delete S.items[id];
+      if(!cur.xv&&!cur.hv&&!cur.f&&!cur.b&&!cur.mv&&!cur.pv) delete S.items[id];
       mark(id); } });
     S.prefs["backup_"+RESET_OWN]=backup; S.prefs.reset=RESET_OWN; S.prefs.cjt1=true; ls.set("nico_prefs",S.prefs); mark("_prefs"); changed=true;
   }
@@ -422,10 +422,11 @@ document.addEventListener("click",e=>{
     const vq={...(u.vq||{})}, pv={...(u.pv||{})}; const q=vq[k]||0; vq[k]=q>0?0:1; if(vq[k]) delete pv[k];
     OPEN.add(id); patch(id,{vq,pv}); rerender(); return; }
   if(b.dataset.vi||b.dataset.vd){ const key=b.dataset.vi||b.dataset.vd; const i=key.indexOf("~"); const id=key.slice(0,i), k=key.slice(i+1);
-    if(k==="_"){ const q=st(id).q||0; patch(id,{q: b.dataset.vt?(q>0?0:1): b.dataset.vi? q+1 : Math.max(0,q-1)}); rerender(); return; }
+    const pv={...(st(id).pv||{})};
+    if(k==="_"){ const q=st(id).q||0, nq=b.dataset.vi? q+1 : Math.max(0,q-1); if(nq>0) delete pv._; patch(id,{q:nq,pv}); rerender(); return; }
     const vq={...(st(id).vq||{})}; const q=vq[k]||0;
-    vq[k]= b.dataset.vt?(q>0?0:1): b.dataset.vi? q+1 : Math.max(0,q-1);
-    OPEN.add(id); patch(id,{vq}); rerender(); return; }
+    vq[k]= b.dataset.vi? q+1 : Math.max(0,q-1); if(vq[k]>0) delete pv[k];
+    OPEN.add(id); patch(id,{vq,pv}); rerender(); return; }
   if(b.dataset.own){ const id=b.dataset.own; patch(id,{q:eff(byId(id)).qty>0?0:1}); rerender(); return; }
   if(b.dataset.inc){ const id=b.dataset.inc; patch(id,{q:eff(byId(id)).qty+1}); rerender(); return; }
   if(b.dataset.dec){ const id=b.dataset.dec; patch(id,{q:Math.max(0,eff(byId(id)).qty-1)}); rerender(); return; }
@@ -465,15 +466,17 @@ function showHelp(){
   const sh=$("#sheet");
   sh.innerHTML=`<div class="in"><h2>Astuces</h2>
     <h3 class="htitle">Déplacer une pièce mal rangée</h3>
-    <ol class="steps"><li>Ouvre le thème où se trouve la pièce.</li>
+    <ol class="steps"><li>Ouvre le thème ou le département où se trouve la pièce, puis touche la pièce.</li>
       <li>Sur sa fiche, <b>garde le doigt appuyé 2 secondes sur le code doré</b> (ex. « JTC FR95-0344 »). Il devient orange pendant l'appui.</li>
-      <li>Choisis le <b>nouveau thème</b>, puis <b>Déplacer</b> et <b>Oui, déplacer</b>.</li>
+      <li>Choisis le <b>nouveau thème ou département</b>, puis <b>Déplacer</b> et <b>Oui, déplacer</b>.</li>
       <li>Le code affiche alors « · déplacée ».</li></ol>
     <p class="note">Pour annuler : même appui long, puis <b>Remettre dans « … »</b>.</p>
     <h3 class="htitle">Pièce en attente</h3>
     <p class="note"><b>Double appui</b> sur une ligne (année + revers) : elle passe en <b>orange « En attente »</b> (commandée, en cours d'échange…). Elle ne compte pas encore comme possédée. Un simple appui ensuite la coche en vert ; un nouveau double appui enlève « En attente ». Le filtre <b>En attente</b> en haut les retrouve toutes, et le compteur <b>Attente</b> en bas les compte.</p>
     <h3 class="htitle">Mosaïque</h3>
-    <p class="note">Dans un thème, le bouton rond en haut à droite affiche les pièces en mosaïque. Touche une année, une lettre ou une pièce pour y aller dans la liste.</p>
+    <p class="note">Un thème ou un département s'ouvre en mosaïque. Touche une pièce pour ouvrir sa fiche, ou une année pour aller dans la liste. Le bouton ☰ en haut à droite passe de la mosaïque à la liste et inversement.</p>
+    <h3 class="htitle">Recherche</h3>
+    <p class="note">Tape un code (ex. FR77-0295), un nom, un lieu ou un numéro de département (ex. 77) : le département s'affiche en premier, puis ses pièces.</p>
     <div class="row"><button class="btn" type="button" id="helpClose">Fermer</button></div></div>`;
   sh.hidden=false; $("#sheetBg").hidden=false; sh.scrollTop=0; $("#helpClose").onclick=closeSheet;
 }
@@ -598,8 +601,8 @@ function curMatch(){ return findByRef(normRef($("#np-ref").value)); }
 function refreshMatch(){
   const t=curMatch(), box=$("#npMatch");
   if(t){
-    box.innerHTML=`<div class="match">Déjà au catalogue : <b>${esc(t.name)}</b> (${esc(catOf(t.cat).name)}). Elle sera ajoutée à ta collection.</div>`;
-    $("#np-name").value=t.name; $("#np-cat").value=t.cat;
+    box.innerHTML=`<div class="match">Déjà au catalogue : <b>${esc(t.name)}</b> (${esc(catOf(catT(t)).name)}). Elle sera ajoutée à ta collection.</div>`;
+    $("#np-name").value=t.name; $("#np-cat").value=catT(t);
   } else if(normRef($("#np-ref").value)){
     box.innerHTML=`<div class="match new">Code inconnu dans l'appli : une nouvelle fiche sera créée.</div>`;
   } else box.innerHTML="";
