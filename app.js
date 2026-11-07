@@ -371,16 +371,12 @@ function backMini(t,p){
 // petit rond « + » : prend la taille d'une pièce seulement quand une photo est mise
 function plusMini(t,side,cls=""){ const l=side==="f"?"Face":"Dos";
   return `<button class="backmini${cls}" data-photo="${t.id}" data-side="${side}" aria-label="Ajouter la photo ${side==="f"?"de la face":"du dos"}"><span>+<br>${l}</span></button>`; }
-function photoBlock(t,e,sf,sb,faceOnly){
+// face uniquement (le dos n'est plus proposé) : petit rond « + Face » sans photo, grande photo quand elle est mise
+function photoBlock(t,e,sf){
   const nl=`<a class="nlink" href="${numUrl(t)}" target="_blank" rel="noopener">${t.n?"Voir les photos sur Numista":"Chercher les photos sur Numista"} ↗</a>`;
-  if(!sf&&!sb) return `<div class="phrow">${plusMini(t,"f"," inrow")}${plusMini(t,"b"," inrow")}<span class="lnk">${nl}${cjtLink(t)}</span></div>`;
-  const repl=(!e.f&&sf)||(!e.b&&sb&&!faceOnly)?`<div class="addrow">${!e.f&&sf?`<button class="addph" data-photo="${t.id}" data-side="f">+ Ma photo (face)</button>`:""}${!e.b&&sb&&!faceOnly?`<button class="addph" data-photo="${t.id}" data-side="b">+ Ma photo (dos)</button>`:""}</div>`:"";
-  let faces;
-  if(faceOnly) faces=sf?`<div class="faces one">${picHTML(t,"f",sf)}${backMini(t,sb)}</div>`:`<div class="phrow">${plusMini(t,"f"," inrow")}${backMini(t,sb).replace('class="backmini','class="backmini inrow')}<span class="lnk">${nl}${cjtLink(t)}</span></div>`;
-  else if(sf&&sb) faces=`<div class="faces">${picHTML(t,"f",sf)}${picHTML(t,"b",sb)}</div>`;
-  else if(sf) faces=`<div class="faces one">${picHTML(t,"f",sf)}${plusMini(t,"b")}</div>`;
-  else faces=`<div class="faces one">${picHTML(t,"b",sb)}${plusMini(t,"f"," left")}</div>`;
-  return faces+creditHTML([sf,sb])+repl;
+  if(!sf) return `<div class="phrow">${plusMini(t,"f"," inrow")}<span class="lnk">${nl}${cjtLink(t)}</span></div>`;
+  const repl=!e.f?`<div class="addrow"><button class="addph" data-photo="${t.id}" data-side="f">+ Ma photo</button></div>`:"";
+  return `<div class="faces one">${picHTML(t,"f",sf)}</div>`+creditHTML([sf])+repl;
 }
 function creditHTML(ps){
   const c=[...new Set(ps.filter(p=>p&&p.by).map(p=>p.by==="Numista"?p.lic:`© ${p.by} – ${p.lic}`))];
@@ -397,13 +393,13 @@ function cardHTML(t){
   const dup=e.us.reduce((a,x)=>a+Math.max(0,x.q-1),0);
   const mini=catT(t)!=="disney"&&catT(t)!=="beauval"; // fiches du catalogue CJT sans photo : vignette compacte
   return `<article class="card${own?" own":""}" data-id="${t.id}" data-year="${yearOf(t)}" data-letter="${letterOf(t)}">
-    ${photoBlock(t,e,sf,sb,faceOnly)}
+    ${photoBlock(t,e,sf)}
     <div>
       <div class="ref" data-mv="${t.id}">${esc(t.ref||"Sans référence JTC")}${st(t.id).mv?' <span class="moved">· déplacée</span>':""}</div>
       <h3 class="name">${esc(t.name)}</h3>
       <div class="info"><span>${esc(yearsLabel(t,e))}</span>${t.dept?`<span>Dép. ${esc(t.dept)}</span>`:""}${t.metal?`<span>${esc(t.metal)}</span>`:""}${t.mint?`<span>Tirage ${esc(t.mint)}</span>`:""}${!S.cat||isVirtual(S.cat)?`<span>${esc(catOf(catT(t)).name)}</span>`:""}</div>
       ${t.note?`<div class="note">${esc(t.note)}</div>`:""}
-      <div class="links">${!((!sf&&!sb)||(faceOnly&&!sf))?`<a class="nlink" href="${numUrl(t)}" target="_blank" rel="noopener">Photos sur Numista ↗</a>${cjtLink(t)}`:""}</div>
+      <div class="links">${sf?`<a class="nlink" href="${numUrl(t)}" target="_blank" rel="noopener">Photos sur Numista ↗</a>${cjtLink(t)}`:""}</div>
     </div>
     ${dup?`<div class="pills"><span class="pill ok">${dup} doublon${dup>1?"s":""}</span></div>`:""}
     ${true?variantsHTML(t,e):`<div class="own-row">
