@@ -1,7 +1,7 @@
 /* Médaillier de Nico — appli installable (PWA)
    Données : catalogue.json (public) + collection de Nico dans Supabase (privée, protégée par compte). */
 "use strict";
-let CATS=[], CATALOG=[], PHOTOS={}, CATALOG_DATE="", LEGACY={}, CJT_OWN={}, CJT_DATE="", RESET_OWN="";
+let CATS=[], CATALOG=[], PHOTOS={}, CATALOG_DATE="", LEGACY={}, CJT_OWN={}, CJT_DATE="", RESET_OWN="", RESET_BACK="";
 const IMPORT_CJT=true;
 // Variantes cochées en vert dans le tableau Disney de Nico : appliquées une seule fois, au premier lancement
 const PRESET = {"d0299":{"2004|04 CN Diff. Bas":1},"d0303":{"2004|04 CN":1},"d0297":{"2007|07 MDP":1},"d0577":{"2008|08 EVM France":1},"d0681":{"2008|08 EVM":1},"d0706":{"2009|09 EVM":1,"2013|13 MDP-2":1,"2020|20 MDP-3 NG":1,"2022|22 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d0811":{"2009|09 EVM":1},"d0945":{"2009|09 EVM":1,"2010|10 EVM":1},"d0837":{"2009|09 EVM":1},"d1047":{"2010|10 EVM":1},"d1011":{"2010|10 EVM":1,"2013|13 MDP-2":1,"2015|15 MDP-2 NG":1,"2017|17 MDP-2 NG":1,"2018|18 MDP-2 NG":1,"2020|20 MDP-3 NG":1,"2021|21 MDP-3 NG":1,"2022|22 MDP-3 NG":1},"d1010":{"2010|10 EVM":1,"2012|12 EVM":1,"2017|17 MDP-2 NG":1,"2018|18 MDP-2 NG":1,"2019|19 MDP-2 NG":1,"2021|21 MDP-3 NG":1,"2022|22 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d1100":{"2011|11 EVM":1},"d1373":{"2012|12 MDP-2":1},"d1279":{"2012|12 EVM":1,"2012|12 MDP-2":1},"d1208":{"2012|12 EVM":1,"2020|20 MDP-3 NG":1},"d1201":{"2012|12 EVM":1,"2015|15 MDP-2 NG":1,"2017|17 MDP-2 NG":1,"2022|22 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d1012":{"2013|13 MDP":1},"d1702":{"2014|14 MDP-2 NG":1},"d1719":{"2014|14 MDP-2 CAN":1},"d1877":{"2015|15 MDP-2 NG":1,"2016|16 MDP-2 NG":1,"2020|20 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d2467":{"2017|17 MDP/EVM":1},"d2392":{"2017|17 MDP/EVM":1},"d1718":{"2017|17 MDP-2 NG":1},"d2817":{"2018|18 MDP/EVM":1},"d2746":{"2018|18 MDP/EVM":1,"2020|20 MDP-3 NG":1,"2021|21 MDP-3 NG":1,"2022|22 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d2501":{"2018|18 MDP-2 NG":1,"2020|20 MDP-3 NG":1},"d3088":{"2020|20 MDP/EVM":1},"d3035":{"2020|20 MDP/EVM":1},"d3635":{"2022|22 MDP/EVM":1},"d3432":{"2022|22 MDP/EVM":1},"d3704":{"2023|23 MDP/EVM":1},"d3885":{"2023|23 MDP-3 NG":1},"d3491":{"2023|23 MDP-3 NG":1},"d3943":{"2024|24 MDP/EVM":1},"d4182":{"2024|24 MDP-3 NG":1},"d3942":{"2024|24 MDP-3 NG":1,"2025|25 MDP-3 NG":1},"d4198":{"2025|25 MDP/EVM":1},"d4239":{"2025|25 MDP-3 NG":1},"d4256":{"2025|25 MDP/EVM":1},"d4489":{"2025|25 MDP/EVM":1},"d4202":{"2025|25 MDP/EVM":1},"d4496":{"2026|26 MDP/EVM":1},"d4047":{"2026|26 MDP/EVM":1},"d4490":{"2026|26 MDP/EVM":1}};
@@ -204,6 +204,11 @@ function upgrade(){
       if(!cur.xv&&!cur.hv&&!cur.f&&!cur.b&&!cur.mv&&!cur.pv) delete S.items[id];
       mark(id); } });
     S.prefs["backup_"+RESET_OWN]=backup; S.prefs.reset=RESET_OWN; S.prefs.cjt1=true; ls.set("nico_prefs",S.prefs); mark("_prefs"); changed=true;
+  }
+  // 1 ter) une seule fois : toutes les photos de dos prises par Nico sont retirées (demande du 07/11/2026)
+  if(RESET_BACK && S.prefs.rb!==RESET_BACK){
+    Object.entries(S.items).forEach(([id,u])=>{ if(u.b){ const cur={...u}; delete cur.b; if(!Object.keys(cur).length) delete S.items[id]; else S.items[id]=cur; mark(id); } });
+    S.prefs.rb=RESET_BACK; ls.set("nico_prefs",S.prefs); mark("_prefs"); changed=true;
   }
   // 2) une seule fois : on coche ce que Nico a marqué « Possédé » sur son compte CJT (sans rien décocher)
   if(IMPORT_CJT && !S.prefs.cjt1){
@@ -862,7 +867,7 @@ function bindAdd(){
 /* ---------- démarrage ---------- */
 async function loadCatalogue(){
   const r=await fetch("catalogue.json",{cache:"no-cache"}); const c=await r.json();
-  CATS=c.cats; CATALOG=c.tokens; PHOTOS=c.photos||{}; CATALOG_DATE=c.updated||""; LEGACY=c.legacy||{}; CJT_OWN=c.cjtOwn||{}; CJT_DATE=c.cjtDate||""; RESET_OWN=c.resetOwn||"";
+  CATS=c.cats; CATALOG=c.tokens; PHOTOS=c.photos||{}; CATALOG_DATE=c.updated||""; LEGACY=c.legacy||{}; CJT_OWN=c.cjtOwn||{}; CJT_DATE=c.cjtDate||""; RESET_OWN=c.resetOwn||""; RESET_BACK=c.resetBack||"";
   NEWY=Math.max(...CATALOG.filter(t=>t.cat!=="disney"&&t.cat!=="beauval").flatMap(t=>t.v?t.v.map(v=>+v[0]):[parseInt(t.years,10)||0]));
   CATALOG.forEach(t=>{ if(t.np&&!PHOTOS[t.id]) PHOTOS[t.id]=t.np; });
 }
