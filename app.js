@@ -24,7 +24,10 @@ function catT(t){ const mv=S.items[t.id]&&S.items[t.id].mv; if(mv&&hasCat(mv)) r
 function inCat(t,c){ const k=catT(t); if(c==="nouveautes") return k!=="disney"&&k!=="beauval"&&parseInt(t.years,10)===NEWY; /* pièces sorties pour la première fois cette année */ return k===c; }
 function isVirtual(c){ return !!(CATS.find(x=>x.id===c)||{}).virtual; }
 function st(id){ return S.items[id]||{}; }
-function units(t){ const u=st(t.id);
+// lignes toujours rangées par année puis par revers (une année ajoutée se met à sa place)
+const byYear=(a,b)=>(+a.y||9999)-(+b.y||9999)||String(a.r).localeCompare(String(b.r),"fr",{numeric:true});
+function units(t){ return unitsRaw(t).sort(byYear); }
+function unitsRaw(t){ const u=st(t.id);
   if(t.v) return t.v.concat((u.xv||[]).filter(([y,r])=>!t.v.some(v=>v[0]==y&&v[1]===r)).map(x=>[x[0],x[1],null,1])).map(([y,r,c,a])=>{const k=y+"|"+r; return {k,y,r,c:c||null,q:(u.vq||{})[k]||0,p:!!(u.pv||{})[k],added:!!a};});
   return [{k:"_",y:yearOf(t),r:t.rev||"",q:u.q||0,c:null,p:!!(u.pv||{})._}]
     .concat((u.xv||[]).map(([y,r])=>{const k=y+"|"+r; return {k,y,r,c:null,q:(u.vq||{})[k]||0,p:!!(u.pv||{})[k],added:true};})); }
