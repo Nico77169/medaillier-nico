@@ -310,6 +310,12 @@ function depTiles(cats,groups){ return cats.map(c=>{ const all=groups[c.id]||[];
 function matchDeps(q){ const n=norm(q).trim(); if(!n) return [];
   const num=/^\d{1,3}$|^2[ab]$/.test(n);
   return CATS.filter(c=>c.dep&&c.num&&(num?(n.length>=2?String(c.num).toLowerCase()===n:(c.num==="0"+n||String(c.num).startsWith(n))):n.length>=3&&norm(c.name).includes(n))); }
+// un filtre actif cache des départements : on le dit clairement, avec un bouton pour tout revoir
+function hiddenNote(groups){ if(!S.filter) return "";
+  const all=CATS.filter(c=>c.dep&&(groups[c.id]||[]).length), shown=all.filter(c=>groups[c.id].some(passFilter)).length, hid=all.length-shown;
+  if(!hid) return "";
+  const lab=({own:"Possédées",missing:"Manquantes",dup:"Doublons",hugo:"Hugo",pend:"En attente"})[S.filter]||S.filter;
+  return `<div class="fnote">Filtre « ${esc(lab)} » actif : ${hid} département${hid>1?"s":""} masqué${hid>1?"s":""}. <button class="linkbtn" id="clearF2">Voir tous les départements</button></div>`; }
 function homeHTML(){
   const groups=groupByCat();
   const big=CATS.filter(c=>!c.dep).map(c=>{ const all=groups[c.id]||[]; const m=catMeta(all);
@@ -321,7 +327,7 @@ function homeHTML(){
       <span class="bar"><i style="width:${m.pct}%"></i></span></button>`; }).join("");
   const deps=depTiles(CATS.filter(c=>c.dep),groups);
   return `<p class="sect-title">Thèmes</p><div class="cats">${big}</div>
-    <p class="sect-title">Départements</p><div class="deps">${deps||'<div class="empty">Aucun département avec ce filtre.</div>'}</div>
+    <p class="sect-title">Départements</p>${hiddenNote(groups)}<div class="deps">${deps||'<div class="empty">Aucun département avec ce filtre.</div>'}</div>
     <button class="addbtn" id="helpBtn">💡 Astuces : déplacer une pièce mal rangée…</button>
     <p class="status">Catalogue mis à jour le ${esc(CATALOG_DATE)} · ${CATALOG.length} médailles${Object.keys(S.custom).length?` + ${Object.keys(S.custom).length} ajoutées par toi`:""} · Liste : catalogue CJT de Nico${CJT_DATE?` (${esc(CJT_DATE)})`:""} · Photos : Numista (licences Creative Commons) · Disney : liste de Nico</p>`;
 }
@@ -448,7 +454,7 @@ document.addEventListener("click",e=>{
   if(b.id==="helpBtn"){ showHelp(); return; }
   if(b.id==="backBtn"){ OPEN.clear(); S.mosaic=false; S.addOpen=false; S.cat=null; S.q=S.homeQ||""; $("#q").value=S.q; render(); return; }
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
-  if(b.id==="clearF"){ S.filter=null; saveFilter(); render(); return; }
+  if(b.id==="clearF"||b.id==="clearF2"){ S.filter=null; saveFilter(); render(); return; }
   // double appui sur une ligne = « En attente » (orange) ; le 1er appui est annulé
   if(b.dataset.vt&&NOCLICK){ NOCLICK=false; return; }
   if(b.dataset.vt){ const key=b.dataset.vt, i=key.indexOf("~"), id=key.slice(0,i), k=key.slice(i+1), now=Date.now();
