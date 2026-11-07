@@ -116,7 +116,8 @@ function patch(id,obj){
   if(cur.vq){ Object.keys(cur.vq).forEach(k=>{ if(!cur.vq[k]) delete cur.vq[k]; }); if(!Object.keys(cur.vq).length) delete cur.vq; }
   if(cur.hv && !Object.keys(cur.hv).length) delete cur.hv;
   if(cur.pv && !Object.keys(cur.pv).length) delete cur.pv;
-  if(!cur.q && !cur.vq && !cur.xv && !cur.hv && !cur.f && !cur.b && !cur.mv && !cur.pv) delete S.items[id]; else S.items[id]=cur;
+  if(cur.hide && !Object.keys(cur.hide).length) delete cur.hide;
+  if(!cur.q && !cur.vq && !cur.xv && !cur.hv && !cur.f && !cur.b && !cur.mv && !cur.pv && !cur.hide) delete S.items[id]; else S.items[id]=cur;
   if(S.custom[id]) saveCustom(id); else saveItem(id);
 }
 function setSync(state,txt){ const el=$("#status"); el.innerHTML=`<span class="sync ${state}"><i></i>${esc(txt)}</span>${UID?'<button class="logout" id="logoutBtn">Se déconnecter</button>':""}`; }
@@ -241,7 +242,7 @@ function mtileHTML(t){
   const e=eff(t), np=PHOTOS[t.id]||{}, own=e.qty>0, pend=!own&&units(t).some(x=>x.p);
   let img="";
   if(e.f) img=`<img src="${esc(ownSrc(e.f))}" data-ph="${esc(e.f)}" alt="" loading="lazy">`;
-  else if(np.f) img=`<img src="${esc(String(np.f.src).replace("-original.jpg","-180.jpg"))}" alt="" loading="lazy">`;
+  else if(np.f&&!(st(t.id).hide||{}).f) img=`<img src="${esc(String(np.f.src).replace("-original.jpg","-180.jpg"))}" alt="" loading="lazy">`;
   const short=esc(String(t.name).replace(/^(Disneyland( Resort)? Paris|ZooParc de Beauval)\s*[-–:]?\s*/i,"").slice(0,28));
   return `<button class="mtile${own?" own":""}${pend?" pend":""}" data-jt="${t.id}" aria-label="${esc(t.name)}${own?" (possédée)":pend?" (en attente)":" (manquante)"}">${img||`<span class="mph">${short}</span>`}${own?'<span class="mok">✓</span>':pend?'<span class="mok mpend">⏳</span>':""}</button>`;
 }
@@ -383,7 +384,8 @@ function creditHTML(ps){
 function cardHTML(t){
   const e=eff(t); const own=e.qty>0; const faceOnly=!!t.v;
   const np=PHOTOS[t.id]||{};
-  const side=k=>{ if(e[k]) return {src:ownSrc(e[k]),own:true,ph:e[k]}; if(np[k]) return {src:np[k].src,by:np[k].by,lic:np[k].lic}; return null; };
+  const hid=st(t.id).hide||{};
+  const side=k=>{ if(e[k]) return {src:ownSrc(e[k]),own:true,ph:e[k]}; if(np[k]&&!hid[k]) return {src:np[k].src,by:np[k].by,lic:np[k].lic}; return null; };
   const sf=side("f"), sb=faceOnly?(e.b?{src:ownSrc(e.b),own:true,ph:e.b}:null):side("b");
   const hasPh=!!(sf||sb);
   const coin=l=>`<span class="ncoin"><span class="blank"></span><small>${l}</small></span>`;
@@ -425,13 +427,18 @@ function showZoom(id,side){ ZOOMY=scrollY;
   const t=byId(id); if(!t) return; const e=eff(t); const np=PHOTOS[t.id]||{};
   let src="", ph="", credit="", own=false;
   if(e[side]){ ph=e[side]; src=ownSrc(ph); own=true; }
-  else if(np[side]){ src=np[side].src; credit=np[side].by==="Numista"?np[side].lic:`© ${np[side].by} – ${np[side].lic} · Source : Numista`; }
+  else if(np[side]&&!(st(t.id).hide||{})[side]){ src=np[side].src; credit=np[side].by==="Numista"?np[side].lic:`© ${np[side].by} – ${np[side].lic} · Source : Numista`; }
   if(!src) return;
   let z=$("#zoom"); if(!z){ z=document.createElement("div"); z.id="zoom"; z.className="zoom"; document.body.appendChild(z);
     z.addEventListener("click",ev=>{ if(ev.target===z||ev.target.classList.contains("zimg")) closeZoom(); }); }
   z.innerHTML=`<div class="zin"><img class="zimg" src="${esc(src)}"${ph?` data-ph="${esc(ph)}"`:""} alt="${side==="f"?"Face":"Dos"} – ${esc(t.name)}">
     <div class="zcap"><b>${esc(t.name)}</b> · ${side==="f"?"Face":"Dos"}${credit?`<small>${esc(credit)}</small>`:""}</div>
-    <div class="row zbtns"><button class="btn ghost" data-photo="${t.id}" data-side="${side}">${own?"Changer la photo":"Mettre ma photo"}</button><button class="btn" id="zoomClose">Fermer</button></div></div>`;
+    <div class="row zbtns"><button class="btn ghost" data-photo="${t.id}" data-side="${side}">${own?"Changer la photo":"Mettre ma photo"}</button><button class="btn" id="zoomClose">Fermer</button></div>
+    <div class="row zbtns" id="zDelWrap"><button class="linkbtn danger" type="button" id="zDel">Retirer cette photo</button></div></div>`;
+  $("#zDel").onclick=()=>{ $("#zDelWrap").innerHTML=`<span class="zsure">Sûr ? La photo ${side==="f"?"de la face":"du dos"} sera retirée.</span><button class="btn" type="button" id="zYes">Oui, retirer</button><button class="btn ghost" type="button" id="zNo">Non</button>`;
+    $("#zNo").onclick=closeZoom;
+    $("#zYes").onclick=()=>{ if(own) patch(id,{[side]:""}); else patch(id,{hide:{...(st(id).hide||{}),[side]:1}}); // photo du catalogue : simplement cachée
+      closeZoom(); render(); toast("Photo retirée"); }; };
   z.hidden=false; document.body.style.overflow="hidden";
 }
 function closeZoom(){ const z=$("#zoom"); if(z){ z.hidden=true; z.innerHTML=""; } document.body.style.overflow=""; ZOOMY=null; }
