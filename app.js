@@ -237,7 +237,7 @@ function jumpTo(pred){
     const top=el.getBoundingClientRect().top+scrollY-($(".top").offsetHeight+12); scrollTo({top,behavior:"instant"});
     el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),1600); });
 }
-function saveView(){ ls.set("nico_view",{cat:S.cat,mosaic:!!S.mosaic,add:!!S.addOpen,piece:PIECE||null,t:Date.now()}); }
+function saveView(){ ls.set("nico_view",{cat:S.cat,mosaic:!!S.mosaic,add:!!S.addOpen,piece:PIECE||null,q:S.q||"",hq:S.homeQ||"",t:Date.now()}); }
 function render(){ renderMain(); if(PIECE&&$("#sheet .piece")) renderPiece(); saveView(); }
 function renderMain(){
   $("#backBtn").hidden=!S.cat;
@@ -406,7 +406,7 @@ function numUrlSafe(t){ return numUrl(t); }
 /* ---------- interactions ---------- */
 document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
-  if(b.dataset.cat){ OPEN.clear(); S.mosaic=true; S.addOpen=false; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
+  if(b.dataset.cat){ if(!S.cat) S.homeQ=S.q; OPEN.clear(); S.mosaic=true; S.addOpen=false; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
   if(b.id==="mosaicBtn"){ S.mosaic=!S.mosaic; render(); scrollTo(0,0); return; }
   if(b.dataset.jy){ const y=b.dataset.jy; jumpTo(t=>(yearOf(t)||"Sans année")===y); return; }
   if(b.dataset.ml){ const g=document.getElementById(b.dataset.ml); if(g) scrollTo({top:g.getBoundingClientRect().top+scrollY-($(".top").offsetHeight+10),behavior:"smooth"}); return; }
@@ -416,7 +416,7 @@ document.addEventListener("click",e=>{
   if(b.id==="pieceList"){ const id=PIECE; closePiece(); jumpTo(t=>t.id===id); return; }
   if(b.id==="moreBtn"){ showMore(); return; }
   if(b.id==="helpBtn"){ showHelp(); return; }
-  if(b.id==="backBtn"){ OPEN.clear(); S.mosaic=false; S.addOpen=false; S.cat=null; S.q=""; $("#q").value=""; render(); return; }
+  if(b.id==="backBtn"){ OPEN.clear(); S.mosaic=false; S.addOpen=false; S.cat=null; S.q=S.homeQ||""; $("#q").value=S.q; render(); return; }
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
   if(b.id==="clearF"){ S.filter=null; saveFilter(); render(); return; }
   // double appui sur une ligne = « En attente » (orange) ; le 1er appui est annulé
@@ -829,6 +829,7 @@ async function start(){
   // retour au même écran seulement si l'appli a été quittée il y a moins de 30 min (sinon on repart de l'accueil)
   let vw=ls.get("nico_view"); if(vw&&!(Date.now()-(vw.t||0)<30*60e3)) vw=null;
   if(vw&&vw.cat&&hasCat(vw.cat)){ S.cat=vw.cat; S.mosaic=vw.mosaic; S.addOpen=vw.add; }
+  if(vw){ S.q=vw.q||""; S.homeQ=vw.hq||""; $("#q").value=S.q; }
   render(); checkRobot();
   if(vw&&vw.piece&&byId(vw.piece)) openPiece(vw.piece);
   restoreDraft();
@@ -853,12 +854,13 @@ const zoomOpen=()=>{ const z=$("#zoom"); return !!(z&&!z.hidden); };
 function atRoot(){ return !S.cat && !S.q && $("#sheet").hidden && !zoomOpen() && !S.addOpen; }
 function arm(){ if(!ARMED && !atRoot()){ try{ history.pushState({medaillier:1},""); ARMED=true; }catch(e){} } }
 function goBack(){
+  const ae=document.activeElement; if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)){ ae.blur(); return; }
   if(zoomOpen()){ closeZoom(); return; }
   if(!$("#sheet").hidden){ if($("#sheet .piece")) closePiece(); else { if($("#npForm")||$("#yrForm")) DRAFT.clear(); closeSheet(); } return; }
   if(S.addOpen){ S.addOpen=false; DRAFT.clear(); render(); return; }
-  if(S.q){ S.q=""; $("#q").value=""; render(); return; }
   if(S.cat && !S.mosaic){ S.mosaic=true; render(); scrollTo(0,0); return; }   // liste -> mosaïque
-  if(S.cat){ OPEN.clear(); S.mosaic=false; S.cat=null; render(); scrollTo(0,0); return; } // thème -> accueil
+  if(S.cat){ OPEN.clear(); S.mosaic=false; S.cat=null; S.q=S.homeQ||""; $("#q").value=S.q; render(); scrollTo(0,0); return; } // thème -> accueil (recherche retrouvée)
+  if(S.q){ S.q=""; S.homeQ=""; $("#q").value=""; render(); return; }
 }
 window.addEventListener("popstate",()=>{ ARMED=false; goBack(); setTimeout(arm,0); });
 new MutationObserver(()=>arm()).observe(document.body,{subtree:true,attributes:true,attributeFilter:["hidden"],childList:true});
