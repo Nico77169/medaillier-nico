@@ -45,11 +45,34 @@ function passFilter(t){
   if(S.filter==="pend") return units(t).some(x=>x.p&&x.q<=0);
   return true;
 }
-function matches(t,q){
-  if(!q) return true;
-  const hay=norm([t.ref,t.name,t.site,t.years,t.dept,t.note,t.metal,catOf(catT(t)).name].join(" "));
-  return norm(q).split(/\s+/).filter(Boolean).every(w=>hay.includes(w));
+/* ---------- recherche tolérante ----------
+   - cherche aussi dans les revers et les années de chaque ligne
+   - ignore accents, majuscules, tirets, apostrophes (« saint malo » = « Saint-Malo », « hermine » = « l'Hermine »)
+   - accepte une petite faute de frappe (« haloween », « halloweene »), le pluriel, les mots coupés (« hallo »)
+   - si rien ne correspond à tous les mots, montre les pièces qui en contiennent le plus (« résultats approchants ») */
+const STOPW=new Set(["de","du","des","la","le","les","l","d","et","a","au","aux","en","the","of","st","ste"]);
+const words=s=>norm(s).replace(/['’`´]/g," ").replace(/[^a-z0-9]+/g," ").trim().split(" ").filter(w=>w&&!STOPW.has(w));
+function near(a,b){ // distance d'édition ≤ 1 (ou ≤ 2 pour les mots longs)
+  const max=a.length>=8?2:1; if(Math.abs(a.length-b.length)>max) return false;
+  let prev=Array.from({length:b.length+1},(_,i)=>i);
+  for(let i=1;i<=a.length;i++){ const cur=[i]; let best=i;
+    for(let j=1;j<=b.length;j++){ cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1)); if(cur[j]<best) best=cur[j]; }
+    if(best>max) return false; prev=cur; }
+  return prev[b.length]<=max;
 }
+function hayOf(t){ const e=eff(t); return words([t.ref,t.name,t.site,t.years,t.dept,t.note,t.metal,catOf(catT(t)).name,e.us.map(x=>x.y+" "+x.r).join(" ")].join(" ")); }
+function wordHit(w,hay,flat){
+  if(flat.includes(w)) return true;                      // morceau de mot (« hallo », « fr77-0295 »)
+  if(w.length<4||/\d/.test(w)) return false;              // pas d'à-peu-près sur les chiffres et codes
+  return hay.some(h=>near(w,h)||(h.length>4&&w.startsWith(h)&&w.length-h.length<=2)); // faute de frappe, pluriel
+}
+const CODE_RE=/^(?:jtc)?([a-z]{2})\s*-?\s*([0-9ab]{2})\s*-?\s*(\d{1,4})$/;
+function score(t,q){ const nq=norm(q).trim();
+  const cm=CODE_RE.exec(nq); if(cm){ const code=(cm[1]+cm[2]+"-"+cm[3].padStart(4,"0")).toUpperCase(); return (t.ref||"").toUpperCase().includes(code)?2:0; } // un code = recherche exacte
+  const qs=words(q); if(!qs.length) return 1; const hay=hayOf(t), flat=hay.join(" ");
+  const hits=qs.filter(w=>wordHit(w,hay,flat)).length; if(hits<qs.length) return hits/qs.length;
+  return qs.every(w=>flat.includes(w))?2:1; } // 2 = tous les mots tels quels, 1 = avec une petite faute
+function matches(t,q){ return !q || score(t,q)>=1; }
 function stats(list){
   let total=0,own=0,qty=0,dup=0,spent=0,value=0,pend=0;
   list.forEach(t=>{const e=eff(t); e.us.forEach(x=>{ total++; if(x.q>0){own++; qty+=x.q; dup+=x.q-1; value+=(x.c??e.val??0)*x.q;} else if(x.p) pend++; }); spent+=(e.paid||0)*e.qty;});
@@ -255,14 +278,21 @@ function renderMain(){
   const v=$("#view");
   if(!S.cat && !S.q){ v.innerHTML=homeHTML(); renderFoot(allTokens(),"Toute la collection"); return; }
   const pool=allTokens().filter(t=>(!S.cat||inCat(t,S.cat)));
-  const list=pool.filter(t=>matches(t,S.q)&&passFilter(t)).sort(mmode==="letter"?((a,b)=>a.name.localeCompare(b.name,"fr")):((a,b)=>String(a.years).localeCompare(String(b.years))||a.name.localeCompare(b.name)));
+  const srt=mmode==="letter"?((a,b)=>a.name.localeCompare(b.name,"fr")):((a,b)=>String(a.years).localeCompare(String(b.years))||a.name.localeCompare(b.name));
+  let list, APPROX=false;
+  if(!S.q) list=pool.filter(passFilter).sort(srt);
+  else { const sc=new Map(); pool.forEach(t=>{ if(passFilter(t)) sc.set(t,score(t,S.q)); });
+    list=[...sc].filter(([,v])=>v>=1).sort((a,b)=>b[1]-a[1]||srt(a[0],b[0])).map(([t])=>t);
+    if(!list.length&&words(S.q).length>1){ APPROX=true; // aucun résultat exact : les plus proches d'abord
+      list=[...sc].filter(([,v])=>v>=0.5).sort((a,b)=>b[1]-a[1]||srt(a[0],b[0])).map(([t])=>t).slice(0,120); } }
+  S.approx=APPROX;
   if(mos&&!S.addOpen){ v.innerHTML=mosaicHTML(list,mmode); renderFoot(pool,"Total "+catOf(S.cat).name); return; }
   if(!S.cat&&S.q){ const dm=matchDeps(S.q).map(c=>c.id); if(dm.length){ const first=t=>dm.includes(catT(t))||(t.dept&&dm.includes("d"+t.dept))?0:1; list.sort((a,b)=>first(a)-first(b)); } } // pièces du département tapé en premier
   const vk=[S.cat,S.q,S.filter].join("§"); if(vk!==VIEWKEY){ VIEWKEY=vk; S.shown=PAGE; }
   S.list=list; const part=list.slice(0,S.shown), rest=list.length-part.length;
   let h="";
   if(!S.cat){ const dm=matchDeps(S.q); if(dm.length) h+=`<p class="sect-title">Département${dm.length>1?"s":""}</p><div class="deps">${depTiles(dm,groupByCat())}</div>`;
-    h+=`<p class="sect-title">${list.length} pièce${list.length>1?"s":""} trouvée${list.length>1?"s":""}</p>`; }
+    h+=`<p class="sect-title">${S.approx?"Rien d'exact — pièces les plus proches":`${list.length} pièce${list.length>1?"s":""} trouvée${list.length>1?"s":""}`}</p>`; }
   h+= list.length?`<div class="list">${part.map(cardHTML).join("")}</div>${rest>0?`<button class="addbtn more" id="moreBtn">Afficher la suite (${rest} pièce${rest>1?"s":""})</button>`:""}`:`<div class="empty">Aucune médaille ne correspond${S.filter?" avec ce filtre":""}.</div>`;
   if(S.cat&&!isVirtual(S.cat)) h+=S.addOpen?`<div id="addPanel">${addFormHTML()}</div>`:`<button class="addbtn" id="addBtn">+ Ajouter une médaille absente du catalogue</button><div id="addPanel"></div>`;
   const y0=scrollY; v.innerHTML=h; if(KEEPY){ scrollTo(0,y0); KEEPY=false; }
