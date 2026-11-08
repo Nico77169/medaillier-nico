@@ -157,8 +157,11 @@ async function pull(){
   let data=null, error=null;
   try{ ({data,error}=await supa.from("collection").select("token_id,data")); }catch(e){ error=e; }
   if(error){ setSync("off","Serveur injoignable : tu travailles sur la copie du téléphone");
+    // une connexion faible fait souvent échouer une seule tentative : on réessaie 2 fois avant d'afficher le bandeau
+    PULLFAIL++; if(PULLFAIL<3){ setTimeout(pull,15000); return; }
     if(navigator.onLine){ ALERT.server="Le serveur de sauvegarde ne répond pas (peut-être en pause). Tes coches restent sur le téléphone."; showAlert(); }
     return; }
+  PULLFAIL=0;
   if(ALERT.server){ ALERT.server=""; showAlert(); }
   const items={}, custom={}; let prefs=null;
   data.forEach(r=>{ if(r.token_id==="_prefs"){ prefs=r.data; return; } const d={...r.data}; if(d._custom){ custom[r.token_id]=d._custom; delete d._custom; } if(Object.keys(d).length) items[r.token_id]=d; });
@@ -176,7 +179,7 @@ async function pull(){
 }
 
 /* ---------- bandeau d'alerte (bilan du robot Supabase + serveur injoignable) ---------- */
-const ALERT={robot:"",server:""};
+const ALERT={robot:"",server:""}; let PULLFAIL=0;
 function showAlert(){ const el=$("#alert"); const m=ALERT.server||ALERT.robot; el.hidden=!m; el.textContent=m?"⚠️ "+m+" Préviens Alex.":""; }
 async function checkRobot(){
   try{
