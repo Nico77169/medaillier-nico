@@ -1,62 +1,65 @@
 Pièces récentes à placer : 788 (déjà placées : 0)
   ✗ introuvable : JTC FR24-0071 | Château de Hautefort |  | 24
-  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
-Overpass 502 https://overpass-api.de/api/interpreter
-Overpass 504 https://overpass.kumi.systems/api/interpreter
-… 50/788 {"l":47,"o":1,"v":1,"rien":1}
-… 75/788 {"l":70,"o":3,"v":1,"rien":1}
+Offices de tourisme trouvés : 3851
+  ✗ introuvable : JTC FR75-0253 | Assemblée Nationale |  | 75
+… 50/788 {"l":46,"o":2,"v":0,"rien":2}
+  ✗ introuvable : JTC FR46-0611 | Grotte du Pech Merle |  | 46
+… 75/788 {"l":68,"o":4,"v":0,"rien":3}
+  ✗ introuvable : JTC FR14-1641 | Mémorial de Caen - L'esplanade et la citation |  | 14
+  ✗ introuvable : JTC FR84-1906 | Vallis Clausa - Le Moulin à Papier de Provence | Moulin à papier Vallis Clausa | 84
   ✗ introuvable : JTC FR14-2558 | Sanctuaire de Lisieux - Sainte-Thérèse |  | 14
-  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
-… 100/788 {"l":88,"o":8,"v":2,"rien":2}
+… 100/788 {"l":84,"o":10,"v":0,"rien":6}
   ✗ introuvable : JTC FR65-2734 | Col du Tourmalet 2115m - Pic du Midi 2877m | Office De Tourisme Du Grand Tourmalet | 65
   ✗ introuvable : JTC FR11-2907 | Gouffre Géant de Cabrespine |  | 11
-… 125/788 {"l":108,"o":8,"v":5,"rien":4}
+… 125/788 {"l":105,"o":12,"v":0,"rien":8}
   ✗ introuvable : JTC FR73-3092 | Les Arcs Film Festival | Association Révélations Culturelles | 73
   ✗ introuvable : JTC FR07-3229 | Grotte Saint-Marcel - Gorges de l'Ardèche |  | 07
   ✗ introuvable : JTC FR03-3299 | Parc le Pal - Le Tigre |  | 03
   ✗ introuvable : JTC FR54-3327 | Destination Nancy - Villa Majorelle | Destination Nancy - Office De Tourisme | 54
   ✗ introuvable : JTC FR93-3364 | Basilique Cathédrale Saint-Denis |  | 93
-… 150/788 {"l":126,"o":10,"v":5,"rien":9}
+… 150/788 {"l":122,"o":15,"v":0,"rien":13}
   ✗ introuvable : JTC FR59-3365 | Maison Natale Charles de Gaulle |  | 59
+  ✗ introuvable : JTC FR08-3406 | Château Fort de Sedan - Le plus grand d'Europe |  | 08
+  ✗ introuvable : JTC FR75-3452 | PSG - Parc des Princes | Paris Saint-Germain | 75
+  ✗ introuvable : JTC FR75-3453 | PSG - Logo | Paris Saint-Germain | 75
   ✗ introuvable : JTC FR56-3492 | Alignements de Carnac et l'oiseau | Site Mégalithique De Carnac | 56
-… 175/788 {"l":148,"o":11,"v":5,"rien":11}
+… 175/788 {"l":140,"o":17,"v":0,"rien":18}
   ✗ introuvable : JTC FR80-3539 | Baie de Somme - Le phoque | Office De Tourisme De Saint Valery Sur Somme | 80
-  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
   ✗ introuvable : JTC FR76-3662 | Destination Le Tréport - Mers - Le Funiculaire | Office De Tourisme Destination Le Tréport-Mers | 76
-  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
-… 200/788 {"l":170,"o":11,"v":6,"rien":13}
-  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+… 200/788 {"l":162,"o":18,"v":0,"rien":20}
   ✗ introuvable : JTC FR07-3898 | C.F.V. - Train de l'Ardèche - 1891 |  | 07
-… 225/788 {"l":189,"o":13,"v":9,"rien":14}
-  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
-  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
-… 250/788 {"l":211,"o":13,"v":12,"rien":14}
+… 225/788 {"l":180,"o":24,"v":0,"rien":21}
+  ✗ introuvable : JTC FR75-4114 | PSG - Ousmane Dembélé | Paris Saint-Germain | 75
+… 250/788 {"l":200,"o":28,"v":0,"rien":22}
   ✗ introuvable : JTC FR24-4123 | Le Fort de La Roque-Gageac |  | 24
   ✗ introuvable : JTC FR14-4178 | Festival du film de Cabourg - Ailes |  | 14
+  ✗ introuvable : JTC FR54-4188 | Place Stanislas - Destination Nancy | Destination Nancy - Office De Tourisme | 54
   ✗ introuvable : JTC FR60-4203 | Parc Astérix Paris - Idéfix 2025 |  | 60
   ✗ introuvable : JTC FR60-4204 | Parc Astérix Paris - Astérix 2025 |  | 60
   ✗ introuvable : JTC FR60-4205 | Parc Astérix Paris - Obélix 2025 |  | 60
   ✗ introuvable : JTC FR60-4206 | Parc Astérix Paris - Falbala 2025 |  | 60
-… 275/788 {"l":228,"o":14,"v":13,"rien":20}
+… 275/788 {"l":216,"o":30,"v":0,"rien":29}
   ✗ introuvable : JTC FR75-4212 | Opération M.I.D.A.S. | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4213 | Opération M.I.D.A.S. | Hôtel de la Monnaie | 75
+  ✗ introuvable : JTC FR49-4216 | Cadre Noir - Bicentenaire | Ecole Nationale D'Equitation | 49
   ✗ introuvable : JTC FR76-4222 | Normannia - Salon Médiéval Fantastique | Fédération Française Médiévale | 76
   ✗ introuvable : JTC DE10-4227 | World Money Fair - Die 52.Messe WMF - 52eme Salon WMF | World Money Fair Berlin | 
+  HTTP 503 https://api-adresse.data.gouv.fr/search/?type=municipality&limit=5&q=Circuit%20des%2024%20
   ✗ introuvable : JTC FR72-4230 | Circuit des 24 heures du Mans - Monument préféré des Français 2024 | Automobile Club De L'Ouest | 72
   ✗ introuvable : JTC FR65-4232 | Centenaire de la béatification de Bernadette Soubirous | Sanctuaires De Lourdes | 65
   ✗ introuvable : JTC FR65-4233 | Avec Marie, pèlerins d'espérance - Jubilé 2025 | Sanctuaires De Lourdes | 65
-… 300/788 {"l":240,"o":17,"v":16,"rien":27}
+… 300/788 {"l":227,"o":36,"v":0,"rien":37}
   ✗ introuvable : JTC FR03-4243 | Le Pal - Big Five Afrique |  | 03
   ✗ introuvable : JTC FR71-4244 | Musée de Bibracte - 30 ans |  | 71
   ✗ introuvable : JTC FR67-4261 | La Montagne des Singes - Alsace - Duo et Bébé |  | 67
-… 325/788 {"l":257,"o":18,"v":20,"rien":30}
+… 325/788 {"l":245,"o":40,"v":0,"rien":40}
   ✗ introuvable : JTC FR29-4273 | La Récré des 3 Curés - Tremor |  | 29
   ✗ introuvable : JTC FR63-4281 | Vulcania en Auvergne - Volcan |  | 63
   ✗ introuvable : JTC FR63-4282 | Vulcania en Auvergne - Dinosaure |  | 63
-… 350/788 {"l":274,"o":19,"v":24,"rien":33}
+… 350/788 {"l":262,"o":44,"v":1,"rien":43}
   ✗ introuvable : JTC FR14-4296 | Centenaire de la Canonisation de Sainte Thérèse - 1925-2025 | Sanctuaire De Lisieux | 14
   ✗ introuvable : JTC FR75-4309 | Exposition Georges Mathieu | Hôtel de la Monnaie | 75
-… 375/788 {"l":293,"o":22,"v":25,"rien":35}
+… 375/788 {"l":280,"o":49,"v":1,"rien":45}
   ✗ introuvable : JTC FR57-4316 | Ligne Maginot - Ouvrage du Hackenberg Veckring - Graffiti | Association Amifort | 57
   ✗ introuvable : JTC FR77-4319 | CMC Paris | Congrès Mondial Des Collectionneurs De Paris | 77
   ✗ introuvable : JTC FR77-4320 | CMC Paris | Congrès Mondial Des Collectionneurs De Paris | 77
@@ -66,17 +69,19 @@ Overpass 504 https://overpass.kumi.systems/api/interpreter
   ✗ introuvable : JTC FR75-4324 | Bonney * Kuma * Vegapunk | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4325 | Atlas * York * Pythagoras | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4326 | Edison * Shaka * Lilith | Hôtel de la Monnaie | 75
-  HTTP 503 https://api-adresse.data.gouv.fr/search/?type=municipality&limit=5&q=Stussy%20*%20Kaku%20*
   ✗ introuvable : JTC FR75-4327 | Stussy * Kaku * Lucci | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4328 | Kizaru * Sentomaru | Hôtel de la Monnaie | 75
+  ✗ introuvable : JTC FR75-4329 | Luffy 2025 | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4330 | Shanks 2025 | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4331 | Monkey D. Luffy | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4332 | Marshall D. Teach | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4333 | Buggy | Hôtel de la Monnaie | 75
-… 400/788 {"l":301,"o":23,"v":26,"rien":50}
+… 400/788 {"l":286,"o":52,"v":1,"rien":61}
   ✗ introuvable : JTC FR30-4349 | La Bambouseraie en Cévennes - Depuis : 1856 - Vallon du Dragon |  | 30
-  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
-… 425/788 {"l":319,"o":24,"v":31,"rien":51}
+  ✗ introuvable : JTC FR75-4361 | Souvenirs de Paris | Hôtel de la Monnaie | 75
+  ✗ introuvable : JTC FR64-4364 | Le Phare de Biarritz | Office De Tourisme Et Des Congrès | 64
+  ✗ introuvable : JTC FR74-4366 | Les Gorges du Fier - Depuis 1869 |  | 74
+… 425/788 {"l":301,"o":58,"v":1,"rien":65}
   ✗ introuvable : JTC FR76-4370 | Les Confiseurs | Association Le Pré De La Bataille | 76
   ✗ introuvable : JTC FR75-4378 | 250 ans de l'Hôtel des Monnaies | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4383 | Tour de France - Planche des Belles Filles | Hôtel de la Monnaie | 75
@@ -86,50 +91,71 @@ Overpass 504 https://overpass.kumi.systems/api/interpreter
   ✗ introuvable : JTC FR75-4387 | Tour de France - Col du Tourmalet | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4388 | Tour de France - Champs-Élysées | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4389 | Tour de France - Logo | Hôtel de la Monnaie | 75
-… 450/788 {"l":332,"o":25,"v":33,"rien":60}
+… 450/788 {"l":313,"o":62,"v":1,"rien":74}
+  ✗ introuvable : JTC FR75-4393 | PSG - Ici c'est Paris | Paris Saint-Germain | 75
+  ✗ introuvable : JTC FR75-4394 | PSG - Champions de France - 24-25 | Paris Saint-Germain | 75
+  ✗ introuvable : JTC FR75-4395 | PSG - Champions d'Europe 2025 | Paris Saint-Germain | 75
   ✗ introuvable : JTC FR76-4413 | L'Historial Jeanne d'Arc Fête ses 10 Ans - 2015-2025 |  | 76
-… 475/788 {"l":349,"o":30,"v":35,"rien":61}
+… 475/788 {"l":327,"o":69,"v":1,"rien":78}
+  ✗ introuvable : JTC FR75-4427 | Verrière du Grand Palais | Le Grand Palais | 75
+  ✗ introuvable : JTC FR75-4428 | Nef du Grand Palais | Le Grand Palais | 75
+  ✗ introuvable : JTC FR75-4429 | Vue aérienne du Grand Palais | Le Grand Palais | 75
+  ✗ introuvable : JTC FR75-4430 | Façade du Grand Palais | Le Grand Palais | 75
+  ✗ introuvable : JTC FR24-4431 | La Grotte du Souffleur de Verre - Oscar Simonin |  | 24
   ✗ introuvable : JTC FR65-4436 | Habemus Papam - Léon XIV - 8 Mai 2025 | Sanctuaires De Lourdes | 65
-… 500/788 {"l":370,"o":32,"v":36,"rien":62}
+… 500/788 {"l":342,"o":73,"v":1,"rien":84}
   ✗ introuvable : JTC FR76-4443 | Abbayes de Normandie - Saint-Wandrille | Abbayes De Normandie - Route Historique | 76
   ✗ introuvable : JTC FR75-4456 | Cité Immersive Fables | Cité Immersive Des Fables | 75
   ✗ introuvable : JTC FR76-4460 | Destination Le Tréport - Mers - Ville d'Eu | Office De Tourisme Destination Le Tréport-Mers | 76
   ✗ introuvable : JTC FR22-4461 | Le Mans - Cathédrale Saint Julien - Saint Julien et le Defensor de la Ville | La Boite à Médailles | 22
   ✗ introuvable : JTC FR22-4462 | Le Mans - Cathédrale Saint Julien - Saint Julien et le Defensor de la Ville | La Boite à Médailles | 22
-… 525/788 {"l":388,"o":33,"v":37,"rien":67}
+… 525/788 {"l":360,"o":75,"v":1,"rien":89}
+  ✗ introuvable : JTC FR62-4474 | Le Varan de Voyage | La Compagnie Du Dragon | 62
   ✗ introuvable : JTC FR60-4483 | Parc Astérix Paris - Idéfix 2026 |  | 60
   ✗ introuvable : JTC FR60-4484 | Parc Astérix Paris - Astérix 2026 |  | 60
   ✗ introuvable : JTC FR60-4485 | Parc Astérix Paris - Obélix 2026 |  | 60
   ✗ introuvable : JTC FR60-4486 | Parc Astérix Paris - Falbala 2026 |  | 60
+  ✗ introuvable : JTC FR27-4487 | Arbora Lumina | Domaine D'Harcourt | 27
+  ✗ introuvable : JTC FR59-4488 | Ankama - Kama Anniversaire | AKM Distribution | 59
   ✗ introuvable : JTC FR75-4495 | Ordre des Experts Comptables - 80 ans | Conseil Supérieur De L'Ordre Des Experts-Compables | 75
-… 550/788 {"l":404,"o":35,"v":39,"rien":72}
+… 550/788 {"l":373,"o":79,"v":1,"rien":97}
+  ✗ introuvable : JTC FR03-4498 | Pastillerie de Vichy - La Véritable - Depuis 1825 |  | 03
   ✗ introuvable : JTC DE10-4504 | World Money Fair - Die 53.Messe WMF - 53eme Salon WMF | World Money Fair Berlin | 
   ✗ introuvable : JTC FR28-4505 | Philidor Enfant de Dreux - Tricentenaire 1726-2026 | Musée D'art Et D'histoire | 28
-… 575/788 {"l":425,"o":36,"v":40,"rien":74}
+… 575/788 {"l":393,"o":81,"v":1,"rien":100}
   ✗ introuvable : JTC FR35-4525 | Domaine de la Bourbansais | Château et Parc Zoologique de la Bourbansais | 35
   ✗ introuvable : JTC MC98-4542 | Collection de Voitures de S.A.S. Le Prince de Monaco - 1993-2023 - 30 ans | Souvenirs Shop Monaco | 
   ✗ introuvable : JTC MC98-4543 | Collection de Voitures de S.A.S. Le Prince de Monaco - Sunbeam Alpine MK1 | Souvenirs Shop Monaco | 
   ✗ introuvable : JTC FR65-4546 | Procession Mariale aux Flambeaux - Patrimoine Immatériel de la France | Sanctuaires De Lourdes | 65
   ✗ introuvable : JTC FR65-4547 | Chemin de Croix des Espelugues | Sanctuaires De Lourdes | 65
-… 600/788 {"l":439,"o":38,"v":44,"rien":79}
+… 600/788 {"l":406,"o":88,"v":1,"rien":105}
   ✗ introuvable : JTC FR65-4549 | 150 Ans du Couronnement de la Vierge - 1876-2026 | Sanctuaires De Lourdes | 65
+  ✗ introuvable : JTC FR75-4550 | UNESCO - Façade |  | 75
+  ✗ introuvable : JTC FR37-4565 | Mini Châteaux - 1996-2026 | Mini Châteaux Parc de Loisirs | 37
   ✗ introuvable : JTC FR34-4571 | Archipel de Thau - Méditerranée | Office De Tourisme Archipel De Thau Méditerranée | 34
-… 625/788 {"l":457,"o":39,"v":48,"rien":81}
+… 625/788 {"l":422,"o":93,"v":1,"rien":109}
   ✗ introuvable : JTC FR14-4586 | Parc Festyland - Valkyrie |  | 14
   ✗ introuvable : JTC FR24-4597 | Parc Du Bournat - Pousse-Pousse | Village Du Bournat | 24
-… 650/788 {"l":476,"o":42,"v":49,"rien":83}
+  ✗ introuvable : JTC FR18-4602 | Route Jacques Coeur - Cathédrale de Jean Linard | Association Route Jacques Coeur | 18
+… 650/788 {"l":439,"o":98,"v":1,"rien":112}
+  ✗ introuvable : JTC FR88-4606 | Confiserie des Hautes Vosges - 40ème Anniversaire - 1986-2026 |  | 88
   ✗ introuvable : JTC FR67-4615 | La Montagne des Singes - Alsace - L'Empreinte |  | 67
   ✗ introuvable : JTC FR45-4618 | Association Numismatique du Centre - Arrivée de Jeanne d'Arc à Orléans - 1429 |  | 45
   ✗ introuvable : JTC FR69-4624 | Parc de le Tête d'Or - Centaurée de Lyon | Mairie De Lyon | 69
   ✗ introuvable : JTC FR54-4628 | Nancy, Capitale Française de l'Art Nouveau | Destination Nancy - Office De Tourisme | 54
-… 675/788 {"l":495,"o":43,"v":50,"rien":87}
+… 675/788 {"l":457,"o":100,"v":1,"rien":117}
   ✗ introuvable : JTC FR75-4637 | 100 ans de Lumière de la Grande Mosquée de Paris - 1926-2026 |  | 75
   ✗ introuvable : JTC FR75-4638 | 100 ans de Lumière de la Grande Mosquée de Paris - 1926-2026 |  | 75
   ✗ introuvable : JTC FR29-4639 | La Récré des 3 Curés - Parc d'Attractions |  | 29
+  ✗ introuvable : JTC FR75-4647 | PSG - Champions de France - 25-26 | Paris Saint-Germain | 75
+  ✗ introuvable : JTC FR75-4648 | PSG - Back 2 Back | Paris Saint-Germain | 75
   ✗ introuvable : JTC FR03-4649 | Centre National du Costume de Scène - 20 ans - 2006-2026 | Centre National De Costume De Scène | 03
   ✗ introuvable : JTC FR30-4651 | La Baleine en Course - Depuis 2026 | Société Du Muséum Des Salins Du Midi | 30
-… 700/788 {"l":511,"o":44,"v":53,"rien":92}
+… 700/788 {"l":471,"o":103,"v":2,"rien":124}
+  ✗ introuvable : JTC FR85-4658 | Le Potager Extraordinaire - Lagenaria Siceraria |  | 85
   ✗ introuvable : JTC FR32-4664 | Le Bonheur est dans le Gers | Office De Tourisme Condom - Gers - Ténarèze | 32
+  ✗ introuvable : JTC FR75-4667 | Palais de l'Elysée - Présidence de la République - Logo |  | 75
+  ✗ introuvable : JTC FR75-4669 | Goku | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4670 | Bulma | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4671 | Kame Sénnin | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4672 | Krilin | Hôtel de la Monnaie | 75
@@ -138,15 +164,19 @@ Overpass 504 https://overpass.kumi.systems/api/interpreter
   ✗ introuvable : JTC FR75-4675 | Ten Shin Han | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4676 | Chaozu | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4677 | Chichi | Hôtel de la Monnaie | 75
+  HTTP 503 https://api-adresse.data.gouv.fr/search/?type=municipality&limit=5&q=Monnaie
   ✗ introuvable : JTC FR75-4678 | Piccolo | Hôtel de la Monnaie | 75
-… 725/788 {"l":521,"o":45,"v":57,"rien":102}
+… 725/788 {"l":478,"o":108,"v":2,"rien":137}
+  ✗ introuvable : JTC FR75-4679 | Goku | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4680 | Goku Great Ape | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR75-4681 | Shenron | Hôtel de la Monnaie | 75
   ✗ introuvable : JTC FR03-4685 | Le Château des Ducs de Bourbon |  | 03
   ✗ introuvable : JTC FR77-4692 | Musée de la Gendarmerie - L'Alpine |  | 77
-… 750/788 {"l":540,"o":47,"v":57,"rien":106}
+  ✗ introuvable : JTC FR63-4696 | Panoramique des Dômes - 63 - Puy-de-Dôme | Les Boutiques Du Panoramique Des Dômes | 63
+  ✗ introuvable : JTC FR59-4702 | Ankama - Kama Anniversaire | AKM Distribution | 59
+… 750/788 {"l":493,"o":111,"v":2,"rien":144}
   ✗ introuvable : JTC FR35-4725 | Brocéliande - La Porte des Secrets - Le Cerf | Office Du Tourisme De Brocéliande | 35
-… 775/788 {"l":558,"o":50,"v":60,"rien":107}
+… 775/788 {"l":511,"o":117,"v":2,"rien":145}
   ✗ introuvable : JTC FR57-4739 | Musée de la Guerre de 1870 et de l'Annexion - Dragon de la Garde Impériale |  | 57
   ✗ introuvable : JTC FR75-4740 | Hello Kitty | Hello Kitty - Beyon Cut | 75
-Terminé : {"l":567,"o":50,"v":62,"rien":109}
+Terminé : {"l":520,"o":119,"v":2,"rien":147}
