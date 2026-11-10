@@ -17,15 +17,15 @@ function yearsOf(t) {
   const s = String(t.years || "") + " " + (t.v || []).map(v => v[0]).join(" ");
   return new Set((s.match(/(?<!\d)20\d\d(?!\d)/g) || []).map(Number));
 }
-async function getJSON(url, tries = 3) {
+async function getJSON(url, tries = 5) {
   for (let i = 0; i < tries; i++) {
     try {
       const r = await fetch(url, { headers: { "User-Agent": UA, "Accept-Language": "fr" } });
       if (r.ok) return await r.json();
       log("  HTTP", r.status, url.slice(0, 90));
-      if (r.status === 403 || r.status === 429) return { __blocked: true };
+      if (r.status === 403 || (r.status === 429 && i >= 2)) return { __blocked: true };
     } catch (e) { log("  réseau", e.message); }
-    await sleep(3000 * (i + 1));
+    await sleep(4000 * (i + 1)); // serveur occupé (503…) : on attend de plus en plus longtemps
   }
   return null;
 }
@@ -37,6 +37,8 @@ const sameDept = (dept, post) => { const d = deptOfPost(post); if (!dept || !d) 
 
 // --- Recherche d'un lieu par son nom -------------------------------------------------------
 let NOMI_BLOCKED = false;
+// homonymes à écarter : restaurants, bars, commerces, bureaux, arrêts de bus…
+const BAD = /^(shop|office|craft|highway|railway|public_transport)=|=(restaurant|cafe|bar|pub|fast_food|bakery|hairdresser|pharmacy|bus_stop|parking|fuel|bank)$/;
 async function findPlace(q, dept) {
   if (!q || q.length < 4) return null;
   const fr = dept ? "&countrycodes=fr" : "";
@@ -47,6 +49,7 @@ async function findPlace(q, dept) {
     else if (Array.isArray(j)) {
       for (const r of j) {
         const a = r.address || {};
+        if (BAD.test(r.category + "=" + r.type)) continue;
         if (deptOk(dept, a["ISO3166-2-lvl6"]) || (dept && sameDept(dept, a.postcode)))
           return { lat: +r.lat, lon: +r.lon, type: r.addresstype || r.type, name: r.name };
       }
@@ -59,6 +62,7 @@ async function findPlace(q, dept) {
     const p = f.properties || {};
     if (dept && p.countrycode !== "FR") continue;
     if (dept && !sameDept(dept, p.postcode)) continue;
+    if (BAD.test(p.osm_key + "=" + p.osm_value)) continue;
     return { lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], type: p.type || p.osm_value, name: p.name };
   }
   return null;
@@ -78,7 +82,8 @@ async function findTown(q, dept) {
 // --- Offices de tourisme de France (une seule requête Overpass) ------------------------------
 async function loadOffices() {
   const q = `[out:json][timeout:240];area["ISO3166-1"="FR"][admin_level=2]->.a;nwr["tourism"="information"]["information"="office"](area.a);out center tags;`;
-  for (const ep of ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"]) {
+  for (const ep of ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter", "https://overpass-api.de/api/interpreter"]) {
+    await sleep(5000);
     try {
       const r = await fetch(ep, { method: "POST", headers: { "User-Agent": UA, "Content-Type": "application/x-www-form-urlencoded" }, body: "data=" + encodeURIComponent(q) });
       if (!r.ok) { log("Overpass", r.status, ep); continue; }
@@ -103,6 +108,8 @@ function townGuesses(t) {
   return [...new Set(out.map(s => s.trim()).filter(s => s.length > 2))];
 }
 
+// REDO=1 : on refait tout (après amélioration du robot)
+if (process.env.REDO === "1") for (const k of Object.keys(GEO)) delete GEO[k];
 const todo = cat.tokens.filter(t => !GEO[t.id] && [...yearsOf(t)].some(y => YEARS.includes(y)));
 log("Pièces récentes à placer :", todo.length, "(déjà placées :", Object.keys(GEO).length + ")");
 let OFFICES = null;
@@ -122,7 +129,8 @@ for (const t of todo) {
     if (!town) for (const q of townGuesses(t)) { town = await findTown(q, dept); if (town) break; }
     if (town) {
       if (!OFFICES) OFFICES = await loadOffices();
-      const o = nearest(OFFICES, town.lat, town.lon, 15);
+      let o = nearest(OFFICES, town.lat, town.lon, 15);
+      if (!o && !OFFICES.length) { const f = await findPlace("Office de tourisme " + town.name, dept); if (f && km(f.lat, f.lon, town.lat, town.lon) < 15) o = { ...f, name: f.name || "Office de tourisme" }; }
       if (o) { hit = o; prec = "o"; label = o.name + " (" + town.name + ")"; }
       else { hit = town; prec = "v"; label = town.name; }
     }
