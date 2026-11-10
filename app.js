@@ -361,7 +361,7 @@ function jumpTo(pred){
 function saveView(){ ls.set("nico_view",{cat:S.cat,mosaic:!!S.mosaic,add:!!S.addOpen,piece:PIECE||null,q:S.q||"",hq:S.homeQ||"",t:Date.now()}); }
 function render(){ renderMain(); if(PIECE&&$("#sheet .piece")) renderPiece(); saveView(); setTimeout(retryPhotos,50); }
 function renderMain(){
-  $("#backBtn").hidden=!S.cat;
+  $("#backBtn").hidden=!S.cat&&!S.near;
   const pool0=S.cat?allTokens().filter(t=>inCat(t,S.cat)):[], mmode=S.cat?mosaicMode(pool0):null;
   if(!mmode) S.mosaic=false;
   const mb=$("#mosaicBtn"); mb.hidden=!mmode; const mos=!!(mmode&&S.mosaic);
@@ -374,6 +374,7 @@ function renderMain(){
   document.querySelectorAll(".chip[data-f]").forEach(b=>b.setAttribute("aria-pressed",String(S.filter===b.dataset.f)));
   $("#clearF").hidden=!S.filter;
   const v=$("#view");
+  if(S.near){ $("#title").textContent="Autour de moi"; $("#crumb").textContent="Pièces récentes proches"; mb.hidden=true; v.innerHTML=nearHTML(); renderFoot(allTokens().filter(t=>GEO[t.id]&&recentUnits(t).length),"Pièces 2025-2027 sur la carte"); return; }
   if(!S.cat && !S.q){ v.innerHTML=homeHTML(); renderFoot(allTokens(),"Toute la collection"); return; }
   const pool=allTokens().filter(t=>(!S.cat||inCat(t,S.cat)));
   const srt=mmode==="letter"?((a,b)=>a.name.localeCompare(b.name,"fr")):((a,b)=>String(a.years).localeCompare(String(b.years))||a.name.localeCompare(b.name));
@@ -414,6 +415,39 @@ function hiddenNote(groups){ if(!S.filter) return "";
   if(!hid) return "";
   const lab=({own:"Possédées",missing:"Manquantes",dup:"Doublons",hugo:"Hugo",pend:"En attente"})[S.filter]||S.filter;
   return `<div class="fnote">Filtre « ${esc(lab)} » actif : ${hid} département${hid>1?"s":""} masqué${hid>1?"s":""}. <button class="linkbtn" id="clearF2">Voir tous les départements</button></div>`; }
+/* ---------- autour de moi (pièces récentes géolocalisées par le robot : geo.json) ---------- */
+let GEO={}, NEAR=null; const NEAR_Y=["2025","2026","2027"];
+const BANDS=[[1.5,"🚶 À pied","moins de 1,5 km"],[8,"🚗 Moins de 10 min en voiture","moins de 8 km à vol d'oiseau"],[25,"Un peu plus loin","jusqu'à 25 km"]];
+async function loadGeo(){ try{ const r=await fetch("geo.json",{cache:"no-cache"}); if(r.ok) GEO=await r.json(); }catch(e){} }
+function kmTo(a,b,c,d){ const R=6371,r=x=>x*Math.PI/180,dl=r(c-a),dn=r(d-b),h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dn/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+function fmtKm(k){ return k<1?Math.max(50,Math.round(k*1000/50)*50)+" m":(k<10?k.toFixed(1).replace(".",","):Math.round(k))+" km"; }
+function locate(){ if(!navigator.geolocation){ NEAR={err:"Ton téléphone ne donne pas sa position à l'appli."}; render(); return; }
+  NEAR={wait:true}; render();
+  navigator.geolocation.getCurrentPosition(p=>{ NEAR={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy,t:Date.now()}; if(S.near) render(); },
+    e=>{ NEAR={err:e.code===1?"refus":"Position introuvable pour l'instant (pas de signal GPS ?)."}; if(S.near) render(); },
+    {enableHighAccuracy:true,timeout:20000,maximumAge:60000}); }
+// variantes récentes d'une pièce (2025-2027) et celles qui manquent
+function recentUnits(t){ return units(t).filter(x=>NEAR_Y.includes(String(x.y))); }
+function nearHTML(){
+  if(!Object.keys(GEO).length) return `<div class="empty">La carte des pièces n'est pas encore prête. Réessaie dans un moment.</div>`;
+  if(!NEAR||NEAR.wait) return `<div class="empty">📍 Recherche de ta position…<br><small>Si le téléphone te demande l'autorisation de localisation, accepte.</small></div>`;
+  if(NEAR.err) return `<div class="empty">${NEAR.err==="refus"?`L'appli n'a pas le droit de connaître ta position.<br><small>Sur le téléphone : touche le petit cadenas (ou ⓘ) à gauche de l'adresse du site → <b>Autorisations</b> → <b>Position</b> → <b>Autoriser</b>. Puis reviens ici.</small>`:esc(NEAR.err)}<br><button class="addbtn" id="nearRetry">Réessayer</button></div>`;
+  const places=new Map();
+  allTokens().forEach(t=>{ const g=GEO[t.id]; if(!g) return; const ru=recentUnits(t); if(!ru.length) return;
+    const miss=ru.some(x=>!(x.q>0)); if(!S.nearAll&&!miss) return;
+    const k=g[0]+","+g[1]; if(!places.has(k)) places.set(k,{lat:g[0],lon:g[1],prec:g[2],label:g[3]||"",ts:[],d:kmTo(NEAR.lat,NEAR.lon,g[0],g[1])});
+    places.get(k).ts.push(t); });
+  const all=[...places.values()].sort((a,b)=>a.d-b.d);
+  const tog=`<div class="nbar"><span>${S.nearAll?"Toutes les pièces 2025-2027":"Seulement celles qui te manquent (2025-2027)"}</span><button class="linkbtn" id="nearAll">${S.nearAll?"Voir seulement les manquantes":"Voir aussi celles que tu as"}</button></div>`
+    +`<p class="mhint">Distances à vol d'oiseau${NEAR.acc>300?` · position imprécise (± ${fmtKm(NEAR.acc/1000)})`:""}. <button class="linkbtn" id="nearRetry">Actualiser ma position</button></p>`;
+  const place=p=>{ const note=p.prec==="o"?"≈ office de tourisme le plus proche":p.prec==="v"?"≈ centre de la ville":"";
+    return `<section class="nplace"><div class="nhead"><div class="ninfo"><b>${esc(p.label||"Lieu de vente")}</b><small>${fmtKm(p.d)}${note?` · ${note}`:""} · ${p.ts.length} pièce${p.ts.length>1?"s":""}</small></div><a class="ngo" href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}" target="_blank" rel="noopener">Y aller ↗</a></div><div class="mgrid four">${p.ts.map(mtileHTML).join("")}</div></section>`; };
+  let h=tog, prev=0, any=false;
+  BANDS.forEach(([max,lab,sub])=>{ const ps=all.filter(p=>p.d>prev&&p.d<=max||(prev===0&&p.d===0)); prev=max; if(!ps.length) return; any=true;
+    h+=`<p class="sect-title">${lab} <small class="nsub">${sub}</small></p>`+ps.map(place).join(""); });
+  if(!any){ h+=`<div class="empty">Aucune pièce 2025-2027 à moins de 25 km.</div>`;
+    const far=all.slice(0,5); if(far.length) h+=`<p class="sect-title">Les plus proches quand même</p>`+far.map(place).join(""); }
+  return h; }
 function homeHTML(){
   const groups=groupByCat();
   const big=CATS.filter(c=>!c.dep).map(c=>{ const all=groups[c.id]||[]; const m=catMeta(all);
@@ -424,7 +458,8 @@ function homeHTML(){
       <span class="meta">${m.s.own} / ${m.s.total} ${all.some(t=>t.v)?"variantes possédées":"possédées"}</span>${m.f}
       <span class="bar"><i style="width:${m.pct}%"></i></span></button>`; }).join("");
   const deps=depTiles(CATS.filter(c=>c.dep),groups);
-  return `<p class="sect-title">Thèmes</p><div class="cats">${big}</div>
+  return `<button class="nearbtn" id="nearBtn"><span>📍</span><b>Autour de moi</b><small>Pièces 2025-2027 vendues près d'ici</small></button>
+    <p class="sect-title">Thèmes</p><div class="cats">${big}</div>
     <p class="sect-title">Départements</p>${hiddenNote(groups)}<div class="deps">${deps||'<div class="empty">Aucun département avec ce filtre.</div>'}</div>
     <button class="addbtn" id="helpBtn">💡 Astuces : déplacer une pièce mal rangée…</button>
     <p class="status">Catalogue mis à jour le ${esc(CATALOG_DATE)} · ${CATALOG.length} médailles${Object.keys(S.custom).length?` + ${Object.keys(S.custom).length} ajoutées par toi`:""} · Liste : catalogue CJT de Nico${CJT_DATE?` (${esc(CJT_DATE)})`:""} · Photos : Numista (licences Creative Commons) · Disney : liste de Nico</p>`;
@@ -552,6 +587,10 @@ document.addEventListener("click",e=>{
   if(b.id==="pieceList"){ const id=PIECE; closePiece(); jumpTo(t=>t.id===id); return; }
   if(b.id==="moreBtn"){ showMore(); return; }
   if(b.id==="helpBtn"){ showHelp(); return; }
+  if(b.id==="nearBtn"){ S.homeQ=S.q; HOMEY=scrollY; S.near=true; S.q=""; $("#q").value=""; scrollTo(0,0); locate(); return; }
+  if(b.id==="nearRetry"){ locate(); return; }
+  if(b.id==="nearAll"){ S.nearAll=!S.nearAll; rerender(); return; }
+  if(b.id==="backBtn"&&S.near&&!S.cat){ exitNear(); return; }
   if(b.id==="backBtn"){ OPEN.clear(); S.mosaic=false; S.addOpen=false; S.cat=null; S.q=S.homeQ||""; $("#q").value=S.q; render(); backHome(); return; }
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
   if(b.id==="clearF"||b.id==="clearF2"){ S.filter=null; saveFilter(); render(); return; }
@@ -593,7 +632,7 @@ document.addEventListener("change",e=>{
   renderFoot(S.cat?allTokens().filter(t=>inCat(t,S.cat)):allTokens(), S.cat?"Total "+catOf(S.cat).name:"Toute la collection");
   toast("Enregistré");
 });
-let qTimer; $("#q").addEventListener("input",e=>{ clearTimeout(qTimer); qTimer=setTimeout(()=>{S.q=e.target.value.trim(); render();},150); });
+let qTimer; $("#q").addEventListener("input",e=>{ clearTimeout(qTimer); qTimer=setTimeout(()=>{S.q=e.target.value.trim(); if(S.near&&S.q) S.near=false; render();},150); });
 const byId=id=>allTokens().find(t=>t.id===id);
 document.addEventListener("click",e=>{ if(e.target.id==="logoutBtn"){ supa.auth.signOut().then(()=>location.reload()); } });
 // photo Numista distante introuvable -> lien vers Numista
@@ -981,7 +1020,7 @@ async function loadCatalogue(){
 async function start(){
   S.filter=ls.get("nico_filter")||null; S.items=ls.get("nico_items")||{}; S.custom=ls.get("nico_custom")||{};
   showBoot("Chargement du catalogue…");
-  try{ await loadCatalogue(); }catch(e){ bootDone(); $("#view").innerHTML='<div class="empty">Impossible de charger le catalogue. Vérifie ta connexion et relance l\'appli.</div>'; return; }
+  try{ await Promise.all([loadCatalogue(),loadGeo()]); }catch(e){ bootDone(); $("#view").innerHTML='<div class="empty">Impossible de charger le catalogue. Vérifie ta connexion et relance l\'appli.</div>'; return; }
   // retour au même écran seulement si l'appli a été quittée il y a moins de 30 min (sinon on repart de l'accueil)
   let vw=ls.get("nico_view"); if(vw&&!(Date.now()-(vw.t||0)<30*60e3)) vw=null;
   if(vw&&vw.cat&&hasCat(vw.cat)){ S.cat=vw.cat; S.mosaic=vw.mosaic; S.addOpen=vw.add; }
@@ -1010,15 +1049,17 @@ if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch
 /* ---------- bouton « retour » du téléphone : revient à l'écran précédent au lieu de fermer l'appli ---------- */
 let ARMED=false;
 const zoomOpen=()=>{ const z=$("#zoom"); return !!(z&&!z.hidden); };
-function atRoot(){ return !S.cat && !S.q && $("#sheet").hidden && !zoomOpen() && !S.addOpen; }
+function atRoot(){ return !S.cat && !S.near && !S.q && $("#sheet").hidden && !zoomOpen() && !S.addOpen; }
 function arm(){ if(!ARMED && !atRoot()){ try{ history.pushState({medaillier:1},""); ARMED=true; }catch(e){} } }
 let HOMEY=0;
 function backHome(){ const y=HOMEY||0, go=()=>scrollTo(0,y); go(); requestAnimationFrame(go); setTimeout(go,120); }
+function exitNear(){ S.near=false; S.q=S.homeQ||""; $("#q").value=S.q; render(); backHome(); }
 function goBack(){
   const ae=document.activeElement; if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)){ ae.blur(); return; }
   if(zoomOpen()){ closeZoom(); return; }
   if(!$("#sheet").hidden){ if($("#sheet .piece")) closePiece(); else { if($("#npForm")||$("#yrForm")) DRAFT.clear(); closeSheet(); } return; }
   if(S.addOpen){ S.addOpen=false; DRAFT.clear(); render(); return; }
+  if(S.near&&!S.cat){ exitNear(); return; }
   if(S.cat && !S.mosaic){ S.mosaic=true; render(); scrollTo(0,0); return; }   // liste -> mosaïque
   if(S.cat){ OPEN.clear(); S.mosaic=false; S.cat=null; S.q=S.homeQ||""; $("#q").value=S.q; render(); backHome(); return; } // thème -> accueil (recherche retrouvée)
   if(S.q){ S.q=""; S.homeQ=""; $("#q").value=""; render(); return; }
