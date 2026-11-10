@@ -111,9 +111,14 @@ function retryPhotos(force){ document.querySelectorAll("img[data-ph]").forEach(i
   PHT[r]=Date.now(); loadPhoto(r); }); }
 // demande au téléphone de ne pas effacer les photos de l'appli pour faire de la place
 try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}
+// photos pas encore envoyées : gardées aussi en mémoire (si le téléphone perd sa copie locale, on envoie quand même)
+const MEM={}, REMOVED=(()=>{ try{ return JSON.parse(localStorage.getItem("nico_removed"))||{}; }catch(e){ return {}; } })();
+function phLog(msg){ const l=ls.get("nico_phlog")||[]; l.unshift(new Date().toLocaleString("fr-FR")+" · "+msg); ls.set("nico_phlog",l.slice(0,15)); }
 async function storeBlob(blob){
   const key="idb:"+(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));
-  await idb.put(key,blob); URLS[key]=URL.createObjectURL(blob); return key;
+  MEM[key]=blob; URLS[key]=URL.createObjectURL(blob);
+  try{ await idb.put(key,blob); }catch(e){ phLog("copie téléphone impossible : "+(e&&e.message||e)); }
+  return key;
 }
 
 /* ---------- synchronisation ---------- */
@@ -142,11 +147,12 @@ async function uploadPending(id){
   const it=S.items[id]; if(!it) return;
   for(const side of ["f","b"]){
     const ref=it[side]; if(!ref||!ref.startsWith("idb:")) continue;
-    const blob=await idb.get(ref); if(!blob){ delete it[side]; continue; }
+    let blob=MEM[ref]||await idb.get(ref).catch(()=>null);
+    if(!blob){ phLog("photo introuvable sur le téléphone ("+id+") : gardée en attente"); PHFAIL[ref]="absente du téléphone"; continue; } // on ne l'efface plus jamais
     const path=`${UID}/${id}_${side}_${Date.now()}.png`;
     const {error}=await supa.storage.from("photos").upload(path,blob,{contentType:blob.type||"image/png",upsert:true});
-    if(error) throw error;
-    const nref="sb:"+path; await idb.put(nref,blob).catch(()=>{}); URLS[nref]=URLS[ref]; it[side]=nref;
+    if(error){ phLog("envoi refusé ("+id+") : "+(error.message||error)); throw error; }
+    const nref="sb:"+path; delete MEM[ref]; await idb.put(nref,blob).catch(()=>{}); URLS[nref]=URLS[ref]; it[side]=nref;
   }
 }
 async function flush(){
@@ -184,6 +190,8 @@ async function pull(){
   data.forEach(r=>{ if(r.token_id==="_prefs"){ prefs=r.data; return; } const d={...r.data}; if(d._custom){ custom[r.token_id]=d._custom; delete d._custom; } if(Object.keys(d).length) items[r.token_id]=d; });
   const q=Q(); Object.keys(EDIT).forEach(id=>{ if(EDIT[id]>=t0-2000) q[id]=1; });
   Object.keys(q).forEach(id=>{ if(S.items[id]) items[id]=S.items[id]; else delete items[id]; if(S.custom[id]) custom[id]=S.custom[id]; else delete custom[id]; });
+  Object.entries(S.items).forEach(([id,u])=>{ if(q[id]||!u) return; ["f","b"].forEach(k=>{ const srv=items[id]||{};
+    if(u[k]&&!srv[k]&&!(REMOVED[id+k]>Date.now()-864e5)){ items[id]={...srv,[k]:u[k]}; const c=Q(); c[id]=1; ls.set("nico_queue",c); phLog("photo gardée (le serveur ne l'avait pas) : "+id); } }); });
   if(!(prefs&&prefs.seeded) && !q._prefs){
     // premier lancement : on reprend ce qui avait été coché localement + les variantes vertes du tableau de Nico
     Object.assign(items,S.items); Object.assign(custom,S.custom); applyPreset(items);
@@ -458,7 +466,7 @@ function showZoom(id,side){ ZOOMY=scrollY;
     <div class="row zbtns" id="zDelWrap"><button class="linkbtn danger" type="button" id="zDel">Retirer cette photo</button></div></div>`;
   $("#zDel").onclick=()=>{ $("#zDelWrap").innerHTML=`<span class="zsure">Sûr ? La photo ${side==="f"?"de la face":"du dos"} sera retirée.</span><button class="btn" type="button" id="zYes">Oui, retirer</button><button class="btn ghost" type="button" id="zNo">Non</button>`;
     $("#zNo").onclick=closeZoom;
-    $("#zYes").onclick=()=>{ if(own) patch(id,{[side]:""}); else patch(id,{hide:{...(st(id).hide||{}),[side]:1}}); // photo du catalogue : simplement cachée
+    $("#zYes").onclick=()=>{ if(own){ REMOVED[id+side]=Date.now(); ls.set("nico_removed",REMOVED); patch(id,{[side]:""}); } else patch(id,{hide:{...(st(id).hide||{}),[side]:1}}); // photo du catalogue : simplement cachée
       closeZoom(); render(); toast("Photo retirée"); }; };
   z.hidden=false; document.body.style.overflow="hidden";
 }
@@ -600,7 +608,11 @@ function showHelp(){
     let onPhone=0; for(const r of refs){ if(await idb.get(r).catch(()=>null)) onPhone++; }
     const sent=refs.filter(r=>r.startsWith("sb:")).length, wait=refs.length-sent, fail=refs.filter(r=>PHFAIL[r]);
     const el=$("#phDiag"); if(!el) return;
-    el.innerHTML=`${refs.length} photo${refs.length>1?"s":""} à toi · ${onPhone} gardée${onPhone>1?"s":""} sur le téléphone · ${sent} envoyée${sent>1?"s":""} au serveur${wait?` · ${wait} en attente d'envoi`:""}${fail.length?`<br><b>${fail.length} impossible${fail.length>1?"s":""} à afficher</b> (${esc([...new Set(fail.map(r=>PHFAIL[r]))].join(", "))})`:"<br>Aucun problème détecté."}`; };
+    el.innerHTML=`${refs.length} photo${refs.length>1?"s":""} à toi · ${onPhone} gardée${onPhone>1?"s":""} sur le téléphone · ${sent} envoyée${sent>1?"s":""} au serveur${wait?` · ${wait} en attente d'envoi`:""}${fail.length?`<br><b>${fail.length} impossible${fail.length>1?"s":""} à afficher</b> (${esc([...new Set(fail.map(r=>PHFAIL[r]))].join(", "))})`:"<br>Aucun problème détecté."}`;
+    let pers="?"; try{ pers=navigator.storage&&navigator.storage.persisted?((await navigator.storage.persisted())?"oui":"non"):"?"; }catch(e){}
+    const ua=navigator.userAgent, br=/SamsungBrowser\/[\d.]+/.exec(ua)||/Firefox\/[\d.]+/.exec(ua)||/EdgA\/[\d.]+/.exec(ua)||/Chrome\/[\d]+/.exec(ua)||["?"];
+    const lg=ls.get("nico_phlog")||[];
+    el.innerHTML+=`<br><small>Navigateur : ${esc(br[0])} · mémoire protégée : ${pers} · ${matchMedia("(display-mode: standalone)").matches?"appli installée":"onglet du navigateur"}</small>${lg.length?`<br><small><b>Derniers évènements :</b><br>${lg.slice(0,6).map(esc).join("<br>")}</small>`:""}`; };
   diag(); $("#phRetry").onclick=async()=>{ Object.keys(PHFAIL).forEach(k=>delete PHFAIL[k]); Object.entries(S.items).forEach(([id,u])=>{ if(u.f&&!URLS[u.f]) loadPhoto(u.f); }); setTimeout(diag,2500); toast("Rechargement des photos…"); };
   sh.hidden=false; $("#sheetBg").hidden=false; sh.scrollTop=0; $("#helpClose").onclick=closeSheet;
 }
