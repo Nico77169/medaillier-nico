@@ -458,8 +458,8 @@ function homeHTML(){
       <span class="meta">${m.s.own} / ${m.s.total} ${all.some(t=>t.v)?"variantes possédées":"possédées"}</span>${m.f}
       <span class="bar"><i style="width:${m.pct}%"></i></span></button>`; }).join("");
   const deps=depTiles(CATS.filter(c=>c.dep),groups);
-  return `<button class="nearbtn" id="nearBtn"><span>📍</span><b>Autour de moi</b><small>Pièces 2025-2027 vendues près d'ici</small></button>
-    <p class="sect-title">Thèmes</p><div class="cats">${big}</div>
+  return `<p class="sect-title">Thèmes</p><div class="cats">${big}</div>
+    <button class="nearbtn" id="nearBtn"><span>📍</span><b>Autour de moi</b><small>Pièces 2025-2027 vendues près d'ici</small></button>
     <p class="sect-title">Départements</p>${hiddenNote(groups)}<div class="deps">${deps||'<div class="empty">Aucun département avec ce filtre.</div>'}</div>
     <button class="addbtn" id="helpBtn">💡 Astuces : déplacer une pièce mal rangée…</button>
     <p class="status">Catalogue mis à jour le ${esc(CATALOG_DATE)} · ${CATALOG.length} médailles${Object.keys(S.custom).length?` + ${Object.keys(S.custom).length} ajoutées par toi`:""} · Liste : catalogue CJT de Nico${CJT_DATE?` (${esc(CJT_DATE)})`:""} · Photos : Numista (licences Creative Commons) · Disney : liste de Nico</p>`;
