@@ -11,6 +11,12 @@ const GEO = fs.existsSync("geo.json") ? JSON.parse(fs.readFileSync("geo.json", "
 const LOG = [];
 const log = (...a) => { const s = a.join(" "); LOG.push(s); console.log(s); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// lieux de vente très fréquents, placés à la main
+const SITES = {
+  "hôtel de la monnaie": [48.85672, 2.33912, "l", "Monnaie de Paris (11 quai de Conti)"],
+  "paris saint-germain": [48.84144, 2.25303, "l", "Parc des Princes (boutique PSG)"],
+  "sanctuaires de lourdes": [43.09756, -0.05832, "l", "Sanctuaires de Lourdes"],
+};
 const FIXED = { disney: [48.8722, 2.7758, "l", "Disneyland Paris"], beauval: [47.2486, 1.3517, "l", "ZooParc de Beauval"] };
 
 function yearsOf(t) {
@@ -53,7 +59,6 @@ async function findPlace(q, dept) {
         if (deptOk(dept, a["ISO3166-2-lvl6"]) || (dept && sameDept(dept, a.postcode)))
           return { lat: +r.lat, lon: +r.lon, type: r.addresstype || r.type, name: r.name };
       }
-      return null;
     }
   }
   await sleep(400);
@@ -118,11 +123,17 @@ for (const t of todo) {
   n++;
   if (FIXED[t.cat]) { GEO[t.id] = FIXED[t.cat]; stats.l++; continue; }
   const dept = t.dept || null, site = (t.site || "").trim();
+  if (SITES[site.toLowerCase()]) { GEO[t.id] = SITES[site.toLowerCase()]; stats.l++; continue; }
   let hit = null, prec = "l", label = "";
   // 1) le lieu de vente indiqué
   if (site && !GENERIC.test(site)) { hit = await findPlace(site, dept); label = site; if (hit && OFFICE.test(site)) prec = "o"; }
   // 2) le nom de la pièce (monument, parc, musée…)
-  if (!hit) { const seg = String(t.name).split(/\s+-\s+/); for (const q of [seg.slice(0, 2).join(" "), seg[0]]) { hit = await findPlace(q, dept); if (hit) { label = q; break; } } }
+  if (!hit) {
+    const clean = x => x.replace(/\b(19|20)\d\d\b|\d+\s*(ans|e|ème)\b/gi, "").replace(/\s+/g, " ").trim();
+    const seg = String(t.name).split(/\s+-\s+/).map(clean).filter(x => x.length > 3);
+    const qs = [...new Set([seg.slice(0, 2).join(" "), seg[0], seg[1] && seg[1].length >= 8 ? seg[1] : null, seg[0] && seg[0].replace(/\bParis\b/i, "").trim()].filter(Boolean))];
+    for (const q of qs) { hit = await findPlace(q, dept); if (hit) { label = q; break; } }
+  }
   // 3) sinon : la commune → office de tourisme le plus proche
   if (!hit || ["city", "town", "village", "municipality", "administrative", "county", "state"].includes(hit.type)) {
     let town = hit && { lat: hit.lat, lon: hit.lon, name: hit.name };
