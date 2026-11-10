@@ -1,0 +1,25 @@
+name: Placer les pièces sur la carte
+on:
+  push:
+    paths: ["scripts/geocode.mjs"]
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  geo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: Géolocaliser les pièces récentes
+        run: node scripts/geocode.mjs
+      - name: Publier
+        if: always()
+        run: |
+          git config user.name "Robot Médaillier"
+          git config user.email "actions@users.noreply.github.com"
+          git add geo.json scripts/geo-log.txt || true
+          git diff --cached --quiet || (git commit -m "Carte des pièces récentes" && (git pull --rebase -q && git push -q || (sleep 10 && git pull --rebase -q && git push -q)))

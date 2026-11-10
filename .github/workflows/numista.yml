@@ -17,9 +17,12 @@ jobs:
         env:
           NUMISTA_API_KEY: ${{ secrets.NUMISTA_API_KEY }}
         run: node scripts/update-numista.mjs
+      - name: Placer les nouvelles pièces sur la carte
+        continue-on-error: true
+        run: node scripts/geocode.mjs
       - name: Publier la mise à jour
         run: |
           git config user.name "Robot Médaillier"
           git config user.email "actions@users.noreply.github.com"
-          git add catalogue.json scripts/seen.json scripts/last-run.txt
+          git add catalogue.json scripts/seen.json scripts/last-run.txt geo.json scripts/geo-log.txt 2>/dev/null; git add catalogue.json scripts/seen.json scripts/last-run.txt
           git diff --cached --quiet || (git commit -m "Nouveautés Numista du mois" && (git pull --rebase -q && git push -q || (sleep 10 && git pull --rebase -q && git push -q)))
