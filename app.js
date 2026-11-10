@@ -86,14 +86,31 @@ const idb=(()=>{ let p=null; const open=()=>p||(p=new Promise((res,rej)=>{ const
   const tx=(mode,fn)=>open().then(db=>new Promise((res,rej)=>{ const t=db.transaction("photos",mode); const st=t.objectStore("photos"); const q=fn(st); t.oncomplete=()=>res(q&&q.result); t.onerror=()=>rej(t.error); }));
   return { get:k=>tx("readonly",s=>s.get(k)), put:(k,v)=>tx("readwrite",s=>s.put(v,k)) }; })();
 function ownSrc(ref){ if(!ref) return ""; if(URLS[ref]) return URLS[ref]; loadPhoto(ref); return BLANK; }
+const PHFAIL={}; // photos qu'on n'a pas encore réussi à charger (raison), pour réessayer et pour le diagnostic
 async function loadPhoto(ref){
   if(LOADING[ref]) return; LOADING[ref]=true;
   try{
-    let blob=await idb.get(ref).catch(()=>null);
-    if(!blob && ref.startsWith("sb:") && supa){ const {data,error}=await supa.storage.from("photos").download(ref.slice(3)); if(!error&&data){ blob=data; idb.put(ref,blob).catch(()=>{}); } }
-    if(blob){ URLS[ref]=URL.createObjectURL(blob); document.querySelectorAll(`img[data-ph="${CSS.escape(ref)}"]`).forEach(i=>i.src=URLS[ref]); }
+    let blob=await idb.get(ref).catch(()=>null), url=null;
+    if(!blob && ref.startsWith("sb:")){
+      if(!UID){ PHFAIL[ref]="attente connexion"; return; }             // pas encore connecté : on réessaiera après la connexion
+      const {data,error}=await supa.storage.from("photos").download(ref.slice(3));
+      if(!error&&data){ blob=data; idb.put(ref,blob).catch(()=>{}); }
+      else { const r=await supa.storage.from("photos").createSignedUrl(ref.slice(3),3600).catch(()=>({})); // plan B : lien direct
+        if(r&&r.data&&r.data.signedUrl) url=r.data.signedUrl; else PHFAIL[ref]="serveur : "+((error&&error.message)||"introuvable"); }
+    }
+    if(blob) url=URL.createObjectURL(blob);
+    if(url){ URLS[ref]=url; delete PHFAIL[ref]; document.querySelectorAll(`img[data-ph="${CSS.escape(ref)}"]`).forEach(i=>i.src=url); }
+    else if(!PHFAIL[ref]) PHFAIL[ref]="absente du téléphone";
   }finally{ LOADING[ref]=false; }
 }
+// réessaie toutes les photos affichées qui ne sont pas encore chargées
+const PHT={};
+function retryPhotos(force){ document.querySelectorAll("img[data-ph]").forEach(i=>{ const r=i.dataset.ph;
+  if(URLS[r]){ if(i.src!==URLS[r]) i.src=URLS[r]; return; }
+  if(!force&&PHFAIL[r]&&PHFAIL[r]!=="attente connexion"&&Date.now()-(PHT[r]||0)<20000) return; // pas plus d'un essai toutes les 20 s
+  PHT[r]=Date.now(); loadPhoto(r); }); }
+// demande au téléphone de ne pas effacer les photos de l'appli pour faire de la place
+try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}
 async function storeBlob(blob){
   const key="idb:"+(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));
   await idb.put(key,blob); URLS[key]=URL.createObjectURL(blob); return key;
@@ -270,7 +287,7 @@ function jumpTo(pred){
     el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),1600); });
 }
 function saveView(){ ls.set("nico_view",{cat:S.cat,mosaic:!!S.mosaic,add:!!S.addOpen,piece:PIECE||null,q:S.q||"",hq:S.homeQ||"",t:Date.now()}); }
-function render(){ renderMain(); if(PIECE&&$("#sheet .piece")) renderPiece(); saveView(); }
+function render(){ renderMain(); if(PIECE&&$("#sheet .piece")) renderPiece(); saveView(); setTimeout(retryPhotos,50); }
 function renderMain(){
   $("#backBtn").hidden=!S.cat;
   const pool0=S.cat?allTokens().filter(t=>inCat(t,S.cat)):[], mmode=S.cat?mosaicMode(pool0):null;
@@ -453,7 +470,7 @@ function numUrlSafe(t){ return numUrl(t); }
 /* ---------- interactions ---------- */
 document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
-  if(b.dataset.cat){ if(!S.cat) S.homeQ=S.q; OPEN.clear(); S.mosaic=true; S.addOpen=false; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
+  if(b.dataset.cat){ if(!S.cat){ S.homeQ=S.q; HOMEY=scrollY; } OPEN.clear(); S.mosaic=true; S.addOpen=false; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
   if(b.id==="mosaicBtn"){ S.mosaic=!S.mosaic; render(); scrollTo(0,0); return; }
   if(b.dataset.jy){ const y=b.dataset.jy; jumpTo(t=>(yearOf(t)||"Sans année")===y); return; }
   if(b.dataset.ml){ const g=document.getElementById(b.dataset.ml); if(g) scrollTo({top:g.getBoundingClientRect().top+scrollY-($(".top").offsetHeight+10),behavior:"smooth"}); return; }
@@ -463,7 +480,7 @@ document.addEventListener("click",e=>{
   if(b.id==="pieceList"){ const id=PIECE; closePiece(); jumpTo(t=>t.id===id); return; }
   if(b.id==="moreBtn"){ showMore(); return; }
   if(b.id==="helpBtn"){ showHelp(); return; }
-  if(b.id==="backBtn"){ OPEN.clear(); S.mosaic=false; S.addOpen=false; S.cat=null; S.q=S.homeQ||""; $("#q").value=S.q; render(); return; }
+  if(b.id==="backBtn"){ OPEN.clear(); S.mosaic=false; S.addOpen=false; S.cat=null; S.q=S.homeQ||""; $("#q").value=S.q; render(); backHome(); return; }
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
   if(b.id==="clearF"||b.id==="clearF2"){ S.filter=null; saveFilter(); render(); return; }
   // double appui sur une ligne = « En attente » (orange) ; le 1er appui est annulé
@@ -575,7 +592,16 @@ function showHelp(){
     <p class="note">Un thème ou un département s'ouvre en mosaïque. Touche une pièce pour ouvrir sa fiche, ou une année pour aller dans la liste. Le bouton ☰ en haut à droite passe de la mosaïque à la liste et inversement.</p>
     <h3 class="htitle">Recherche</h3>
     <p class="note">Tape un code (ex. FR77-0295), un nom, un lieu ou un numéro de département (ex. 77) : le département s'affiche en premier, puis ses pièces.</p>
+    <h3 class="htitle">Diagnostic des photos</h3>
+    <p class="note" id="phDiag">Calcul…</p>
+    <div class="row"><button class="btn ghost" type="button" id="phRetry">Recharger les photos</button></div>
     <div class="row"><button class="btn" type="button" id="helpClose">Fermer</button></div></div>`;
+  const diag=async()=>{ const refs=[]; Object.entries(S.items).forEach(([id,u])=>{ if(u.f) refs.push(u.f); });
+    let onPhone=0; for(const r of refs){ if(await idb.get(r).catch(()=>null)) onPhone++; }
+    const sent=refs.filter(r=>r.startsWith("sb:")).length, wait=refs.length-sent, fail=refs.filter(r=>PHFAIL[r]);
+    const el=$("#phDiag"); if(!el) return;
+    el.innerHTML=`${refs.length} photo${refs.length>1?"s":""} à toi · ${onPhone} gardée${onPhone>1?"s":""} sur le téléphone · ${sent} envoyée${sent>1?"s":""} au serveur${wait?` · ${wait} en attente d'envoi`:""}${fail.length?`<br><b>${fail.length} impossible${fail.length>1?"s":""} à afficher</b> (${esc([...new Set(fail.map(r=>PHFAIL[r]))].join(", "))})`:"<br>Aucun problème détecté."}`; };
+  diag(); $("#phRetry").onclick=async()=>{ Object.keys(PHFAIL).forEach(k=>delete PHFAIL[k]); Object.entries(S.items).forEach(([id,u])=>{ if(u.f&&!URLS[u.f]) loadPhoto(u.f); }); setTimeout(diag,2500); toast("Rechargement des photos…"); };
   sh.hidden=false; $("#sheetBg").hidden=false; sh.scrollTop=0; $("#helpClose").onclick=closeSheet;
 }
 function showAddYear(id,d){
@@ -882,7 +908,7 @@ async function start(){
   restoreDraft();
   const {data:{session}}=await supa.auth.getSession();
   if(!session){ showLogin(); return; }
-  UID=session.user.id; setSync("wait","Synchronisation…"); pull();
+  UID=session.user.id; setSync("wait","Synchronisation…"); pull(); retryPhotos(true);
 }
 function showLogin(){
   $("#login").hidden=false;
@@ -890,23 +916,25 @@ function showLogin(){
     const {data,error}=await supa.auth.signInWithPassword({email:$("#lg-mail").value.trim(),password:$("#lg-pass").value});
     b.disabled=false; b.textContent="Se connecter";
     if(error){ er.textContent=navigator.onLine?"E-mail ou mot de passe incorrect.":"Pas de réseau : connecte-toi une première fois avec internet."; er.hidden=false; return; }
-    $("#login").hidden=true; UID=data.user.id; setSync("wait","Synchronisation…"); pull(); };
+    $("#login").hidden=true; UID=data.user.id; setSync("wait","Synchronisation…"); pull(); retryPhotos(true); };
 }
 window.addEventListener("online",flush);
-document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ checkRobot(); if(UID) pull(); } });
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ checkRobot(); if(UID) pull(); setTimeout(retryPhotos,300); } });
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 /* ---------- bouton « retour » du téléphone : revient à l'écran précédent au lieu de fermer l'appli ---------- */
 let ARMED=false;
 const zoomOpen=()=>{ const z=$("#zoom"); return !!(z&&!z.hidden); };
 function atRoot(){ return !S.cat && !S.q && $("#sheet").hidden && !zoomOpen() && !S.addOpen; }
 function arm(){ if(!ARMED && !atRoot()){ try{ history.pushState({medaillier:1},""); ARMED=true; }catch(e){} } }
+let HOMEY=0;
+function backHome(){ const y=HOMEY||0, go=()=>scrollTo(0,y); go(); requestAnimationFrame(go); setTimeout(go,120); }
 function goBack(){
   const ae=document.activeElement; if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)){ ae.blur(); return; }
   if(zoomOpen()){ closeZoom(); return; }
   if(!$("#sheet").hidden){ if($("#sheet .piece")) closePiece(); else { if($("#npForm")||$("#yrForm")) DRAFT.clear(); closeSheet(); } return; }
   if(S.addOpen){ S.addOpen=false; DRAFT.clear(); render(); return; }
   if(S.cat && !S.mosaic){ S.mosaic=true; render(); scrollTo(0,0); return; }   // liste -> mosaïque
-  if(S.cat){ OPEN.clear(); S.mosaic=false; S.cat=null; S.q=S.homeQ||""; $("#q").value=S.q; render(); scrollTo(0,0); return; } // thème -> accueil (recherche retrouvée)
+  if(S.cat){ OPEN.clear(); S.mosaic=false; S.cat=null; S.q=S.homeQ||""; $("#q").value=S.q; render(); backHome(); return; } // thème -> accueil (recherche retrouvée)
   if(S.q){ S.q=""; S.homeQ=""; $("#q").value=""; render(); return; }
 }
 window.addEventListener("popstate",()=>{ ARMED=false; goBack(); setTimeout(arm,0); });
