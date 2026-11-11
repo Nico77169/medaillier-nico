@@ -1,4 +1,4 @@
-// Place sur la carte les pièces récentes (2025-2027) du catalogue — une seule fois par pièce.
+// Place sur la carte les pièces du catalogue (récentes d'abord ; toutes si ALL=1) — une seule fois par pièce.
 // Résultat : geo.json  { id: [lat, lon, précision, libellé] }
 //   précision : "l" = le lieu lui-même, "o" = office de tourisme le plus proche, "v" = centre de la ville
 // Sources gratuites : OpenStreetMap (Nominatim / Photon / Overpass) et la Base Adresse Nationale (adresse.data.gouv.fr)
@@ -7,7 +7,18 @@ import fs from "node:fs";
 const YEARS = [2025, 2026, 2027];
 const UA = "MedaillierNico/1.0 (https://github.com/Nico77169/medaillier-nico)";
 const cat = JSON.parse(fs.readFileSync("catalogue.json", "utf8"));
-const GEO = fs.existsSync("geo.json") ? JSON.parse(fs.readFileSync("geo.json", "utf8")) : {};
+const rd = f => fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : {};
+// geo.json = pièces 2025-2027 ; geo-old.json = toutes les autres ; geo-miss.json = déjà cherchées sans succès
+const GEO = { ...rd("geo-old.json"), ...rd("geo.json") };
+const MISS = rd("geo-miss.json");
+const ALL = process.env.ALL === "1";
+const T0 = Date.now(), BUDGET = 5 * 3600e3; // on s'arrête à 5 h, la suite se fait au passage suivant
+const RECENT = new Set(cat.tokens.filter(t => [...yearsOfT(t)].some(y => YEARS.includes(y))).map(t => t.id));
+function yearsOfT(t) { const s = String(t.years || "") + " " + (t.v || []).map(v => v[0]).join(" "); return new Set((s.match(/(?<!\d)20\d\d(?!\d)/g) || []).map(Number)); }
+function save() {
+  const a = {}, b = {}; for (const [k, v] of Object.entries(GEO)) (RECENT.has(k) ? a : b)[k] = v;
+  fs.writeFileSync("geo.json", JSON.stringify(a)); fs.writeFileSync("geo-old.json", JSON.stringify(b)); fs.writeFileSync("geo-miss.json", JSON.stringify(MISS));
+}
 const LOG = [];
 const log = (...a) => { const s = a.join(" "); LOG.push(s); console.log(s); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -115,12 +126,14 @@ function townGuesses(t) {
 
 // REDO=1 : on refait tout (après amélioration du robot)
 if (process.env.REDO === "1") for (const k of Object.keys(GEO)) delete GEO[k];
-const todo = cat.tokens.filter(t => !GEO[t.id] && [...yearsOf(t)].some(y => YEARS.includes(y)));
-log("Pièces récentes à placer :", todo.length, "(déjà placées :", Object.keys(GEO).length + ")");
+const todo = cat.tokens.filter(t => !GEO[t.id] && !MISS[t.id] && (ALL || RECENT.has(t.id)))
+  .sort((a, b) => (RECENT.has(b.id) - RECENT.has(a.id)) || ((+String(b.years).slice(0, 4) || 0) - (+String(a.years).slice(0, 4) || 0)));
+log("Pièces à placer :", todo.length, "(déjà placées :", Object.keys(GEO).length + ", toutes années :", ALL + ")");
 let OFFICES = null;
 let n = 0, stats = { l: 0, o: 0, v: 0, rien: 0 };
 for (const t of todo) {
   n++;
+  if (Date.now() - T0 > BUDGET * 0.75) { log("Temps écoulé : suite au prochain passage."); break; }
   if (FIXED[t.cat]) { GEO[t.id] = FIXED[t.cat]; stats.l++; continue; }
   const dept = t.dept || null, site = (t.site || "").trim();
   if (SITES[site.toLowerCase()]) { GEO[t.id] = SITES[site.toLowerCase()]; stats.l++; continue; }
@@ -147,10 +160,10 @@ for (const t of todo) {
     }
   }
   if (hit) { GEO[t.id] = [+hit.lat.toFixed(5), +hit.lon.toFixed(5), prec, label]; stats[prec]++; }
-  else { stats.rien++; log("  ✗ introuvable :", t.ref, "|", t.name, "|", site, "|", dept); }
-  if (n % 25 === 0) { log(`… ${n}/${todo.length}`, JSON.stringify(stats)); fs.writeFileSync("geo.json", JSON.stringify(GEO)); }
+  else { stats.rien++; MISS[t.id] = 1; log("  ✗ introuvable :", t.ref, "|", t.name, "|", site, "|", dept); }
+  if (n % 25 === 0) { log(`… ${n}/${todo.length}`, JSON.stringify(stats)); save(); }
 }
-fs.writeFileSync("geo.json", JSON.stringify(GEO));
+save();
 log("Terminé :", JSON.stringify(stats));
 
 // --- Adresse postale de chaque point (5e case), une seule fois par endroit -------------------
@@ -158,6 +171,7 @@ const ADDR = {}; for (const v of Object.values(GEO)) if (v[4]) ADDR[v[0] + "," +
 let na = 0;
 for (const v of Object.values(GEO)) {
   if (v[4]) continue;
+  if (Date.now() - T0 > BUDGET) { log("Temps écoulé pour les adresses : suite au prochain passage."); break; }
   const k = v[0] + "," + v[1];
   if (!(k in ADDR)) {
     await sleep(1100);
@@ -166,10 +180,10 @@ for (const v of Object.values(GEO)) {
     const street = [a.house_number, a.road || a.pedestrian || a.square || a.footway || a.place].filter(Boolean).join(" ");
     const town = a.city || a.town || a.village || a.municipality || a.hamlet || "";
     ADDR[k] = [street, [a.postcode, town].filter(Boolean).join(" "), a.country_code && a.country_code !== "fr" ? a.country : ""].filter(Boolean).join(", ");
-    na++; if (na % 50 === 0) { log("… adresses :", na); fs.writeFileSync("geo.json", JSON.stringify(GEO)); }
+    na++; if (na % 50 === 0) { log("… adresses :", na); save(); }
   }
   if (ADDR[k]) v[4] = ADDR[k];
 }
-fs.writeFileSync("geo.json", JSON.stringify(GEO));
+save();
 log("Adresses trouvées :", na);
 fs.writeFileSync("scripts/geo-log.txt", LOG.join("\n") + "\n");
