@@ -374,7 +374,7 @@ function renderMain(){
   document.querySelectorAll(".chip[data-f]").forEach(b=>b.setAttribute("aria-pressed",String(S.filter===b.dataset.f)));
   $("#clearF").hidden=!S.filter;
   const v=$("#view");
-  if(S.near){ $("#title").textContent="Autour de moi"; $("#crumb").textContent="Pièces vendues près d'ici"; mb.hidden=true; v.innerHTML=nearHTML(); renderFoot(allTokens().filter(t=>geoOf(t.id)&&(S.nearY==="all"||recentUnits(t).length)),"Pièces sur la carte"); return; }
+  if(S.near){ $("#title").textContent="Autour de moi"; $("#crumb").textContent="Pièces vendues près d'ici"; mb.hidden=true; v.innerHTML=nearHTML(); renderFoot(allTokens().filter(t=>geoOf(t.id)&&(S.nearY!=="rec"||recentUnits(t).length)),"Pièces sur la carte"); return; }
   if(!S.cat && !S.q){ v.innerHTML=homeHTML(); renderFoot(allTokens(),"Toute la collection"); return; }
   const pool=allTokens().filter(t=>(!S.cat||inCat(t,S.cat)));
   const srt=mmode==="letter"?((a,b)=>a.name.localeCompare(b.name,"fr")):((a,b)=>String(a.years).localeCompare(String(b.years))||a.name.localeCompare(b.name));
@@ -435,7 +435,7 @@ function nearHTML(){
   if(!Object.keys(GEO).length) return `<div class="empty">La carte des pièces n'est pas encore prête. Réessaie dans un moment.</div>`;
   if(!NEAR||NEAR.wait) return `<div class="empty">📍 Recherche de ta position…<br><small>Si le téléphone te demande l'autorisation de localisation, accepte.</small></div>`;
   if(NEAR.err) return `<div class="empty">${NEAR.err==="refus"?`L'appli n'a pas le droit de connaître ta position.<br><small>Sur le téléphone : touche le petit cadenas (ou ⓘ) à gauche de l'adresse du site → <b>Autorisations</b> → <b>Position</b> → <b>Autoriser</b>. Puis reviens ici.</small>`:esc(NEAR.err)}<br><button class="addbtn" id="nearRetry">Réessayer</button></div>`;
-  const places=new Map(), R=S.nearR||10, rec=S.nearY!=="all"; let gone=0;
+  const places=new Map(), R=S.nearR||10, rec=S.nearY==="rec"; let gone=0;
   allTokens().forEach(t=>{ const g=geoOf(t.id); if(!g) return; const ru=rec?recentUnits(t):units(t); if(!ru.length) return;
     const miss=ru.some(x=>!(x.q>0)); if(!S.nearAll&&!miss) return;
     if(st(t.id).ns){ if(kmTo(NEAR.lat,NEAR.lon,g[0],g[1])<=R) gone++; return; }
@@ -667,7 +667,7 @@ document.addEventListener("click",e=>{
   if(b.id==="nearRetry"){ locate(); return; }
   if(b.id==="nearAll"){ S.nearAll=!S.nearAll; rerender(); return; }
   if(b.dataset.nr){ S.nearR=+b.dataset.nr; S.nearMore=false; ls.set("nico_nearR",S.nearR); render(); return; }
-  if(b.id==="nearY"){ S.nearY=S.nearY==="all"?"rec":"all"; S.nearMore=false; render(); return; }
+  if(b.id==="nearY"){ S.nearY=S.nearY==="rec"?"all":"rec"; S.nearMore=false; render(); return; }
   if(b.id==="nearMore"){ S.nearMore=true; rerender(); return; }
   if(b.dataset.ns){ showNotSold(b.dataset.ns); return; }
   if(b.dataset.wedit){ showEditPlace(b.dataset.wedit); return; }
