@@ -2,7 +2,7 @@
    Données : catalogue.json (public) + collection de Nico dans Supabase (privée, protégée par compte). */
 "use strict";
 let CATS=[], CATALOG=[], PHOTOS={}, CATALOG_DATE="", LEGACY={}, CJT_OWN={}, CJT_DATE="", RESET_OWN="", RESET_BACK="";
-const IMPORT_CJT=true;
+const IMPORT_CJT=false; // import CJT fait une fois (6 nov.) : coupé pour qu'il ne puisse jamais se refaire
 // Variantes cochées en vert dans le tableau Disney de Nico : appliquées une seule fois, au premier lancement
 const PRESET = {"d0299":{"2004|04 CN Diff. Bas":1},"d0303":{"2004|04 CN":1},"d0297":{"2007|07 MDP":1},"d0577":{"2008|08 EVM France":1},"d0681":{"2008|08 EVM":1},"d0706":{"2009|09 EVM":1,"2013|13 MDP-2":1,"2020|20 MDP-3 NG":1,"2022|22 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d0811":{"2009|09 EVM":1},"d0945":{"2009|09 EVM":1,"2010|10 EVM":1},"d0837":{"2009|09 EVM":1},"d1047":{"2010|10 EVM":1},"d1011":{"2010|10 EVM":1,"2013|13 MDP-2":1,"2015|15 MDP-2 NG":1,"2017|17 MDP-2 NG":1,"2018|18 MDP-2 NG":1,"2020|20 MDP-3 NG":1,"2021|21 MDP-3 NG":1,"2022|22 MDP-3 NG":1},"d1010":{"2010|10 EVM":1,"2012|12 EVM":1,"2017|17 MDP-2 NG":1,"2018|18 MDP-2 NG":1,"2019|19 MDP-2 NG":1,"2021|21 MDP-3 NG":1,"2022|22 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d1100":{"2011|11 EVM":1},"d1373":{"2012|12 MDP-2":1},"d1279":{"2012|12 EVM":1,"2012|12 MDP-2":1},"d1208":{"2012|12 EVM":1,"2020|20 MDP-3 NG":1},"d1201":{"2012|12 EVM":1,"2015|15 MDP-2 NG":1,"2017|17 MDP-2 NG":1,"2022|22 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d1012":{"2013|13 MDP":1},"d1702":{"2014|14 MDP-2 NG":1},"d1719":{"2014|14 MDP-2 CAN":1},"d1877":{"2015|15 MDP-2 NG":1,"2016|16 MDP-2 NG":1,"2020|20 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d2467":{"2017|17 MDP/EVM":1},"d2392":{"2017|17 MDP/EVM":1},"d1718":{"2017|17 MDP-2 NG":1},"d2817":{"2018|18 MDP/EVM":1},"d2746":{"2018|18 MDP/EVM":1,"2020|20 MDP-3 NG":1,"2021|21 MDP-3 NG":1,"2022|22 MDP-3 NG":1,"2023|23 MDP-3 NG":1},"d2501":{"2018|18 MDP-2 NG":1,"2020|20 MDP-3 NG":1},"d3088":{"2020|20 MDP/EVM":1},"d3035":{"2020|20 MDP/EVM":1},"d3635":{"2022|22 MDP/EVM":1},"d3432":{"2022|22 MDP/EVM":1},"d3704":{"2023|23 MDP/EVM":1},"d3885":{"2023|23 MDP-3 NG":1},"d3491":{"2023|23 MDP-3 NG":1},"d3943":{"2024|24 MDP/EVM":1},"d4182":{"2024|24 MDP-3 NG":1},"d3942":{"2024|24 MDP-3 NG":1,"2025|25 MDP-3 NG":1},"d4198":{"2025|25 MDP/EVM":1},"d4239":{"2025|25 MDP-3 NG":1},"d4256":{"2025|25 MDP/EVM":1},"d4489":{"2025|25 MDP/EVM":1},"d4202":{"2025|25 MDP/EVM":1},"d4496":{"2026|26 MDP/EVM":1},"d4047":{"2026|26 MDP/EVM":1},"d4490":{"2026|26 MDP/EVM":1}};
 function applyPreset(items){ Object.entries(PRESET).forEach(([id,vq])=>{ const cur=items[id]||{}; items[id]={...cur,vq:{...vq,...(cur.vq||{})}}; }); }
@@ -931,7 +931,8 @@ function showLogin(){
     $("#login").hidden=true; UID=data.user.id; setSync("wait","Synchronisation…"); pull(); retryPhotos(true); };
 }
 window.addEventListener("online",flush);
-document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ checkRobot(); if(UID) pull(); setTimeout(retryPhotos,300); } });
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden"&&UID&&Object.keys(Q()).length){ clearTimeout(flushTimer); flush(); } // on réduit l'appli : envoi immédiat
+  if(document.visibilityState==="visible"){ checkRobot(); if(UID) pull(); setTimeout(retryPhotos,300); } });
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 /* ---------- bouton « retour » du téléphone : revient à l'écran précédent au lieu de fermer l'appli ---------- */
 let ARMED=false;
