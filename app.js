@@ -237,6 +237,7 @@ async function pullOnce(){
   let data=null, error=null;
   try{ ({data,error}=await fetchAll()); }catch(e){ error=e; }
   if(error){ setSync("off","Serveur injoignable : tu travailles sur la copie du téléphone");
+    bootDone(navigator.onLine?"Le serveur ne répond pas : tu vois la copie du téléphone, nouvel essai automatique.":"Pas de réseau : tu vois la copie du téléphone. Tes coches partiront au retour du réseau.");
     // une connexion faible fait souvent échouer une seule tentative : on réessaie 2 fois avant d'afficher le bandeau
     PULLFAIL++; if(PULLFAIL<3){ setTimeout(pull,15000); return; }
     if(navigator.onLine){ ALERT.server="Le serveur de sauvegarde ne répond pas (peut-être en pause). Tes coches restent sur le téléphone."; showAlert(); }
@@ -261,7 +262,9 @@ async function pullOnce(){
     queue("_prefs");
   } else { S.items=items; S.custom=custom; persistLocal(); }
   S.prefs={...(ls.get("nico_prefs")||{}),...(prefs||{}),...S.prefs,seeded:true}; upgrade();
-  render(); flush();
+  render();
+  if(BOOT&&Object.keys(Q()).length){ bootMsg("Envoi de tes dernières coches…"); await flush(); } else flush();
+  bootDone();
 }
 
 /* ---------- bandeau d'alerte (bilan du robot Supabase + serveur injoignable) ---------- */
@@ -962,6 +965,12 @@ function bindAdd(){
 }
 
 
+/* ---------- écran de chargement : on attend que la collection soit à jour avant de laisser toucher ---------- */
+let BOOT=true, BOOTT=null;
+function showBoot(msg){ BOOT=true; $("#bootMsg").textContent=msg||"Mise à jour de ta collection…"; $("#boot").hidden=false;
+  clearTimeout(BOOTT); BOOTT=setTimeout(()=>bootDone("Connexion lente : la mise à jour continue en arrière-plan."),15000); }
+function bootMsg(m){ if(BOOT) $("#bootMsg").textContent=m; }
+function bootDone(msg){ clearTimeout(BOOTT); if(!BOOT) return; BOOT=false; $("#boot").hidden=true; if(msg) toast(msg); }
 /* ---------- démarrage ---------- */
 async function loadCatalogue(){
   const r=await fetch("catalogue.json",{cache:"no-cache"}); const c=await r.json();
@@ -971,7 +980,8 @@ async function loadCatalogue(){
 }
 async function start(){
   S.filter=ls.get("nico_filter")||null; S.items=ls.get("nico_items")||{}; S.custom=ls.get("nico_custom")||{};
-  try{ await loadCatalogue(); }catch(e){ $("#view").innerHTML='<div class="empty">Impossible de charger le catalogue. Vérifie ta connexion et relance l\'appli.</div>'; return; }
+  showBoot("Chargement du catalogue…");
+  try{ await loadCatalogue(); }catch(e){ bootDone(); $("#view").innerHTML='<div class="empty">Impossible de charger le catalogue. Vérifie ta connexion et relance l\'appli.</div>'; return; }
   // retour au même écran seulement si l'appli a été quittée il y a moins de 30 min (sinon on repart de l'accueil)
   let vw=ls.get("nico_view"); if(vw&&!(Date.now()-(vw.t||0)<30*60e3)) vw=null;
   if(vw&&vw.cat&&hasCat(vw.cat)){ S.cat=vw.cat; S.mosaic=vw.mosaic; S.addOpen=vw.add; }
@@ -980,7 +990,8 @@ async function start(){
   if(vw&&vw.piece&&byId(vw.piece)) openPiece(vw.piece);
   restoreDraft();
   const {data:{session}}=await supa.auth.getSession();
-  if(!session){ showLogin(); return; }
+  if(!session){ bootDone(); showLogin(); return; }
+  bootMsg(Object.keys(Q()).length?"Envoi de tes dernières coches…":"Mise à jour de ta collection…");
   UID=session.user.id; setSync("wait","Synchronisation…"); pull(); retryPhotos(true);
 }
 function showLogin(){
@@ -989,11 +1000,12 @@ function showLogin(){
     const {data,error}=await supa.auth.signInWithPassword({email:$("#lg-mail").value.trim(),password:$("#lg-pass").value});
     b.disabled=false; b.textContent="Se connecter";
     if(error){ er.textContent=navigator.onLine?"E-mail ou mot de passe incorrect.":"Pas de réseau : connecte-toi une première fois avec internet."; er.hidden=false; return; }
-    $("#login").hidden=true; UID=data.user.id; setSync("wait","Synchronisation…"); pull(); retryPhotos(true); };
+    $("#login").hidden=true; showBoot(); UID=data.user.id; setSync("wait","Synchronisation…"); pull(); retryPhotos(true); };
 }
 window.addEventListener("online",flush);
-document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden"&&UID&&Object.keys(Q()).length){ clearTimeout(flushTimer); flush(); } // on réduit l'appli : envoi immédiat
-  if(document.visibilityState==="visible"){ checkRobot(); if(UID) pull(); setTimeout(retryPhotos,300); } });
+let HIDDENAT=0;
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden"){ HIDDENAT=Date.now(); if(UID&&Object.keys(Q()).length){ clearTimeout(flushTimer); flush(); } } // on réduit l'appli : envoi immédiat
+  if(document.visibilityState==="visible"){ checkRobot(); if(UID){ if(HIDDENAT&&Date.now()-HIDDENAT>60e3&&navigator.onLine) showBoot(); pull(); } setTimeout(retryPhotos,300); } });
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 /* ---------- bouton « retour » du téléphone : revient à l'écran précédent au lieu de fermer l'appli ---------- */
 let ARMED=false;

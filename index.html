@@ -266,6 +266,10 @@ img{max-width:100%}
 .mtile.own .mph{opacity:1;color:#3b2a06}
 .mtile .mok{position:absolute;right:-2px;bottom:-2px;width:18px;height:18px;border-radius:50%;background:var(--ok);color:#fff;font-size:.62rem;font-weight:800;display:grid;place-items:center;box-shadow:0 0 0 2px var(--bg)}
 .card.flash{animation:flash 1.6s ease-out}
+.boot{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;color:var(--ink)}
+.boot[hidden]{display:none}.boot img{border-radius:24px;box-shadow:0 6px 24px rgba(0,0,0,.18)}.boot b{font-size:1.3rem}.boot p{margin:0;font-weight:600}.boot small{color:var(--muted)}
+.bspin{width:38px;height:38px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--gold);animation:bspin .8s linear infinite}
+@keyframes bspin{to{transform:rotate(360deg)}}
 @keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--gold)}100%{box-shadow:0 0 0 0 transparent}}
 @media (prefers-reduced-motion:reduce){.card.flash{animation:none;box-shadow:0 0 0 3px var(--gold)}}
 .mabc{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}.mabc button{min-width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:var(--surface);border:1px solid var(--line);color:inherit;text-decoration:none;font-weight:700;font-size:14px}.mgroup[id]{scroll-margin-top:150px}
@@ -308,6 +312,7 @@ img{max-width:100%}
 </style>
 </head>
 <body>
+<div id="boot" class="boot" role="status" aria-live="polite"><img src="icons/icon-192.png" alt="" width="96" height="96"><b>Médaillier de Nico</b><div class="bspin" aria-hidden="true"></div><p id="bootMsg">Mise à jour de ta collection…</p><small>Attends quelques secondes, tout se met à jour.</small></div>
 <section class="login" id="login" hidden>
   <form id="loginForm" autocomplete="on">
     <div class="logo" aria-hidden="true"></div>
@@ -350,7 +355,7 @@ img{max-width:100%}
 <section class="sheet" id="sheet" hidden aria-label="Ajouter ma pièce"></section>
 <footer class="foot"><div class="in" id="foot"></div></footer>
 <script src="vendor/supabase.js"></script>
-<script src="config.js?v=30"></script>
-<script src="app.js?v=30"></script>
+<script src="config.js?v=31"></script>
+<script src="app.js?v=31"></script>
 </body>
 </html>
