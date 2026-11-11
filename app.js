@@ -482,6 +482,20 @@ const OPEN=new Set();
 // Case « Hugo » : simple info cochée par ligne (variante ou pièce), sans effet sur les totaux de Nico
 function hugoBtn(t,k){ const on=!!((st(t.id).hv||{})[k]); return `<button class="hugo${on?" on":""}" data-hu="${esc(t.id+"~"+k)}" role="switch" aria-checked="${on}" aria-label="Hugo"><span class="htxt">Hugo</span><span class="hknob"></span></button>`; }
 function cjtUrl(t){ const m=/[A-Z]{2}[0-9AB]{2}-(\d{4})/.exec(t.ref||""); return m?"https://www.collection-jetons-touristiques.com/jeton/"+parseInt(m[1],10):""; }
+/* lieu de vente d'une pièce récente (geo.json : lat, lon, précision, nom, adresse) */
+const WOPEN=new Set(); let INSHEET=false;
+function whereHTML(t){
+  const g=GEO[t.id]; if(!g) return "";
+  const [lat,lon,prec,label,addr]=g, open=INSHEET||WOPEN.has(t.id);
+  const note=prec==="o"?"Office de tourisme le plus proche — en général, il vend les pièces de la ville":prec==="v"?"Position approximative : centre de la ville":"";
+  const dist=NEAR&&NEAR.lat?` · à ${fmtKm(kmTo(NEAR.lat,NEAR.lon,lat,lon))}`:"";
+  const name=label||"Lieu de vente", dl=0.0035;
+  return `<div class="where${open?" open":""}"><button class="wtog" type="button" data-where="${t.id}"><span>📍</span><b>Où l'acheter</b><small>${esc(name)}${dist}</small><i>${open?"▴":"▾"}</i></button>${open?`
+    <div class="wbody"><div class="wname">${esc(name)}</div>${addr?`<div class="waddr">${esc(addr)}</div>`:""}${note?`<div class="wnote">${note}</div>`:""}
+    <iframe class="wmap" loading="lazy" title="Plan" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-dl*1.6},${lat-dl},${lon+dl*1.6},${lat+dl}&layer=mapnik&marker=${lat},${lon}"></iframe>
+    <div class="wbtns"><a class="wgo main" href="geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(name)})">🧭 Itinéraire GPS</a><a class="wgo" href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" rel="noopener">Google Maps</a><a class="wgo" href="https://waze.com/ul?ll=${lat},${lon}&navigate=yes" target="_blank" rel="noopener">Waze</a><button class="wgo" type="button" data-wcopy="${t.id}">Copier l'adresse</button></div>
+    <div class="wnote">« Itinéraire GPS » propose les applis du téléphone (Mappy, Waze, Google Maps…). Pièce récente, rien ne garantit qu'elle soit encore en vente.</div></div>`:""}</div>`;
+}
 function cjtLink(t){ const u=cjtUrl(t); return u?`<a class="nlink" href="${u}" target="_blank" rel="noopener">Fiche CJT ↗</a>`:""; }
 function numUrl(t){ if(t.n) return "https://fr.numista.com/"+t.n;
   const m=/FR[0-9AB]{2}-\d{4}/.exec(t.ref||""); return "https://fr.numista.com/catalogue/index.php?ct=exonumia&r="+encodeURIComponent(m?m[0]:t.name); }
@@ -527,6 +541,7 @@ function cardHTML(t){
       <div class="info"><span>${esc(yearsLabel(t,e))}</span>${t.dept?`<span>Dép. ${esc(t.dept)}</span>`:""}${t.metal?`<span>${esc(t.metal)}</span>`:""}${t.mint?`<span>Tirage ${esc(t.mint)}</span>`:""}${!S.cat||isVirtual(S.cat)?`<span>${esc(catOf(catT(t)).name)}</span>`:""}</div>
       ${t.note?`<div class="note">${esc(t.note)}</div>`:""}
       <div class="links">${sf?`<a class="nlink" href="${numUrl(t)}" target="_blank" rel="noopener">Photos sur Numista ↗</a>${cjtLink(t)}`:""}</div>
+      ${whereHTML(t)}
     </div>
     ${dup?`<div class="pills"><span class="pill ok">${dup} doublon${dup>1?"s":""}</span></div>`:""}
     ${true?variantsHTML(t,e):`<div class="own-row">
@@ -578,6 +593,9 @@ function numUrlSafe(t){ return numUrl(t); }
 document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
   if(b.dataset.cat){ if(!S.cat){ S.homeQ=S.q; HOMEY=scrollY; } OPEN.clear(); S.mosaic=true; S.addOpen=false; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
+  if(b.dataset.where){ const id=b.dataset.where; if(PIECE===id) return; WOPEN.has(id)?WOPEN.delete(id):WOPEN.add(id); rerender(); return; }
+  if(b.dataset.wcopy){ const g=GEO[b.dataset.wcopy]||[], txt=[g[3],g[4]].filter(Boolean).join(", ")||`${g[0]}, ${g[1]}`;
+    (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast("Adresse copiée"),()=>toast(txt)); return; }
   if(b.id==="mosaicBtn"){ S.mosaic=!S.mosaic; render(); scrollTo(0,0); return; }
   if(b.dataset.jy){ const y=b.dataset.jy; jumpTo(t=>(yearOf(t)||"Sans année")===y); return; }
   if(b.dataset.ml){ const g=document.getElementById(b.dataset.ml); if(g) scrollTo({top:g.getBoundingClientRect().top+scrollY-($(".top").offsetHeight+10),behavior:"smooth"}); return; }
@@ -778,7 +796,8 @@ function openPiece(id){ PIECE=id; OPEN.add(id); renderPiece(true); saveView(); }
 function renderPiece(first){
   const t=byId(PIECE); if(!t){ PIECE=null; closeSheet(); return; } // pièce supprimée : on ferme
   const sh=$("#sheet"), y=first?0:sh.scrollTop;
-  sh.innerHTML=`<div class="in piece"><div class="phead"><button class="btn ghost" type="button" id="pieceList">Voir dans la liste</button><button class="btn" type="button" id="pieceClose">Fermer</button></div>${cardHTML(t)}</div>`;
+  INSHEET=true; let card; try{ card=cardHTML(t); }finally{ INSHEET=false; }
+  sh.innerHTML=`<div class="in piece"><div class="phead"><button class="btn ghost" type="button" id="pieceList">Voir dans la liste</button><button class="btn" type="button" id="pieceClose">Fermer</button></div>${card}</div>`;
   sh.hidden=false; $("#sheetBg").hidden=false; sh.scrollTop=y;
 }
 function closePiece(){ PIECE=null; closeSheet(); saveView(); }
