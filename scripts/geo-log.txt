@@ -1,61 +1,32 @@
-Pièces récentes à placer : 788 (déjà placées : 0)
-Overpass 502 https://overpass-api.de/api/interpreter
-Overpass erreur fetch failed
-Overpass erreur fetch failed
-Overpass 502 https://overpass-api.de/api/interpreter
-  ✗ introuvable : JTC FR75-0253 | Assemblée Nationale |  | 75
-… 50/788 {"l":47,"o":2,"v":0,"rien":1}
-… 75/788 {"l":69,"o":5,"v":0,"rien":1}
+Pièces récentes à placer : 20 (déjà placées : 768)
   ✗ introuvable : JTC FR84-1906 | Vallis Clausa - Le Moulin à Papier de Provence | Moulin à papier Vallis Clausa | 84
-… 100/788 {"l":86,"o":12,"v":0,"rien":2}
-… 125/788 {"l":111,"o":12,"v":0,"rien":2}
   ✗ introuvable : JTC FR73-3092 | Les Arcs Film Festival | Association Révélations Culturelles | 73
-  ✗ introuvable : JTC FR93-3364 | Basilique Cathédrale Saint-Denis |  | 93
-… 150/788 {"l":131,"o":15,"v":0,"rien":4}
-… 175/788 {"l":155,"o":16,"v":0,"rien":4}
-… 200/788 {"l":178,"o":18,"v":0,"rien":4}
-… 225/788 {"l":200,"o":21,"v":0,"rien":4}
   ✗ introuvable : JTC FR14-4178 | Festival du film de Cabourg - Ailes |  | 14
-… 275/788 {"l":246,"o":24,"v":0,"rien":5}
   ✗ introuvable : JTC FR76-4222 | Normannia - Salon Médiéval Fantastique | Fédération Française Médiévale | 76
-… 300/788 {"l":265,"o":29,"v":0,"rien":6}
-… 325/788 {"l":286,"o":33,"v":0,"rien":6}
-… 350/788 {"l":310,"o":34,"v":0,"rien":6}
-  ✗ introuvable : JTC FR14-4296 | Centenaire de la Canonisation de Sainte Thérèse - 1925-2025 | Sanctuaire De Lisieux | 14
-… 375/788 {"l":329,"o":38,"v":1,"rien":7}
   ✗ introuvable : JTC FR77-4319 | CMC Paris | Congrès Mondial Des Collectionneurs De Paris | 77
   ✗ introuvable : JTC FR77-4320 | CMC Paris | Congrès Mondial Des Collectionneurs De Paris | 77
-… 400/788 {"l":348,"o":42,"v":1,"rien":9}
   ✗ introuvable : JTC FR74-4366 | Les Gorges du Fier - Depuis 1869 |  | 74
-… 425/788 {"l":367,"o":44,"v":4,"rien":10}
   ✗ introuvable : JTC FR76-4370 | Les Confiseurs | Association Le Pré De La Bataille | 76
-… 450/788 {"l":389,"o":46,"v":4,"rien":11}
-… 475/788 {"l":407,"o":53,"v":4,"rien":11}
-  ✗ introuvable : JTC FR75-4427 | Verrière du Grand Palais | Le Grand Palais | 75
-  ✗ introuvable : JTC FR75-4429 | Vue aérienne du Grand Palais | Le Grand Palais | 75
   ✗ introuvable : JTC FR24-4431 | La Grotte du Souffleur de Verre - Oscar Simonin |  | 24
-… 500/788 {"l":425,"o":57,"v":4,"rien":14}
   ✗ introuvable : JTC FR75-4456 | Cité Immersive Fables | Cité Immersive Des Fables | 75
   ✗ introuvable : JTC FR22-4461 | Le Mans - Cathédrale Saint Julien - Saint Julien et le Defensor de la Ville | La Boite à Médailles | 22
   ✗ introuvable : JTC FR22-4462 | Le Mans - Cathédrale Saint Julien - Saint Julien et le Defensor de la Ville | La Boite à Médailles | 22
-… 525/788 {"l":443,"o":61,"v":4,"rien":17}
   ✗ introuvable : JTC FR62-4474 | Le Varan de Voyage | La Compagnie Du Dragon | 62
   ✗ introuvable : JTC FR27-4487 | Arbora Lumina | Domaine D'Harcourt | 27
   ✗ introuvable : JTC FR59-4488 | Ankama - Kama Anniversaire | AKM Distribution | 59
   ✗ introuvable : JTC FR75-4495 | Ordre des Experts Comptables - 80 ans | Conseil Supérieur De L'Ordre Des Experts-Compables | 75
-… 550/788 {"l":461,"o":63,"v":5,"rien":21}
-… 575/788 {"l":482,"o":66,"v":6,"rien":21}
-  ✗ introuvable : JTC MC98-4542 | Collection de Voitures de S.A.S. Le Prince de Monaco - 1993-2023 - 30 ans | Souvenirs Shop Monaco | 
-  ✗ introuvable : JTC MC98-4543 | Collection de Voitures de S.A.S. Le Prince de Monaco - Sunbeam Alpine MK1 | Souvenirs Shop Monaco | 
-  ✗ introuvable : JTC FR75-4550 | UNESCO - Façade |  | 75
-… 650/788 {"l":538,"o":80,"v":8,"rien":24}
-  ✗ introuvable : JTC FR54-4628 | Nancy, Capitale Française de l'Art Nouveau | Destination Nancy - Office De Tourisme | 54
-… 675/788 {"l":559,"o":82,"v":9,"rien":25}
   ✗ introuvable : JTC FR30-4651 | La Baleine en Course - Depuis 2026 | Société Du Muséum Des Salins Du Midi | 30
-… 700/788 {"l":579,"o":84,"v":11,"rien":26}
   ✗ introuvable : JTC FR85-4658 | Le Potager Extraordinaire - Lagenaria Siceraria |  | 85
   ✗ introuvable : JTC FR59-4702 | Ankama - Kama Anniversaire | AKM Distribution | 59
-… 750/788 {"l":619,"o":91,"v":12,"rien":28}
-… 775/788 {"l":637,"o":98,"v":12,"rien":28}
   ✗ introuvable : JTC FR75-4740 | Hello Kitty | Hello Kitty - Beyon Cut | 75
-Terminé : {"l":647,"o":99,"v":13,"rien":29}
+Terminé : {"l":0,"o":0,"v":0,"rien":20}
+… adresses : 50
+… adresses : 100
+… adresses : 150
+… adresses : 200
+… adresses : 250
+… adresses : 300
+… adresses : 350
+… adresses : 400
+… adresses : 450
+Adresses trouvées : 481
