@@ -148,7 +148,7 @@ function markDirty(id,before,after){
   });
   DV[id]=(DV[id]||0)+1; ls.set("nico_dirty",DIRTY);
 }
-function emptyItem(c){ return !c.q && !c.vq && !c.xv && !c.hv && !c.f && !c.b && !c.mv && !c.pv && !c.hide; }
+function emptyItem(c){ return !c.q && !c.vq && !c.xv && !c.hv && !c.f && !c.b && !c.mv && !c.pv && !c.hide && !c.ns; }
 function applyDirty(base,d){
   const r=JSON.parse(JSON.stringify(base||{}));
   Object.entries(d||{}).forEach(([k,v])=>{
@@ -417,8 +417,11 @@ function hiddenNote(groups){ if(!S.filter) return "";
   return `<div class="fnote">Filtre « ${esc(lab)} » actif : ${hid} département${hid>1?"s":""} masqué${hid>1?"s":""}. <button class="linkbtn" id="clearF2">Voir tous les départements</button></div>`; }
 /* ---------- autour de moi (pièces récentes géolocalisées par le robot : geo.json) ---------- */
 let GEO={}, NEAR=null; const NEAR_Y=["2025","2026","2027"];
-const BANDS=[[1.5,"🚶 À pied","moins de 1,5 km"],[8,"🚗 Moins de 10 min en voiture","moins de 8 km à vol d'oiseau"],[25,"Un peu plus loin","jusqu'à 25 km"]];
-async function loadGeo(){ try{ const r=await fetch("geo.json",{cache:"no-cache"}); if(r.ok) GEO=await r.json(); }catch(e){} }
+const BANDS=[[1.5,"🚶 À pied","moins de 1,5 km"],[8,"🚗 Moins de 10 min en voiture","moins de 8 km"],[30,"🚗 Un peu plus loin","8 à 30 km"],[80,"🛣️ Sortie à la journée","30 à 80 km"]];
+const RADII=[[2,"2 km","à pied"],[10,"10 km","vite fait"],[30,"30 km","en voiture"],[80,"80 km","la journée"]];
+async function loadGeo(){
+  const get=async f=>{ try{ const r=await fetch(f,{cache:"no-cache"}); return r.ok?await r.json():{}; }catch(e){ return {}; } };
+  const [a,b]=await Promise.all([get("geo.json"),get("geo-old.json")]); GEO={...b,...a}; }
 function kmTo(a,b,c,d){ const R=6371,r=x=>x*Math.PI/180,dl=r(c-a),dn=r(d-b),h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dn/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
 function fmtKm(k){ return k<1?Math.max(50,Math.round(k*1000/50)*50)+" m":(k<10?k.toFixed(1).replace(".",","):Math.round(k))+" km"; }
 function locate(){ if(!navigator.geolocation){ NEAR={err:"Ton téléphone ne donne pas sa position à l'appli."}; render(); return; }
@@ -432,20 +435,25 @@ function nearHTML(){
   if(!Object.keys(GEO).length) return `<div class="empty">La carte des pièces n'est pas encore prête. Réessaie dans un moment.</div>`;
   if(!NEAR||NEAR.wait) return `<div class="empty">📍 Recherche de ta position…<br><small>Si le téléphone te demande l'autorisation de localisation, accepte.</small></div>`;
   if(NEAR.err) return `<div class="empty">${NEAR.err==="refus"?`L'appli n'a pas le droit de connaître ta position.<br><small>Sur le téléphone : touche le petit cadenas (ou ⓘ) à gauche de l'adresse du site → <b>Autorisations</b> → <b>Position</b> → <b>Autoriser</b>. Puis reviens ici.</small>`:esc(NEAR.err)}<br><button class="addbtn" id="nearRetry">Réessayer</button></div>`;
-  const places=new Map();
-  allTokens().forEach(t=>{ const g=GEO[t.id]; if(!g) return; const ru=recentUnits(t); if(!ru.length) return;
+  const places=new Map(), R=S.nearR||10, rec=S.nearY!=="all"; let gone=0;
+  allTokens().forEach(t=>{ const g=GEO[t.id]; if(!g) return; const ru=rec?recentUnits(t):units(t); if(!ru.length) return;
     const miss=ru.some(x=>!(x.q>0)); if(!S.nearAll&&!miss) return;
+    if(st(t.id).ns){ if(kmTo(NEAR.lat,NEAR.lon,g[0],g[1])<=R) gone++; return; }
     const k=g[0]+","+g[1]; if(!places.has(k)) places.set(k,{lat:g[0],lon:g[1],prec:g[2],label:g[3]||"",ts:[],d:kmTo(NEAR.lat,NEAR.lon,g[0],g[1])});
     places.get(k).ts.push(t); });
-  const all=[...places.values()].sort((a,b)=>a.d-b.d);
-  const tog=`<div class="nbar"><span>${S.nearAll?"Toutes les pièces 2025-2027":"Seulement celles qui te manquent (2025-2027)"}</span><button class="linkbtn" id="nearAll">${S.nearAll?"Voir seulement les manquantes":"Voir aussi celles que tu as"}</button></div>`
-    +`<p class="mhint">Distances à vol d'oiseau${NEAR.acc>300?` · position imprécise (± ${fmtKm(NEAR.acc/1000)})`:""}. <button class="linkbtn" id="nearRetry">Actualiser ma position</button></p>`;
+  const all=[...places.values()].sort((a,b)=>a.d-b.d), inR=all.filter(p=>p.d<=R);
+  const chips=`<div class="nchips" role="tablist" aria-label="Distance">${RADII.map(([r,l,sub])=>`<button class="nchip${r===R?" on":""}" data-nr="${r}" role="tab" aria-selected="${r===R}"><b>${l}</b><small>${sub}</small></button>`).join("")}</div>`;
+  const tog=chips+`<div class="nbar"><span>${rec?"Pièces 2025-2027":"Toutes les années"}</span><button class="linkbtn" id="nearY">${rec?"Voir toutes les années":"Seulement 2025-2027"}</button></div>`
+    +`<div class="nbar"><span>${S.nearAll?"Celles que tu as aussi":"Seulement celles qui te manquent"}</span><button class="linkbtn" id="nearAll">${S.nearAll?"Seulement les manquantes":"Voir aussi celles que tu as"}</button></div>`
+    +`<p class="mhint">Distances à vol d'oiseau${NEAR.acc>300?` · position imprécise (± ${fmtKm(NEAR.acc/1000)})`:""}.${gone?` ${gone} pièce${gone>1?"s":""} signalée${gone>1?"s":""} plus en vente masquée${gone>1?"s":""}.`:""} <button class="linkbtn" id="nearRetry">Actualiser ma position</button></p>`;
   const place=p=>{ const note=p.prec==="o"?"≈ office de tourisme le plus proche":p.prec==="v"?"≈ centre de la ville":"";
     return `<section class="nplace"><div class="nhead"><div class="ninfo"><b>${esc(p.label||"Lieu de vente")}</b><small>${fmtKm(p.d)}${note?` · ${note}`:""} · ${p.ts.length} pièce${p.ts.length>1?"s":""}</small></div><a class="ngo" href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}" target="_blank" rel="noopener">Y aller ↗</a></div><div class="mgrid four">${p.ts.map(mtileHTML).join("")}</div></section>`; };
-  let h=tog, prev=0, any=false;
-  BANDS.forEach(([max,lab,sub])=>{ const ps=all.filter(p=>p.d>prev&&p.d<=max||(prev===0&&p.d===0)); prev=max; if(!ps.length) return; any=true;
-    h+=`<p class="sect-title">${lab} <small class="nsub">${sub}</small></p>`+ps.map(place).join(""); });
-  if(!any){ h+=`<div class="empty">Aucune pièce 2025-2027 à moins de 25 km.</div>`;
+  let h=tog, prev=0, shown=0; const LIM=S.nearMore?400:40;
+  BANDS.forEach(([max,lab,sub])=>{ if(prev>=R||shown>=LIM) return; const top=Math.min(max,R); const ps=inR.filter(p=>p.d>prev&&p.d<=top||(prev===0&&p.d===0)); prev=max; if(!ps.length) return;
+    const take=ps.slice(0,LIM-shown); shown+=take.length;
+    h+=`<p class="sect-title">${lab} <small class="nsub">${max>R?"jusqu'à "+R+" km":sub}</small></p>`+take.map(place).join(""); });
+  if(inR.length>shown) h+=`<button class="addbtn" id="nearMore">Voir les ${inR.length-shown} autres lieux</button>`;
+  if(!inR.length){ h+=`<div class="empty">Aucune pièce à moins de ${R} km${rec?" pour 2025-2027":""}.${R<80?" Essaie une distance plus grande.":""}</div>`;
     const far=all.slice(0,5); if(far.length) h+=`<p class="sect-title">Les plus proches quand même</p>`+far.map(place).join(""); }
   return h; }
 function homeHTML(){
@@ -459,7 +467,7 @@ function homeHTML(){
       <span class="bar"><i style="width:${m.pct}%"></i></span></button>`; }).join("");
   const deps=depTiles(CATS.filter(c=>c.dep),groups);
   return `<p class="sect-title">Thèmes</p><div class="cats">${big}</div>
-    <button class="nearbtn" id="nearBtn"><span>📍</span><b>Autour de moi</b><small>Pièces 2025-2027 vendues près d'ici</small></button>
+    <button class="nearbtn" id="nearBtn"><span>📍</span><b>Autour de moi</b><small>Pièces vendues près d'ici, de 2 à 80 km</small></button>
     <p class="sect-title">Départements</p>${hiddenNote(groups)}<div class="deps">${deps||'<div class="empty">Aucun département avec ce filtre.</div>'}</div>
     <button class="addbtn" id="helpBtn">💡 Astuces : déplacer une pièce mal rangée…</button>
     <p class="status">Catalogue mis à jour le ${esc(CATALOG_DATE)} · ${CATALOG.length} médailles${Object.keys(S.custom).length?` + ${Object.keys(S.custom).length} ajoutées par toi`:""} · Liste : catalogue CJT de Nico${CJT_DATE?` (${esc(CJT_DATE)})`:""} · Photos : Numista (licences Creative Commons) · Disney : liste de Nico</p>`;
@@ -486,15 +494,27 @@ function cjtUrl(t){ const m=/[A-Z]{2}[0-9AB]{2}-(\d{4})/.exec(t.ref||""); return
 const WOPEN=new Set(); let INSHEET=false;
 function whereHTML(t){
   const g=GEO[t.id]; if(!g) return "";
-  const [lat,lon,prec,label,addr]=g, open=INSHEET||WOPEN.has(t.id);
+  const [lat,lon,prec,label,addr]=g, open=INSHEET||WOPEN.has(t.id), ns=st(t.id).ns;
   const note=prec==="o"?"Office de tourisme le plus proche — en général, il vend les pièces de la ville":prec==="v"?"Position approximative : centre de la ville":"";
   const dist=NEAR&&NEAR.lat?` · à ${fmtKm(kmTo(NEAR.lat,NEAR.lon,lat,lon))}`:"";
   const name=label||"Lieu de vente", dl=0.0035;
-  return `<div class="where${open?" open":""}"><button class="wtog" type="button" data-where="${t.id}"><span>📍</span><b>Où l'acheter</b><small>${esc(name)}${dist}</small><i>${open?"▴":"▾"}</i></button>${open?`
+  return `<div class="where${open?" open":""}"><button class="wtog" type="button" data-where="${t.id}"><span>📍</span><b>Où l'acheter</b><small>${ns?"⚠️ plus en vente · ":""}${esc(name)}${dist}</small><i>${open?"▴":"▾"}</i></button>${open?`
     <div class="wbody"><div class="wname">${esc(name)}</div>${addr?`<div class="waddr">${esc(addr)}</div>`:""}${note?`<div class="wnote">${note}</div>`:""}
     <iframe class="wmap" loading="lazy" title="Plan" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-dl*1.6},${lat-dl},${lon+dl*1.6},${lat+dl}&layer=mapnik&marker=${lat},${lon}"></iframe>
     <div class="wbtns"><a class="wgo main" href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" rel="noopener">🧭 Y aller avec Google Maps</a><button class="wgo" type="button" data-wcopy="${t.id}">Copier l'adresse</button></div>
-    <div class="wnote">Pièce récente : rien ne garantit qu'elle soit encore en vente.</div></div>`:""}</div>`;
+    ${ns?`<div class="wgone">⚠️ Signalée <b>plus en vente ici</b> le ${new Date(ns).toLocaleDateString("fr-FR")}. <button class="linkbtn" type="button" data-nsundo="${t.id}">Annuler le signalement</button></div>`
+      :`<button class="wbad" type="button" data-ns="${t.id}">🚫 Signaler : plus en vente ici</button><div class="wnote">Rien ne garantit qu'elle soit encore en vente : si ce n'est plus le cas, signale-le.</div>`}</div>`:""}</div>`;
+}
+function showNotSold(id){
+  const t=byId(id), g=GEO[id]; if(!t||!g) return; const sh=$("#sheet");
+  const step1=()=>{ sh.innerHTML=`<div class="in"><h2>Plus en vente ici ?</h2><p>Es-tu sûr de vouloir indiquer que la pièce <b>${esc(t.name)}</b> n'est plus vendue à <b>${esc(g[3]||"cet endroit")}</b> ?</p>
+    <div class="row"><button class="btn ghost" type="button" id="nsNo">Annuler</button><button class="btn" type="button" id="nsYes">Oui, elle n'est plus vendue</button></div></div>`;
+    $("#nsNo").onclick=back; $("#nsYes").onclick=step2; };
+  const step2=()=>{ sh.innerHTML=`<div class="in"><h2>Dernière vérification</h2><p>Tu confirmes ? La pièce n'apparaîtra plus dans « Autour de moi ». Tu pourras annuler plus tard depuis sa fiche.</p>
+    <div class="row"><button class="btn ghost" type="button" id="nsNo">Non, je me suis trompé</button><button class="btn danger" type="button" id="nsOk">Je confirme</button></div></div>`;
+    $("#nsNo").onclick=back; $("#nsOk").onclick=()=>{ patch(id,{ns:Date.now()}); rerender(); back(); toast("Signalé : plus en vente ici"); }; };
+  const back=()=>{ if(PIECE===id) renderPiece(); else { closeSheet(); rerender(); } };
+  sh.hidden=false; $("#sheetBg").hidden=false; step1();
 }
 function cjtLink(t){ const u=cjtUrl(t); return u?`<a class="nlink" href="${u}" target="_blank" rel="noopener">Fiche CJT ↗</a>`:""; }
 function numUrl(t){ if(t.n) return "https://fr.numista.com/"+t.n;
@@ -608,6 +628,11 @@ document.addEventListener("click",e=>{
   if(b.id==="nearBtn"){ S.homeQ=S.q; HOMEY=scrollY; S.near=true; S.q=""; $("#q").value=""; scrollTo(0,0); locate(); return; }
   if(b.id==="nearRetry"){ locate(); return; }
   if(b.id==="nearAll"){ S.nearAll=!S.nearAll; rerender(); return; }
+  if(b.dataset.nr){ S.nearR=+b.dataset.nr; S.nearMore=false; ls.set("nico_nearR",S.nearR); render(); return; }
+  if(b.id==="nearY"){ S.nearY=S.nearY==="all"?"rec":"all"; S.nearMore=false; render(); return; }
+  if(b.id==="nearMore"){ S.nearMore=true; rerender(); return; }
+  if(b.dataset.ns){ showNotSold(b.dataset.ns); return; }
+  if(b.dataset.nsundo){ const id=b.dataset.nsundo; patch(id,{ns:""}); toast("Signalement annulé"); rerender(); if(PIECE===id) renderPiece(); return; }
   if(b.id==="backBtn"&&S.near&&!S.cat){ exitNear(); return; }
   if(b.id==="backBtn"){ OPEN.clear(); S.mosaic=false; S.addOpen=false; S.cat=null; S.q=S.homeQ||""; $("#q").value=S.q; render(); backHome(); return; }
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
@@ -1037,7 +1062,7 @@ async function loadCatalogue(){
   CATALOG.forEach(t=>{ if(t.np&&!PHOTOS[t.id]) PHOTOS[t.id]=t.np; });
 }
 async function start(){
-  S.filter=ls.get("nico_filter")||null; S.items=ls.get("nico_items")||{}; S.custom=ls.get("nico_custom")||{};
+  S.nearR=ls.get("nico_nearR")||10; S.filter=ls.get("nico_filter")||null; S.items=ls.get("nico_items")||{}; S.custom=ls.get("nico_custom")||{};
   showBoot("Chargement du catalogue…");
   try{ await Promise.all([loadCatalogue(),loadGeo()]); }catch(e){ bootDone(); $("#view").innerHTML='<div class="empty">Impossible de charger le catalogue. Vérifie ta connexion et relance l\'appli.</div>'; return; }
   // retour au même écran seulement si l'appli a été quittée il y a moins de 30 min (sinon on repart de l'accueil)
