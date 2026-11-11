@@ -493,8 +493,8 @@ function whereHTML(t){
   return `<div class="where${open?" open":""}"><button class="wtog" type="button" data-where="${t.id}"><span>📍</span><b>Où l'acheter</b><small>${esc(name)}${dist}</small><i>${open?"▴":"▾"}</i></button>${open?`
     <div class="wbody"><div class="wname">${esc(name)}</div>${addr?`<div class="waddr">${esc(addr)}</div>`:""}${note?`<div class="wnote">${note}</div>`:""}
     <iframe class="wmap" loading="lazy" title="Plan" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-dl*1.6},${lat-dl},${lon+dl*1.6},${lat+dl}&layer=mapnik&marker=${lat},${lon}"></iframe>
-    <div class="wbtns"><a class="wgo main" href="geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(name)})">🧭 Itinéraire GPS</a><a class="wgo" href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" rel="noopener">Google Maps</a><a class="wgo" href="https://waze.com/ul?ll=${lat},${lon}&navigate=yes" target="_blank" rel="noopener">Waze</a><button class="wgo" type="button" data-wcopy="${t.id}">Copier l'adresse</button></div>
-    <div class="wnote">« Itinéraire GPS » propose les applis du téléphone (Mappy, Waze, Google Maps…). Pièce récente, rien ne garantit qu'elle soit encore en vente.</div></div>`:""}</div>`;
+    <div class="wbtns"><a class="wgo main" href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" rel="noopener">🧭 Y aller avec Google Maps</a><button class="wgo" type="button" data-wcopy="${t.id}">Copier l'adresse</button></div>
+    <div class="wnote">Pièce récente : rien ne garantit qu'elle soit encore en vente.</div></div>`:""}</div>`;
 }
 function cjtLink(t){ const u=cjtUrl(t); return u?`<a class="nlink" href="${u}" target="_blank" rel="noopener">Fiche CJT ↗</a>`:""; }
 function numUrl(t){ if(t.n) return "https://fr.numista.com/"+t.n;
