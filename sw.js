@@ -1,6 +1,6 @@
 /* Service worker : appli utilisable hors ligne + mises à jour automatiques */
-const CACHE = "medaillier-v29";
-const SHELL = ["./", "index.html", "app.js?v=29", "config.js?v=29", "catalogue.json", "manifest.webmanifest",
+const CACHE = "medaillier-v30";
+const SHELL = ["./", "index.html", "app.js?v=30", "config.js?v=30", "catalogue.json", "manifest.webmanifest",
   "vendor/supabase.js", "vendor/591.supabase.js", "icons/icon-192.png", "icons/icon-512.png",
   // photos Disney et Beauval : téléchargées dès l'installation pour être visibles hors ligne
   "img/b232877_f.webp",

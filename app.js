@@ -132,14 +132,45 @@ function persistLocal(){ ls.set("nico_items",S.items); ls.set("nico_custom",S.cu
 function saveItem(id){ persistLocal(); queue(id); }
 function saveCustom(id){ persistLocal(); queue(id); }
 function saveFilter(){ ls.set("nico_filter",S.filter); }
+/* Journal des modifs : on n'envoie au serveur QUE ce qui a été touché (champ par champ, année par année),
+   appliqué par-dessus la version du serveur. Un téléphone pas à jour ne peut donc plus écraser d'autres coches. */
+const DIRTY=ls.get("nico_dirty")||{}, DV={};
+const MAPS=["vq","hv","pv","hide"];
+const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+function markDirty(id,before,after){
+  before=before||{}; after=after||{}; const d=DIRTY[id]||(DIRTY[id]={});
+  new Set([...Object.keys(before),...Object.keys(after)]).forEach(k=>{
+    const a=before[k], b=after[k];
+    if(MAPS.includes(k)){ const m=d["~"+k]||(d["~"+k]={});
+      new Set([...Object.keys(a||{}),...Object.keys(b||{})]).forEach(x=>{ const y=(b||{})[x]; if(!same((a||{})[x],y)) m[x]=y===undefined?null:y; });
+      if(!Object.keys(m).length) delete d["~"+k]; }
+    else if(!same(a,b)) d["="+k]=b===undefined?null:b;
+  });
+  DV[id]=(DV[id]||0)+1; ls.set("nico_dirty",DIRTY);
+}
+function emptyItem(c){ return !c.q && !c.vq && !c.xv && !c.hv && !c.f && !c.b && !c.mv && !c.pv && !c.hide; }
+function applyDirty(base,d){
+  const r=JSON.parse(JSON.stringify(base||{}));
+  Object.entries(d||{}).forEach(([k,v])=>{
+    if(k[0]==="="){ const f=k.slice(1); if(v===null||v===""||v===0&&f!=="q") delete r[f]; else r[f]=v; }
+    else if(k[0]==="~"){ const f=k.slice(1), m=(r[f]&&typeof r[f]==="object")?r[f]:{};
+      Object.entries(v).forEach(([x,y])=>{ if(y===null||y===0||y===false||y==="") delete m[x]; else m[x]=y; });
+      if(Object.keys(m).length) r[f]=m; else delete r[f]; }
+    else if(k==="_custom"){ if(v===null) delete r._custom; else r._custom=v; }
+  });
+  if(!r.q) delete r.q;
+  return r;
+}
 function patch(id,obj){
+  const before=S.items[id]?JSON.parse(JSON.stringify(S.items[id])):null;
   const cur={...(S.items[id]||{}),...obj};
   Object.keys(cur).forEach(k=>{ if(cur[k]===""||cur[k]==null) delete cur[k]; });
   if(cur.vq){ Object.keys(cur.vq).forEach(k=>{ if(!cur.vq[k]) delete cur.vq[k]; }); if(!Object.keys(cur.vq).length) delete cur.vq; }
   if(cur.hv && !Object.keys(cur.hv).length) delete cur.hv;
   if(cur.pv && !Object.keys(cur.pv).length) delete cur.pv;
   if(cur.hide && !Object.keys(cur.hide).length) delete cur.hide;
-  if(!cur.q && !cur.vq && !cur.xv && !cur.hv && !cur.f && !cur.b && !cur.mv && !cur.pv && !cur.hide) delete S.items[id]; else S.items[id]=cur;
+  if(emptyItem(cur)) delete S.items[id]; else S.items[id]=cur;
+  markDirty(id,before,S.items[id]);
   if(S.custom[id]) saveCustom(id); else saveItem(id);
 }
 function setSync(state,txt){ const el=$("#status"); el.innerHTML=`<span class="sync ${state}"><i></i>${esc(txt)}</span>${UID?'<button class="logout" id="logoutBtn">Se déconnecter</button>':""}`; }
@@ -153,6 +184,7 @@ async function uploadPending(id){
     const {error}=await supa.storage.from("photos").upload(path,blob,{contentType:blob.type||"image/png",upsert:true});
     if(error){ phLog("envoi refusé ("+id+") : "+(error.message||error)); throw error; }
     const nref="sb:"+path; delete MEM[ref]; await idb.put(nref,blob).catch(()=>{}); URLS[nref]=URLS[ref]; it[side]=nref;
+    if(DIRTY[id]&&DIRTY[id]["="+side]===ref){ DIRTY[id]["="+side]=nref; ls.set("nico_dirty",DIRTY); }
   }
 }
 async function flush(){
@@ -162,11 +194,22 @@ async function flush(){
   try{
     for(const id of ids){
       if(id==="_prefs"){ const {error}=await supa.from("collection").upsert({user_id:UID,token_id:"_prefs",data:{...S.prefs,seeded:true},updated_at:new Date().toISOString()}); if(error) throw error; }
-      else if(S.items[id]||S.custom[id]){
+      else {
+        const v0=DV[id]||0;
         await uploadPending(id); persistLocal();
-        const data={...(S.items[id]||{})}; if(S.custom[id]) data._custom=S.custom[id];
-        const {error}=await supa.from("collection").upsert({user_id:UID,token_id:id,data,updated_at:new Date().toISOString()}); if(error) throw error;
-      } else { const {error}=await supa.from("collection").delete().eq("token_id",id); if(error) throw error; }
+        let data;
+        if(DIRTY[id]){
+          const {data:row,error:e1}=await supa.from("collection").select("data").eq("token_id",id).maybeSingle(); if(e1) throw e1;
+          data=applyDirty(row&&row.data, DIRTY[id]); if(S.custom[id]) data._custom=S.custom[id];
+        } else { data={...(S.items[id]||{})}; if(S.custom[id]) data._custom=S.custom[id]; }
+        const hasCustom=!!data._custom, item={...data}; delete item._custom;
+        if(emptyItem(item)&&!hasCustom){ const {error}=await supa.from("collection").delete().eq("token_id",id); if(error) throw error; }
+        else { const {error}=await supa.from("collection").upsert({user_id:UID,token_id:id,data,updated_at:new Date().toISOString()}); if(error) throw error; }
+        if((DV[id]||0)!==v0) continue; // modifié pendant l'envoi : on le garde dans la file, il repart au tour suivant
+        delete DIRTY[id]; ls.set("nico_dirty",DIRTY);
+        if(emptyItem(item)) delete S.items[id]; else S.items[id]=item;
+        if(hasCustom) S.custom[id]=data._custom; persistLocal();
+      }
       const cur=Q(); delete cur[id]; ls.set("nico_queue",cur);
     }
     setSync("ok","Tout est sauvegardé en ligne");
@@ -182,9 +225,14 @@ async function fetchAll(){
     all.push(...(data||[])); if(!data||data.length<N) return {data:all,error:null};
   }
 }
+let PULLING=false;
 async function pull(){
   if(!UID) return;
   if(syncing){ setTimeout(pull,1500); return; }
+  if(PULLING) return; PULLING=true;
+  try{ await pullOnce(); }finally{ PULLING=false; }
+}
+async function pullOnce(){
   const t0=Date.now();
   let data=null, error=null;
   try{ ({data,error}=await fetchAll()); }catch(e){ error=e; }
@@ -196,12 +244,16 @@ async function pull(){
   PULLFAIL=0;
   if(ALERT.server){ ALERT.server=""; showAlert(); }
   const items={}, custom={}; let prefs=null;
-  data.forEach(r=>{ if(r.token_id==="_prefs"){ prefs=r.data; return; } const d={...r.data}; if(d._custom){ custom[r.token_id]=d._custom; delete d._custom; } if(Object.keys(d).length) items[r.token_id]=d; });
+  const raw={};
+  data.forEach(r=>{ raw[r.token_id]=r.data; if(r.token_id==="_prefs"){ prefs=r.data; return; } const d={...r.data}; if(d._custom){ custom[r.token_id]=d._custom; delete d._custom; } if(Object.keys(d).length) items[r.token_id]=d; });
   const q=Q(); Object.keys(EDIT).forEach(id=>{ if(EDIT[id]>=t0-2000) q[id]=1; });
-  Object.keys(q).forEach(id=>{ if(S.items[id]) items[id]=S.items[id]; else delete items[id]; if(S.custom[id]) custom[id]=S.custom[id]; else delete custom[id]; });
+  Object.keys(q).forEach(id=>{ if(id==="_prefs") return;
+    if(DIRTY[id]){ const m=applyDirty(raw[id],DIRTY[id]); const c=m._custom; delete m._custom;
+      if(emptyItem(m)) delete items[id]; else items[id]=m; if(c) custom[id]=c; else if(!S.custom[id]) delete custom[id]; else custom[id]=S.custom[id]; return; }
+    if(S.items[id]) items[id]=S.items[id]; else delete items[id]; if(S.custom[id]) custom[id]=S.custom[id]; else delete custom[id]; });
   Object.entries(S.items).forEach(([id,u])=>{ if(q[id]||!u) return; ["f","b"].forEach(k=>{ const srv=items[id]||{};
     if(u[k]&&!srv[k]&&!(REMOVED[id+k]>Date.now()-864e5)){ items[id]={...srv,[k]:u[k]}; const c=Q(); c[id]=1; ls.set("nico_queue",c); phLog("photo gardée (le serveur ne l'avait pas) : "+id); } }); });
-  if(!(prefs&&prefs.seeded) && !q._prefs){
+  if(!(prefs&&prefs.seeded) && !q._prefs && !(ls.get("nico_prefs")||{}).seeded && !Object.keys(raw).length){
     // premier lancement : on reprend ce qui avait été coché localement + les variantes vertes du tableau de Nico
     Object.assign(items,S.items); Object.assign(custom,S.custom); applyPreset(items);
     S.items=items; S.custom=custom; persistLocal();
@@ -526,7 +578,7 @@ document.addEventListener("click",e=>{
   if(b.dataset.zoom){ showZoom(b.dataset.zoom,b.dataset.side); return; }
   if(b.id==="zoomClose"){ closeZoom(); return; }
   if(b.dataset.photo){ const y=ZOOMY!=null?ZOOMY:scrollY; closeZoom(); NP={target:{id:b.dataset.photo,side:b.dataset.side},y}; showPick(); return; }
-  if(b.dataset.rm){ const id=b.dataset.rm; delete S.custom[id]; delete S.items[id]; saveCustom(id); render(); toast("Médaille supprimée"); return; }
+  if(b.dataset.rm){ const id=b.dataset.rm; delete S.custom[id]; delete S.items[id]; delete DIRTY[id]; ls.set("nico_dirty",DIRTY); saveCustom(id); render(); toast("Médaille supprimée"); return; }
   if(b.id==="addBtn"){ showAdd(); return; }
   if(b.dataset.ay){ showAddYear(b.dataset.ay); return; }
 
