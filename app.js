@@ -374,7 +374,7 @@ function renderMain(){
   document.querySelectorAll(".chip[data-f]").forEach(b=>b.setAttribute("aria-pressed",String(S.filter===b.dataset.f)));
   $("#clearF").hidden=!S.filter;
   const v=$("#view");
-  if(S.near){ $("#title").textContent="Autour de moi"; $("#crumb").textContent="Pièces récentes proches"; mb.hidden=true; v.innerHTML=nearHTML(); renderFoot(allTokens().filter(t=>GEO[t.id]&&recentUnits(t).length),"Pièces 2025-2027 sur la carte"); return; }
+  if(S.near){ $("#title").textContent="Autour de moi"; $("#crumb").textContent="Pièces vendues près d'ici"; mb.hidden=true; v.innerHTML=nearHTML(); renderFoot(allTokens().filter(t=>GEO[t.id]&&recentUnits(t).length),"Pièces 2025-2027 sur la carte"); return; }
   if(!S.cat && !S.q){ v.innerHTML=homeHTML(); renderFoot(allTokens(),"Toute la collection"); return; }
   const pool=allTokens().filter(t=>(!S.cat||inCat(t,S.cat)));
   const srt=mmode==="letter"?((a,b)=>a.name.localeCompare(b.name,"fr")):((a,b)=>String(a.years).localeCompare(String(b.years))||a.name.localeCompare(b.name));
