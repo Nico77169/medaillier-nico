@@ -1,7 +1,10 @@
-Pièces récentes à placer : 20 (déjà placées : 768)
-  ✗ introuvable : JTC FR84-1906 | Vallis Clausa - Le Moulin à Papier de Provence | Moulin à papier Vallis Clausa | 84
-  ✗ introuvable : JTC FR73-3092 | Les Arcs Film Festival | Association Révélations Culturelles | 73
-  ✗ introuvable : JTC FR14-4178 | Festival du film de Cabourg - Ailes |  | 14
+Pièces à placer : 3931 (déjà placées : 768, toutes années : true)
+  ✗ introuvable : JTC FR27-4487 | Arbora Lumina | Domaine D'Harcourt | 27
+  ✗ introuvable : JTC FR59-4488 | Ankama - Kama Anniversaire | AKM Distribution | 59
+  ✗ introuvable : JTC FR30-4651 | La Baleine en Course - Depuis 2026 | Société Du Muséum Des Salins Du Midi | 30
+  ✗ introuvable : JTC FR85-4658 | Le Potager Extraordinaire - Lagenaria Siceraria |  | 85
+  ✗ introuvable : JTC FR59-4702 | Ankama - Kama Anniversaire | AKM Distribution | 59
+  ✗ introuvable : JTC FR75-4740 | Hello Kitty | Hello Kitty - Beyon Cut | 75
   ✗ introuvable : JTC FR76-4222 | Normannia - Salon Médiéval Fantastique | Fédération Française Médiévale | 76
   ✗ introuvable : JTC FR77-4319 | CMC Paris | Congrès Mondial Des Collectionneurs De Paris | 77
   ✗ introuvable : JTC FR77-4320 | CMC Paris | Congrès Mondial Des Collectionneurs De Paris | 77
@@ -12,16 +15,431 @@ Pièces récentes à placer : 20 (déjà placées : 768)
   ✗ introuvable : JTC FR22-4461 | Le Mans - Cathédrale Saint Julien - Saint Julien et le Defensor de la Ville | La Boite à Médailles | 22
   ✗ introuvable : JTC FR22-4462 | Le Mans - Cathédrale Saint Julien - Saint Julien et le Defensor de la Ville | La Boite à Médailles | 22
   ✗ introuvable : JTC FR62-4474 | Le Varan de Voyage | La Compagnie Du Dragon | 62
-  ✗ introuvable : JTC FR27-4487 | Arbora Lumina | Domaine D'Harcourt | 27
-  ✗ introuvable : JTC FR59-4488 | Ankama - Kama Anniversaire | AKM Distribution | 59
   ✗ introuvable : JTC FR75-4495 | Ordre des Experts Comptables - 80 ans | Conseil Supérieur De L'Ordre Des Experts-Compables | 75
-  ✗ introuvable : JTC FR30-4651 | La Baleine en Course - Depuis 2026 | Société Du Muséum Des Salins Du Midi | 30
-  ✗ introuvable : JTC FR85-4658 | Le Potager Extraordinaire - Lagenaria Siceraria |  | 85
-  ✗ introuvable : JTC FR59-4702 | Ankama - Kama Anniversaire | AKM Distribution | 59
-  ✗ introuvable : JTC FR75-4740 | Hello Kitty | Hello Kitty - Beyon Cut | 75
-Terminé : {"l":0,"o":0,"v":0,"rien":20}
+  ✗ introuvable : JTC FR14-4178 | Festival du film de Cabourg - Ailes |  | 14
+  ✗ introuvable : JTC FR73-3092 | Les Arcs Film Festival | Association Révélations Culturelles | 73
+  ✗ introuvable : JTC FR84-1906 | Vallis Clausa - Le Moulin à Papier de Provence | Moulin à papier Vallis Clausa | 84
+  ✗ introuvable : JTC FR24-3955 | Les Collectionneurs Bergeracois - Cyrano regardant à gauche |  | 24
+  ✗ introuvable : JTC FR88-3957 | Grand la Gallo-Romaine - Les Gladiateurs | Site De Grand | 88
+Overpass erreur fetch failed
+Overpass erreur fetch failed
+Overpass erreur fetch failed
+Overpass erreur fetch failed
+… 50/3931 {"l":27,"o":1,"v":0,"rien":22}
+  ✗ introuvable : JTC FR22-3982 | Le Mans - Cathédrale Saint-Julien - Porche Royal | La Boite à Médailles | 22
+  ✗ introuvable : JTC FR22-3986 | Le Mans - Cathédrale Saint-Julien - Porche Royal | La Boite à Médailles | 22
+… 75/3931 {"l":47,"o":3,"v":1,"rien":24}
+… 100/3931 {"l":71,"o":4,"v":1,"rien":24}
+  ✗ introuvable : JTC FR11-4026 | Les Sels de Gruissan |  | 11
+  ✗ introuvable : JTC FR14-4046 | La Mora | Association La Mora – Guillaume Le Conquérant | 14
+… 125/3931 {"l":91,"o":6,"v":2,"rien":26}
+  ✗ introuvable : JTC FR75-4077 | Concours Lépine - 123 ans du concours |  | 75
+… 150/3931 {"l":110,"o":10,"v":3,"rien":27}
+… 175/3931 {"l":132,"o":13,"v":3,"rien":27}
+  ✗ introuvable : JTC FR68-4135 | Le Parc du Petit Prince - Assis sur sa Planète |  | 68
+… 200/3931 {"l":153,"o":16,"v":3,"rien":28}
+  ✗ introuvable : JTC FR59-4146 | Patrimoine Remarquable Douaisis | Office du Tourisme de Douai | 59
+  ✗ introuvable : JTC FR64-4147 | Parachutistes S.A.S - Libération de la France - 1944-2024 - Bretagne | La Chimère - 1er R.P.I.Ma | 64
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+… 225/3931 {"l":170,"o":22,"v":3,"rien":30}
+  ✗ introuvable : JTC FR80-4176 | Cirque Arlette Gruss - 40 ans |  | 80
+  ✗ introuvable : JTC FR80-4177 | Cirque Arlette Gruss - 40 ans |  | 80
+  ✗ introuvable : JTC FR64-4185 | Parachutistes S.A.S - Libération de la France - 1944-2024 - Jeep | La Chimère - 1er R.P.I.Ma | 64
+  ✗ introuvable : JTC FR59-4195 | Banque Daugecoin | AKM Distribution | 59
+  ✗ introuvable : JTC FR59-4196 | Banque Daugecoin | AKM Distribution | 59
+… 250/3931 {"l":188,"o":24,"v":3,"rien":35}
+  ✗ introuvable : JTC FR30-3706 | Le saunier de Camargue | Société Du Muséum Des Salins Du Midi | 30
+… 275/3931 {"l":211,"o":25,"v":3,"rien":36}
+… 325/3931 {"l":257,"o":29,"v":3,"rien":36}
+  ✗ introuvable : JTC FR75-3804 | Paris Capitale de la Gastronomie du Moyen Âge à nos jours | La Conciergerie | 75
+  ✗ introuvable : JTC FR14-3809 | Parc Festyland - Dina - Face cerclée |  | 14
+  ✗ introuvable : JTC FR75-3813 | Concours Lépine - 122 ans du concours |  | 75
+… 350/3931 {"l":274,"o":34,"v":3,"rien":39}
+  ✗ introuvable : JTC FR89-3818 | Amis et Pèlerins de Saint Jacques de la Voie de Vézelay | Amis Et Pèlerins St-Jacques De La Voie De Vézelay | 89
+… 375/3931 {"l":293,"o":39,"v":3,"rien":40}
+  ✗ introuvable : JTC FR84-3850 | Vallis Clausa - Le Moulin à Papier de Provence - 50 ans | Moulin à papier Vallis Clausa | 84
+… 400/3931 {"l":311,"o":45,"v":3,"rien":41}
+  ✗ introuvable : JTC FR25-3907 | Fortifications Vauban - 15 ans au Patrimoine Mondial de l'Unesco - 2008-2023 | Mission Réseau Vauban | 25
+… 425/3931 {"l":329,"o":48,"v":6,"rien":42}
+  ✗ introuvable : JTC FR76-3937 | Transmanche - Dieppe-Newhaven | DFDS France | 76
+… 450/3931 {"l":349,"o":52,"v":6,"rien":43}
+  ✗ introuvable : JTC FR94-3457 | Umstanda - Colombia 9000 | Umstanda France | 94
+  ✗ introuvable : JTC FR94-3458 | Umstanda - Colombia 9000 | Umstanda France | 94
+  réseau fetch failed
+  ✗ introuvable : JTC FR75-3483 | Comédie Française - 1622-2022 | La Comédie Française | 75
+… 500/3931 {"l":388,"o":60,"v":6,"rien":46}
+  ✗ introuvable : JTC FR11-3522 | Les sels de Gruissan - Logo |  | 11
+… 525/3931 {"l":408,"o":63,"v":7,"rien":47}
+  ✗ introuvable : JTC FR75-3546 | The Witcher - Le Sorceleur - Bragelonne | Editions Bragelonne | 75
+  ✗ introuvable : JTC FR03-3557 | Parc le Pal - Rhinocéros |  | 03
+  ✗ introuvable : JTC FR46-3559 | Les Grottes de Presque -1922 -2022 un siècle de visite |  | 46
+  ✗ introuvable : JTC FR22-3562 | Confrérie des chevaliers de la coquille St Jacques - 35 ans |  | 22
+… 550/3931 {"l":424,"o":68,"v":7,"rien":51}
+  ✗ introuvable : JTC FR75-3573 | Concours Lépine - 121 ans du concours |  | 75
+  ✗ introuvable : JTC FR63-3575 | Panoramique des Dômes - 2012-2022 10 ans ! | Les Boutiques Du Panoramique Des Dômes | 63
+  ✗ introuvable : JTC FR63-3576 | Panoramique des Dômes - 2012-2022 10 ans ! | Les Boutiques Du Panoramique Des Dômes | 63
+  ✗ introuvable : JTC FR06-3610 | Alpha - Parc Animalier - 2022 | Scenoparc Alpha, Le Temps Du Loup | 06
+… 600/3931 {"l":464,"o":73,"v":8,"rien":55}
+  ✗ introuvable : JTC FR84-3636 | Festival d'Avignon | Office De Tourisme | 84
+… 625/3931 {"l":485,"o":76,"v":8,"rien":56}
+  ✗ introuvable : JTC FR22-3664 | Le Mans - Cathédrale Saint-Julien - Porche Royal - Tympan | La Boite à Médailles | 22
+  ✗ introuvable : JTC FR22-3665 | Le Mans - Cathédrale Saint-Julien - Porche Royal - Tympan | La Boite à Médailles | 22
+  ✗ introuvable : JTC FR93-3671 | Téléthon - Blasons Coubron - Montfermeil - Clichy-sous- Bois | Gadiffert Et Crocfer | 93
+  ✗ introuvable : JTC FR75-3681 | Paris Cyber Summit |  | 75
+  ✗ introuvable : JTC FR75-3700 | France - FFF | Boutique FFF | 75
+… 650/3931 {"l":503,"o":78,"v":8,"rien":61}
+  ✗ introuvable : JTC FR24-3287 | Roulons Ensemble Avec Léa |  | 24
+  ✗ introuvable : JTC FR24-3288 | Roulons Ensemble Avec Léa |  | 24
+… 675/3931 {"l":522,"o":82,"v":8,"rien":63}
+  ✗ introuvable : JTC FR75-3293 | La Commune 150 ans - Place au peuple | Les Amies Et Amis De La Commune De Paris 1871 | 75
+  ✗ introuvable : JTC FR75-3331 | Bicentenaire de la mort de Napoléon - 1821-2021 | Réunion Des Musées Nationaux | 75
+… 725/3931 {"l":563,"o":88,"v":9,"rien":65}
+  ✗ introuvable : JTC FR62-3356 | Parc de Bagatelle - Les Woodies | Parc Bagatelle | 62
+… 750/3931 {"l":585,"o":90,"v":9,"rien":66}
+  ✗ introuvable : JTC FR38-3401 | Le petit train de la Mure - Isère |  | 38
+  ✗ introuvable : JTC FR06-3408 | Grasse, capitale mondiale du parfum | Beauté Monde | 06
+… 775/3931 {"l":606,"o":92,"v":9,"rien":68}
+  ✗ introuvable : JTC FR13-3420 | Ieu m'en fouti, sieu d'Auruou | Mairie D'Auriol | 13
+  ✗ introuvable : JTC FR93-3427 | Téléthon - Blasons Stains Pierrefitte-sur-Seine Villetaneuse | Gadiffert Et Crocfer | 93
+  ✗ introuvable : JTC FR75-3429 | Concours Lépine - 120 ans du concours |  | 75
+… 825/3931 {"l":646,"o":97,"v":11,"rien":71}
+  ✗ introuvable : JTC FR76-3104 | Abbayes de Normandie - Route historique |  | 76
+  ✗ introuvable : JTC FR03-3116 | Parc le Pal - Palou et Paline |  | 03
+… 850/3931 {"l":668,"o":98,"v":11,"rien":73}
+… 875/3931 {"l":687,"o":104,"v":11,"rien":73}
+  ✗ introuvable : JTC FR03-3160 | Vallée du cœur de France - Destination Val de Cher | Office De Tourisme De La Vallée Du Coeur De France | 03
+… 900/3931 {"l":706,"o":107,"v":13,"rien":74}
+  ✗ introuvable : JTC FR14-3213 | Parc Festyland - Festy casque |  | 14
+… 925/3931 {"l":728,"o":109,"v":13,"rien":75}
+  ✗ introuvable : JTC FR17-3228 | Le Pont transbordeur - 120 ans - 1900-2020 | Communauté D'Agglomération Du Pays Rochefortais | 17
+… 950/3931 {"l":749,"o":112,"v":13,"rien":76}
+  ✗ introuvable : JTC FR75-3248 | Concours Lépine - 119 ans du concours |  | 75
+  ✗ introuvable : JTC FR54-3252 | Saint-Nicolas en Lorraine | Les Emaux D'Or | 54
+  ✗ introuvable : JTC FR93-3255 | Téléthon - Blasons Rosny-sous-Bois Neuilly-Plaisance Montreuil | Gadiffert Et Crocfer | 93
+  ✗ introuvable : JTC FR22-3259 | Le Mans - Cathédrale Saint-Julien - 900 ans de la dédicace de l'église romane | La Boite à Médailles | 22
+  ✗ introuvable : JTC FR22-3260 | Le Mans - Cathédrale Saint-Julien - 900 ans de la dédicace de l'église romane | La Boite à Médailles | 22
+  ✗ introuvable : JTC FR22-2837 | Le Mans - Cathédrale Saint Julien - En synode 2018-2019 | La Boite à Médailles | 22
+  ✗ introuvable : JTC FR22-2838 | Le Mans - Cathédrale Saint Julien - En synode 2018-2019 | La Boite à Médailles | 22
+… 1000/3931 {"l":787,"o":115,"v":15,"rien":83}
+… 1025/3931 {"l":808,"o":119,"v":15,"rien":83}
+  ✗ introuvable : JTC FR03-2892 | Parc le Pal - Le loup |  | 03
+  ✗ introuvable : JTC FR03-2893 | Parc le Pal - Le Perroquet |  | 03
+… 1050/3931 {"l":824,"o":126,"v":15,"rien":85}
+… 1075/3931 {"l":844,"o":131,"v":15,"rien":85}
+  HTTP 503 https://api-adresse.data.gouv.fr/search/?type=municipality&limit=5&q=La%20cigogne
+  ✗ introuvable : JTC FR13-2929 | Alsace - La cigogne | Editions Infopuce | 13
+  ✗ introuvable : JTC FR13-2930 | Alsace - La cigogne | Editions Infopuce | 13
+  ✗ introuvable : JTC FR13-2940 | Parc zoologique de la Barben - Le loup |  | 13
+  ✗ introuvable : JTC FR75-2941 | Concours Lépine - 118 ans du concours |  | 75
+  ✗ introuvable : JTC FR75-2947 | Chancellerie des Universités de Paris |  | 75
+… 1100/3931 {"l":863,"o":132,"v":15,"rien":90}
+… 1125/3931 {"l":883,"o":135,"v":17,"rien":90}
+… 1150/3931 {"l":906,"o":137,"v":17,"rien":90}
+  ✗ introuvable : JTC FR92-3014 | Citroën 1919-2019 | Automobiles Citroën | 92
+  ✗ introuvable : JTC FR75-3022 | Le Petit Palais - Vue de l'entrée |  | 75
+  ✗ introuvable : JTC FR49-3036 | Souvenir Vendéen - Association fondée en 1932 | Association Le Souvenir Vendéen | 49
+  ✗ introuvable : JTC FR75-3038 | La Conciergerie - Marie-Antoinette |  | 75
+… 1175/3931 {"l":924,"o":140,"v":17,"rien":94}
+  ✗ introuvable : JTC FR93-3049 | Téléthon - Blasons Aubervilliers Pantin La Courneuve | Gadiffert Et Crocfer | 93
+… 1200/3931 {"l":948,"o":140,"v":17,"rien":95}
+… 1225/3931 {"l":972,"o":141,"v":17,"rien":95}
+… 1250/3931 {"l":994,"o":144,"v":17,"rien":95}
+  ✗ introuvable : JTC FR25-2654 | Fortifications Vauban - 10 ans au Patrimoine Mondial de l'Unesco | Mission Réseau Vauban | 25
+  ✗ introuvable : JTC FR13-2658 | Bretagne - L'hermine | Editions Infopuce | 13
+  ✗ introuvable : JTC FR13-2659 | Bretagne - L'hermine | Editions Infopuce | 13
+… 1275/3931 {"l":1014,"o":145,"v":18,"rien":98}
+  ✗ introuvable : JTC FR11-2684 | Les sels de Gruissan - La barque |  | 11
+… 1300/3931 {"l":1035,"o":148,"v":18,"rien":99}
+… 1325/3931 {"l":1055,"o":153,"v":18,"rien":99}
+  ✗ introuvable : JTC FR13-2721 | Bretagne - L'hermine - Type 2 | Editions Infopuce | 13
+  ✗ introuvable : JTC FR13-2722 | Bretagne - L'hermine - Type 2 | Editions Infopuce | 13
+  ✗ introuvable : JTC FR75-2735 | Concours Lépine - 117 ans du concours |  | 75
+  ✗ introuvable : JTC FR08-2741 | 1521 Mézières assiégée - Défendue par Bayard - ANA | Association Numismatique Ardennaise | 08
+… 1350/3931 {"l":1074,"o":155,"v":18,"rien":103}
+  ✗ introuvable : JTC FR37-2750 | Musée Ronsard | Conseil Départemental D’Indre-et-Loire | 37
+  ✗ introuvable : JTC FR17-2752 | Pont de Ré - 30 ans - 1988-2018 | Office De Tourisme Destination île De Ré | 17
+  ✗ introuvable : JTC FR51-2754 | Venteuil - Village de Champagne | Angélique BELLOT | 77
+  ✗ introuvable : JTC FR75-2765 | Salon Paris Philex - 2ème édition - 7-10 juin 2018 | Paris-Philex | 75
+… 1375/3931 {"l":1094,"o":156,"v":18,"rien":107}
+  ✗ introuvable : JTC FR93-2794 | Téléthon - Blasons Villepinte Tremblay-en-France Vaujours | Association Numismatique De Bondy | 93
+… 1400/3931 {"l":1115,"o":158,"v":19,"rien":108}
+  ✗ introuvable : JTC FR94-2800 | Ryder Cup 2018 | Philaposte | 94
+  ✗ introuvable : JTC FR55-2814 | Fondation de l'Ossuaire de Douaumont - Armistice - 1918-2018 |  | 55
+  ✗ introuvable : JTC FR83-2433 | Rugby Top 14 - 2016-2017 - Le logo | SV Concept Et Process | 83
+  ✗ introuvable : JTC FR83-2434 | Rugby Top 14 - 2016-2017 - Bayonne | SV Concept Et Process | 83
+  ✗ introuvable : JTC FR83-2435 | Rugby Top 14 - 2016-2017 - Bordeaux-Bègles | SV Concept Et Process | 83
+  ✗ introuvable : JTC FR83-2436 | Rugby Top 14 - 2016-2017 - Brive | SV Concept Et Process | 83
+  HTTP 503 https://api-adresse.data.gouv.fr/search/?type=municipality&limit=5&q=2016-2017
+  ✗ introuvable : JTC FR83-2437 | Rugby Top 14 - 2016-2017 - Castres | SV Concept Et Process | 83
+  ✗ introuvable : JTC FR83-2438 | Rugby Top 14 - 2016-2017 - Clermont | SV Concept Et Process | 83
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR83-2439 | Rugby Top 14 - 2016-2017 - Grenoble | SV Concept Et Process | 83
+  ✗ introuvable : JTC FR83-2440 | Rugby Top 14 - 2016-2017 - La Rochelle | SV Concept Et Process | 83
+  ✗ introuvable : JTC FR83-2441 | Rugby Top 14 - 2016-2017 - Lyon | SV Concept Et Process | 83
+  ✗ introuvable : JTC FR83-2442 | Rugby Top 14 - 2016-2017 - Montpellier | SV Concept Et Process | 83
+  ✗ introuvable : JTC FR83-2443 | Rugby Top 14 - 2016-2017 - Paris | SV Concept Et Process | 83
+  ✗ introuvable : JTC FR83-2444 | Rugby Top 14 - 2016-2017 - Pau | SV Concept Et Process | 83
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR83-2445 | Rugby Top 14 - 2016-2017 - Racing 92 | SV Concept Et Process | 83
+  ✗ introuvable : JTC FR83-2446 | Rugby Top 14 - 2016-2017 - Toulon | SV Concept Et Process | 83
+  ✗ introuvable : JTC FR83-2447 | Rugby Top 14 - 2016-2017 - Toulouse | SV Concept Et Process | 83
+… 1450/3931 {"l":1142,"o":163,"v":20,"rien":125}
+  ✗ introuvable : JTC FR76-2488 | Association Jubilee - 75ème anniversaire - Raid du 19 août 1942 | Association Jubilee - Dieppe | 76
+… 1475/3931 {"l":1164,"o":163,"v":22,"rien":126}
+  ✗ introuvable : JTC DE21-2508 | Les éditions Leuchtturm fêtent leurs 100 ans - 1917-2017 | Leuchtturm Albenverlag GmbH & Co. KG | 
+… 1500/3931 {"l":1182,"o":168,"v":23,"rien":127}
+  ✗ introuvable : JTC FR03-2533 | Parc le Pal - La girafe et son petit |  | 03
+  ✗ introuvable : JTC FR14-2539 | Parc Festyland - Miolnyr |  | 14
+… 1525/3931 {"l":1201,"o":171,"v":24,"rien":129}
+  ✗ introuvable : JTC FR13-2562 | Parc zoologique de la Barben - Le guépard |  | 13
+  ✗ introuvable : JTC FR75-2566 | Concours Lépine - 116 ans du concours |  | 75
+… 1550/3931 {"l":1220,"o":175,"v":24,"rien":131}
+  ✗ introuvable : JTC FR14-2588 | Festival du film de Cabourg - Le Cygne |  | 14
+… 1575/3931 {"l":1241,"o":178,"v":24,"rien":132}
+  ✗ introuvable : JTC FR22-2605 | Le Mans - Cathédrale Saint Julien - Francja 1917-2017 | La Boite à Médailles | 22
+  ✗ introuvable : JTC FR22-2606 | Le Mans - Cathédrale Saint Julien - Francja 1917-2017 | La Boite à Médailles | 22
+… 1600/3931 {"l":1259,"o":183,"v":24,"rien":134}
+  ✗ introuvable : JTC FR24-2160 | Les Collectionneurs Bergeracois - Cyrano regardant à droite |  | 24
+  ✗ introuvable : JTC FR34-2174 | Sites d'Exception en Languedoc |  | 34
+  ✗ introuvable : JTC FR63-2175 | Ensemble pour Flo - Pour vivre mes passions |  | 63
+  ✗ introuvable : JTC FR63-2176 | Ensemble pour Flo - Pour vivre mes passions |  | 63
+  ✗ introuvable : JTC FR13-2180 | Scorpion - Signe d'eau - Du 23 octobre au 21 novembre | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR13-2181 | Sagittaire - Signe de feu - Du 22 novembre au 20 décembre | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR13-2182 | Balance - Signe d'air - Du 23 septembre au 22 octobre | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR13-2183 | Capricorne - Signe de terre - Du 21 décembre au 19 janvier | Aubagne Philatélie | 13
+… 1625/3931 {"l":1271,"o":186,"v":26,"rien":142}
+  ✗ introuvable : JTC FR83-2200 | Toulon RCT triple champion d'Europe face lisse | Rugby Club Toulonnais | 83
+  ✗ introuvable : JTC FR83-2201 | Toulon RCT triple champion d'Europe muguet | Rugby Club Toulonnais | 83
+… 1650/3931 {"l":1292,"o":188,"v":26,"rien":144}
+  ✗ introuvable : JTC FR13-2214 | Paris - Les monuments | Editions Infopuce | 13
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR88-2234 | Grand la Gallo-Romaine - Le Sanglier, l’Amphithéâtre et les Arcades | Site De Grand | 88
+… 1675/3931 {"l":1310,"o":193,"v":26,"rien":146}
+  ✗ introuvable : JTC FR41-2252 | Fédération Française d'Equitation - Logo |  | 41
+  ✗ introuvable : JTC FR13-2254 | Parc zoologique de la Barben - Le panda roux |  | 13
+  ✗ introuvable : JTC FR03-2261 | Parc le Pal - Palou |  | 03
+… 1700/3931 {"l":1328,"o":197,"v":26,"rien":149}
+  ✗ introuvable : JTC FR22-2268 | Le Mans - Cathédrale Saint Julien - Jubilé de la Miséricorde | La Boite à Médailles | 22
+  ✗ introuvable : JTC FR22-2269 | Le Mans - Cathédrale Saint Julien - Jubilé de la Miséricorde | La Boite à Médailles | 22
+  ✗ introuvable : JTC FR67-2271 | Z1Zoo - Asie - Eclectus Roratus | M. Didier BAYEN - Perroquet Club | 67
+  ✗ introuvable : JTC FR67-2272 | Z1Zoo - Australie - Cacatoès de Leadbeater | M. Didier BAYEN - Perroquet Club | 67
+  ✗ introuvable : JTC FR67-2273 | Z1Zoo - Amérique - Ara Ararauna | M. Didier BAYEN - Perroquet Club | 67
+  ✗ introuvable : JTC FR67-2274 | Z1Zoo - Afrique - Gris du Gabon | M. Didier BAYEN - Perroquet Club | 67
+  ✗ introuvable : JTC FR67-2275 | Z1Zoo - Afrique - Inséparable masqué | M. Didier BAYEN - Perroquet Club | 67
+  ✗ introuvable : JTC FR67-2276 | Z1Zoo - Perroquet du Sénégal | M. Didier BAYEN - Perroquet Club | 67
+  ✗ introuvable : JTC FR67-2277 | Z1Zoo - Elever pour préserver | M. Didier BAYEN - Perroquet Club | 67
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR75-2309 | Belem - 120 ans - 1896-2016 | Fondation Belem | 75
+… 1750/3931 {"l":1365,"o":199,"v":27,"rien":159}
+  ✗ introuvable : JTC FR75-2326 | Cabourg - Méridien de l'Amour | Orbis Média | 75
+  ✗ introuvable : JTC FR75-2328 | Concours Lépine - 1901-2016 - 115 ans du concours |  | 75
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+… 1775/3931 {"l":1382,"o":205,"v":27,"rien":161}
+… 1800/3931 {"l":1404,"o":208,"v":27,"rien":161}
+  ✗ introuvable : JTC FR75-2391 | Les Etoiles du Rex - 20 ans - 1996-2016 |  | 75
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+… 1825/3931 {"l":1419,"o":214,"v":30,"rien":162}
+  HTTP 503 https://api-adresse.data.gouv.fr/search/?type=municipality&limit=5&q=Carr%C3%A9%20d'Encre
+  ✗ introuvable : JTC FR75-2451 | Carré d'Encre - 7ème anniversaire - 2 décembre 2016 |  | 75
+  ✗ introuvable : JTC FR75-2452 | Carré d'Encre - 7ème anniversaire - 2 décembre 2016 |  | 75
+  ✗ introuvable : JTC FR60-2455 | Mircea Cantor | Fondation Francès | 60
+… 1850/3931 {"l":1441,"o":214,"v":30,"rien":165}
+  ✗ introuvable : JTC FR19-1900 | Une médaille pour l'Amour ! | UneMedaillePour.fr | 19
+  ✗ introuvable : JTC FR19-1925 | Une médaille pour l'Amour ! | UneMedaillePour.fr | 19
+  ✗ introuvable : JTC FR13-1978 | Cancer - Signe d'eau - Du 22 juin au 22 juillet | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR13-1979 | Les 7 merveilles du monde antique - Le colosse de Rhodes | Aubagne Philatélie | 13
+… 1875/3931 {"l":1458,"o":218,"v":30,"rien":169}
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR75-1989 | Carré d'Encre - La Poste 2015 - Année de la Chèvre |  | 75
+  HTTP 503 https://api-adresse.data.gouv.fr/search/?type=municipality&limit=5&q=24%20octobre%202015
+  ✗ introuvable : JTC FR75-1996 | Salon du Jeton Touristique - 24 octobre 2015 - Paris | Salon Du Jeton Touristique / Espace Charenton | 75
+  ✗ introuvable : JTC FR19-2000 | Une médaille pour la Liberté ! | UneMedaillePour.fr | 19
+  ✗ introuvable : JTC FR19-2001 | Une médaille pour la Liberté ! | UneMedaillePour.fr | 19
+  ✗ introuvable : JTC FR57-2007 | Domaine de Lindre Espace Naturel Sensible de Moselle |  | 57
+… 1900/3931 {"l":1473,"o":223,"v":30,"rien":174}
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  HTTP 400 https://api-adresse.data.gouv.fr/search/?type=municipality&limit=5&q=%2210%20ans%20d%C3%A9
+  HTTP 400 https://api-adresse.data.gouv.fr/search/?type=municipality&limit=5&q=%2210%20ans%20d%C3%A9
+  HTTP 400 https://api-adresse.data.gouv.fr/search/?type=municipality&limit=5&q=%2210%20ans%20d%C3%A9
+  HTTP 400 https://api-adresse.data.gouv.fr/search/?type=municipality&limit=5&q=%2210%20ans%20d%C3%A9
+  HTTP 400 https://api-adresse.data.gouv.fr/search/?type=municipality&limit=5&q=%2210%20ans%20d%C3%A9
+  ✗ introuvable : JTC FR87-2008 | Les Nez Rouges - "10 ans déjà !" | Association "Les Nez Rouges" | 87
+  ✗ introuvable : JTC FR68-2020 | Le Parc du Petit Prince - Le premier parc aérien au monde |  | 68
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+… 1925/3931 {"l":1492,"o":227,"v":30,"rien":176}
+  ✗ introuvable : JTC FR92-2047 | Le Domaine des Dieux - Astérix et Obélix | SND | 92
+  ✗ introuvable : JTC FR92-2048 | Le Domaine des Dieux - Cesar | SND | 92
+  ✗ introuvable : JTC FR92-2049 | Le Domaine des Dieux - Obelix | SND | 92
+… 1950/3931 {"l":1507,"o":233,"v":31,"rien":179}
+  ✗ introuvable : JTC FR03-2065 | Parc le Pal - La tête de lion |  | 03
+  ✗ introuvable : JTC FR13-2078 | Les 7 merveilles du monde antique - Les jardins suspendus de Babylone | Aubagne Philatélie | 13
+… 1975/3931 {"l":1523,"o":238,"v":33,"rien":181}
+  ✗ introuvable : JTC FR22-2096 | Cathédrale Saint Julien du Mans | La Boite à Médailles | 22
+  ✗ introuvable : JTC FR80-2103 | Cirque Arlette Gruss - 30 ans |  | 80
+  ✗ introuvable : JTC FR22-2107 | Cathédrale Saint Julien du Mans | La Boite à Médailles | 22
+… 2000/3931 {"l":1542,"o":241,"v":33,"rien":184}
+  ✗ introuvable : JTC FR13-2124 | Lion - Signe de feu - Du 23 juillet au 22 août | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR13-2125 | Les 7 merveilles du monde antique - La pyramide de Khéops | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR76-2129 | Les Oubliés du Meknès - 75e anniversaire - 24 juillet 1940 - 24 juillet 2015 | Association « Les Oubliés du Meknès » | 76
+  ✗ introuvable : JTC FR11-2132 | Château de Quéribus et son rocher |  | 11
+… 2025/3931 {"l":1557,"o":246,"v":34,"rien":188}
+  ✗ introuvable : JTC FR75-2159 | Ordre des Experts Comptables - 70 ans | Conseil Supérieur De L'Ordre Des Experts-Compables | 75
+  ✗ introuvable : JTC FR13-2167 | Vierge - Signe de terre - Du 23 août au 22 septembre | Aubagne Philatélie | 13
+… 2050/3931 {"l":1578,"o":247,"v":35,"rien":190}
+  ✗ introuvable : JTC FR75-2178 | Carré d'Encre - 6ème anniversaire - 2 décembre 2015 |  | 75
+  ✗ introuvable : JTC FR75-2449 | La Tribune - 30 ans |  | 75
+  ✗ introuvable : JTC FR75-2475 | A.O.C.D.T.F. - Les Compagnons du Devoir - Ile de France | Les Compagnons Du Devoir Et Du Tour De France | 75
+  ✗ introuvable : JTC FR75-2476 | A.O.C.D.T.F. - Les Compagnons du Devoir - Ile de France | Les Compagnons Du Devoir Et Du Tour De France | 75
+… 2075/3931 {"l":1599,"o":247,"v":35,"rien":194}
+  ✗ introuvable : JTC FR13-1715 | Les 7 merveilles du monde antique - Le phare d'Alexandrie | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR13-1716 | Verseau - Signe d'air - Du 21 janvier au 18 février | Aubagne Philatélie | 13
+… 2100/3931 {"l":1613,"o":255,"v":36,"rien":196}
+  ✗ introuvable : JTC FR13-1743 | Parc zoologique de la Barben - L'ours brun |  | 13
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+… 2125/3931 {"l":1635,"o":257,"v":36,"rien":197}
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR51-1774 | Bicentenaire de la campagne de France - 1814-2014 | Ass. de la Commémoration de la Campagne de France | 51
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR87-1789 | J'aime la France - Première destination touristique mondiale ! | Association Jetons-Touristiques.com St- Victurnien | 87
+  ✗ introuvable : JTC FR75-1792 | Holiday on Ice 2014 - 70e anniversaire | Stage Entertainment France | 75
+… 2150/3931 {"l":1655,"o":259,"v":36,"rien":200}
+  ✗ introuvable : JTC FR19-1800 | Une médaille pour la Paix ! | UneMedaillePour.fr | 19
+  ✗ introuvable : JTC FR22-1816 | Le Mans - Cathédrale Saint Julien - Les Anges Musiciens | La Boite à Médailles | 22
+… 2175/3931 {"l":1675,"o":262,"v":36,"rien":202}
+  ✗ introuvable : JTC FR13-1822 | Poissons - Signe d'eau - Du 19 février au 20 mars | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR13-1823 | Bélier - Signe de feu - Du 21 mars au 20 avril | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR13-1824 | Les 7 merveilles du monde antique - La statue de Zeus | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR75-1836 | Parc zoologique de Paris - Vue d'ensemble |  | 75
+  ✗ introuvable : JTC FR13-1841 | Frédéric Mistral - 1830-1914 - Centenaire de son décès | Conservatoire Documentaire et Culturel F.Mistral | 13
+  ✗ introuvable : JTC FR75-1843 | Le lieu du design - Tramway 2014 - Une école Française | Le Lieu Du Design [Site Fermé] | 75
+… 2200/3931 {"l":1690,"o":266,"v":36,"rien":208}
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR75-1866 | Centre des monuments nationaux - Les 100 ans ! |  | 75
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR63-1869 | Panoramique des Dômes - Le logo | Les Boutiques Du Panoramique Des Dômes | 63
+… 2225/3931 {"l":1711,"o":268,"v":36,"rien":210}
+  ✗ introuvable : JTC FR03-1872 | Parc Le Pal - Tom l'éléphanteau et sa mère Nina |  | 03
+  ✗ introuvable : JTC FR75-1873 | Carré d'Encre - 5ème anniversaire - 2 décembre 2014 |  | 75
+  ✗ introuvable : JTC FR13-1875 | Rowing Club de Marseille - 100 ans |  | 13
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR13-1878 | Taureau - Signe de terre - Du 21 avril au 20 mai | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR13-1879 | Les 7 merveilles du monde antique - Le temple d'Artemis | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR19-1882 | R5 - Le Maquis du Limousin | UneMedaillePour.fr | 19
+  ✗ introuvable : JTC FR67-1889 | Tenerife - Loro Parque Fundacion - VIII International Parrot Convention | M. Didier BAYEN - Perroquet Club | 67
+  ✗ introuvable : JTC FR13-1895 | Lyon - Place Bellecour - Monument à Louis XIV | Editions Infopuce | 13
+… 2250/3931 {"l":1724,"o":272,"v":36,"rien":218}
+  ✗ introuvable : JTC FR34-1899 | Aquarium Mare Nostrum - Explorateurs d'océan | PlanetOcean Montpellier | 34
+  ✗ introuvable : JTC IR00-1914 | St Canice's Kilkenny Credit Union Ltd - 1964-2014 |  | 
+  ✗ introuvable : JTC FR19-1920 | Une médaille pour la Paix ! | UneMedaillePour.fr | 19
+  ✗ introuvable : JTC FR75-1923 | Holiday on Ice 2014 - 70e anniversaire | Stage Entertainment France | 75
+… 2275/3931 {"l":1742,"o":274,"v":37,"rien":222}
+  ✗ introuvable : JTC FR67-1934 | Tenerife - Loro Parque Fundacion - VIII International Parrot Convention | M. Didier BAYEN - Perroquet Club | 67
+  ✗ introuvable : JTC FR13-1935 | Gémeaux - Signe d'air - Du 21 mai au 21 juin | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR13-1936 | Les 7 merveilles du monde antique - Le mausolée d'Halicarnasse | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR13-1938 | Appellation Bandol Contrôlée | Aubagne Philatélie | 13
+  ✗ introuvable : JTC FR74-1940 | Cent cinquantenaire de la Compagnie des Guides du Val Montjoie - 1864-2014 | Bureau des Guides de Saint Gervais | 74
+  ✗ introuvable : JTC FR14-1957 | Festival du film de Cabourg |  | 14
+  ✗ introuvable : JTC FR73-2149 | Festival de Cinéma Européen des Arcs | Association Révélations Culturelles | 73
+  ✗ introuvable : JTC FR75-1457 | Les Amis de l'Euro - Une passion depuis 10 ans - 2003-2013 |  | 75
+  ✗ introuvable : JTC FR15-1513 | Chemins de Fer de la Haute Auvergne - X 2908 |  | 15
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+… 2325/3931 {"l":1776,"o":281,"v":37,"rien":231}
+  ✗ introuvable : JTC FR22-1531 | Le Mans - Cathédrale Saint Julien - Le vitrail de l'Ascension | La Boite à Médailles | 22
+  ✗ introuvable : JTC FR04-1540 | AFPM - 43e rassemblement EMP-Gap Tallard 2013 | Association Française Des Pilotes De Montagne | 04
+  ✗ introuvable : JTC FR75-1551 | Carré d'Encre - 3ème anniversaire - 2 décembre 2012 |  | 75
+  ✗ introuvable : JTC FR75-1554 | Editions Atlas - Les Archives Astérix |  | 75
+… 2350/3931 {"l":1792,"o":286,"v":37,"rien":235}
+  ✗ introuvable : JTC FR75-1565 | Salon du Jeton Touristique - 26 octobre 2013 - Paris | Salon Du Jeton Touristique / Espace Charenton | 75
+  ✗ introuvable : JTC FR67-1580 | La Montagne des Singes - Bébé singe dans les bras de sa mère |  | 67
+… 2375/3931 {"l":1811,"o":289,"v":38,"rien":237}
+  ✗ introuvable : JTC FR31-1586 | CGT - 50e congrès - Plus fort ensemble | 50e Congrès de la CGT | 31
+  ✗ introuvable : JTC FR75-1589 | L'Age de Glace Live ! Tournée 2013 | Stage Entertainment France | 75
+… 2400/3931 {"l":1828,"o":294,"v":39,"rien":239}
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+… 2425/3931 {"l":1849,"o":297,"v":40,"rien":239}
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+… 2450/3931 {"l":1869,"o":301,"v":41,"rien":239}
+  ✗ introuvable : JTC FR93-1663 | Téléthon - Blasons Gagny Le Raincy Villemomble | Association Numismatique De Bondy | 93
+  ✗ introuvable : JTC FR13-1670 | Santons Fouque - Comtadine à la gerbe de blé | Editions Infopuce | 13
+  ✗ introuvable : JTC FR84-1674 | Vallis Clausa - Le Moulin à Papier de Provence - 40 ans | Moulin à papier Vallis Clausa | 84
+  ✗ introuvable : JTC FR15-1683 | Cathédrale Saint-Pierre - Les Amis de la Cathédrale - Saint-Flour | Maison Paroissiale - Les Amis De La Cathédrale | 15
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+… 2475/3931 {"l":1885,"o":305,"v":42,"rien":243}
+  ✗ introuvable : JTC FR22-1695 | Confrérie des chevaliers de la coquille St Jacques - 25 ans |  | 22
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR75-1770 | Maîtres Cuisiniers de France - Reims 2013 | Association Des Maîtres Cuisiniers De France | 75
+  ✗ introuvable : JTC FR73-2148 | Festival de Cinéma Européen des Arcs 2013 | Association Révélations Culturelles | 73
+  ✗ introuvable : JTC FR22-1301 | Cathédrale du Mans - 1962-2012 - 50 ans du concile Vatican II | La Boite à Médailles | 22
+… 2525/3931 {"l":1929,"o":307,"v":42,"rien":247}
+  ✗ introuvable : JTC FR18-1322 | Route Jacques Coeur en Berry - Les anges et le blason | Association Route Jacques Coeur | 18
+… 2550/3931 {"l":1951,"o":309,"v":42,"rien":248}
+  ✗ introuvable : JTC FR87-1330 | Le Père-Noël | Association Jetons-Touristiques.com St- Victurnien | 87
+  ✗ introuvable : JTC FR87-1331 | Association Jetons-Touristiques.com - Le logo | Association Jetons-Touristiques.com St- Victurnien | 87
+  ✗ introuvable : JTC FR75-1341 | Concours général agricole des animaux 2012 | Salon de l'Agriculture | 75
+… 2575/3931 {"l":1970,"o":312,"v":42,"rien":251}
+  ✗ introuvable : JTC FR13-1368 | 6ème World Water Forum - La goutte d'eau | Editions Infopuce | 13
+  ✗ introuvable : JTC FR13-1380 | Parc zoologique de La Barben - Les deux tigres |  | 13
+… 2600/3931 {"l":1989,"o":315,"v":43,"rien":253}
+  ✗ introuvable : JTC FR78-1388 | Provins Duke Festival | PXR Média | 78
+… 2625/3931 {"l":2010,"o":318,"v":43,"rien":254}
+  ✗ introuvable : JTC FR75-1414 | La Conciergerie - Face cerclée |  | 75
+… 2650/3931 {"l":2033,"o":318,"v":44,"rien":255}
+  ✗ introuvable : JTC FR93-1460 | Téléthon - Blasons Bondy Livry-Gargan Pavillons-sous- Bois | Association Numismatique De Bondy | 93
+… 2675/3931 {"l":2053,"o":319,"v":47,"rien":256}
+  ✗ introuvable : JTC FR08-1473 | Arthur Rimbaud né à Charleville le 20 octobre 1854 - ANA | Association Numismatique Ardennaise | 08
+… 2700/3931 {"l":2074,"o":322,"v":47,"rien":257}
+  réseau fetch failed
+  ✗ introuvable : JTC FR59-1492 | Chiens Guides d'Aveugles - 60 ans ensemble |  | 59
+  ✗ introuvable : JTC FR13-1493 | Les Coquelicots | Editions Infopuce | 13
+  ✗ introuvable : JTC FR75-1501 | Mamma Mia ! La tournée 2012-2013 | Stage Entertainment France | 75
+  ✗ introuvable : JTC FR33-1504 | Lascaux - La frise des cerfs | Lascaux - Exposition Internationale | 33
+  ✗ introuvable : JTC FR67-1512 | Perroquet Club - Perroquet du Sénégal | M. Didier BAYEN - Perroquet Club | 67
+  ✗ introuvable : JTC FR13-1539 | Santons fouque - Jubilé de Renaude | Editions Infopuce | 13
+… 2725/3931 {"l":2091,"o":324,"v":47,"rien":263}
+  ✗ introuvable : JTC FR75-1546 | Federation Française du Sport Automobile - 1952-2012 - 60 ans | F.F.S.A. | 75
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR07-1116 | Parc Avenue - Le petit train et le toboggan boa |  | 07
+… 2750/3931 {"l":2110,"o":328,"v":47,"rien":265}
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR93-1123 | Eclaireuses Eclaireurs de France - 100 ans de liens pour la jeunesse |  | 93
+… 2775/3931 {"l":2131,"o":331,"v":47,"rien":266}
+  ✗ introuvable : JTC FR13-1151 | Salon du Chocolat - Les gourmandises |  | 13
+  ✗ introuvable : JTC FR30-1162 | IRRP Information - Recherche Rétinite Pigmentaire |  | 30
+  ✗ introuvable : JTC FR34-1173 | Aquarium Mare Nostrum - Le poulpe | PlanetOcean Montpellier | 34
+… 2800/3931 {"l":2152,"o":332,"v":47,"rien":269}
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR75-1183 | Holiday on Ice - Depuis 1951 en France | Stage Entertainment France | 75
+  ✗ introuvable : JTC FR75-1184 | Concours général agricole 2011 | Salon de l'Agriculture | 75
+  ✗ introuvable : JTC FR75-1196 | Salon du Jeton Touristique - 29 octobre 2011 - Paris | Salon Du Jeton Touristique / Espace Charenton | 75
+… 2825/3931 {"l":2170,"o":335,"v":48,"rien":272}
+  ✗ introuvable : JTC FR79-1204 | 20 ans Groupama Centre-Atlantique |  | 79
+  ✗ introuvable : JTC FR13-1209 | La Parpaïolle | Editions Infopuce | 13
+  ✗ introuvable : JTC FR75-1227 | Concours Lépine - 1901-2011 - Les 110 ans du concours |  | 75
+… 2850/3931 {"l":2189,"o":337,"v":49,"rien":275}
+  HTTP 503 https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countryc
+  ✗ introuvable : JTC FR85-1229 | Fête de la Musique - 30ème Anniversaire - 21 juin 2011 | Monnaie Finances | 85
+… 2875/3931 {"l":2207,"o":342,"v":50,"rien":276}
+  ✗ introuvable : JTC FR13-1257 | Santons Fouque - Le Grand Peintre Aixois | Editions Infopuce | 13
+  ✗ introuvable : JTC FR93-1263 | Téléthon - Blasons Drancy Dugny Le Bourget | Association Numismatique De Bondy | 93
+  ✗ introuvable : JTC FR67-1271 | Perroquet Club - Afrique - Inséparable masqué | M. Didier BAYEN - Perroquet Club | 67
+  ✗ introuvable : JTC FR87-1272 | Les 15 ans d'EVM | Association Jetons-Touristiques.com St- Victurnien | 87
+  ✗ introuvable : JTC FR93-1285 | Robert Bosch SAS - 1886-2011 - 125 ans | Robert Bosch France SAS | 93
+  ✗ introuvable : JTC FR06-1300 | G20 France 2011 - Nouveau monde, nouvelles idées | G20 - Sommet de Cannes 2011 | 06
+  ✗ introuvable : JTC FR13-0972 | Salon du Chocolat - La cabosse |  | 13
+  ✗ introuvable : JTC FR75-0973 | RétroMobile 2010 - 35e anniversaire | Salon RetroMobile | 75
+… 2925/3931 {"l":2243,"o":346,"v":52,"rien":284}
+  ✗ introuvable : JTC FR59-0980 | Grand carillon de Douai - 62 Cloches | ARPAC | 59
+  ✗ introuvable : JTC FR19-0981 | Pays Vallée de la Dordogne Corrézienne - La Gabare | O.T. Aubazine-Beynat | 19
+  ✗ introuvable : JTC FR59-0985 | Paris - Saint-Germain l'Auxerrois | ARPAC | 59
+Temps écoulé : suite au prochain passage.
+Terminé : {"l":2248,"o":347,"v":52,"rien":287}
+  HTTP 503 https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&lat=43.
 … adresses : 50
 … adresses : 100
+  HTTP 503 https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&lat=48.
+  HTTP 503 https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&lat=44.
 … adresses : 150
 … adresses : 200
 … adresses : 250
@@ -29,4 +447,14 @@ Terminé : {"l":0,"o":0,"v":0,"rien":20}
 … adresses : 350
 … adresses : 400
 … adresses : 450
-Adresses trouvées : 481
+  HTTP 503 https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&lat=45.
+… adresses : 500
+  HTTP 503 https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&lat=48.
+… adresses : 550
+… adresses : 600
+… adresses : 650
+… adresses : 700
+… adresses : 750
+… adresses : 800
+… adresses : 850
+Adresses trouvées : 894
