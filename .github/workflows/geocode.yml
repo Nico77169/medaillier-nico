@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: "22"
       - name: Géolocaliser les pièces récentes
-        run: REDO=1 node scripts/geocode.mjs
+        run: node scripts/geocode.mjs
       - name: Publier
         if: always()
         run: |

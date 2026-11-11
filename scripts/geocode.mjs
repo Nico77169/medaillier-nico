@@ -152,4 +152,24 @@ for (const t of todo) {
 }
 fs.writeFileSync("geo.json", JSON.stringify(GEO));
 log("Terminé :", JSON.stringify(stats));
+
+// --- Adresse postale de chaque point (5e case), une seule fois par endroit -------------------
+const ADDR = {}; for (const v of Object.values(GEO)) if (v[4]) ADDR[v[0] + "," + v[1]] = v[4];
+let na = 0;
+for (const v of Object.values(GEO)) {
+  if (v[4]) continue;
+  const k = v[0] + "," + v[1];
+  if (!(k in ADDR)) {
+    await sleep(1100);
+    const j = await getJSON(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&lat=${v[0]}&lon=${v[1]}`);
+    const a = (j && j.address) || {};
+    const street = [a.house_number, a.road || a.pedestrian || a.square || a.footway || a.place].filter(Boolean).join(" ");
+    const town = a.city || a.town || a.village || a.municipality || a.hamlet || "";
+    ADDR[k] = [street, [a.postcode, town].filter(Boolean).join(" "), a.country_code && a.country_code !== "fr" ? a.country : ""].filter(Boolean).join(", ");
+    na++; if (na % 50 === 0) { log("… adresses :", na); fs.writeFileSync("geo.json", JSON.stringify(GEO)); }
+  }
+  if (ADDR[k]) v[4] = ADDR[k];
+}
+fs.writeFileSync("geo.json", JSON.stringify(GEO));
+log("Adresses trouvées :", na);
 fs.writeFileSync("scripts/geo-log.txt", LOG.join("\n") + "\n");
