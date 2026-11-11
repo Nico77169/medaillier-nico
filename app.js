@@ -148,7 +148,7 @@ function markDirty(id,before,after){
   });
   DV[id]=(DV[id]||0)+1; ls.set("nico_dirty",DIRTY);
 }
-function emptyItem(c){ return !c.q && !c.vq && !c.xv && !c.hv && !c.f && !c.b && !c.mv && !c.pv && !c.hide && !c.ns; }
+function emptyItem(c){ return !c.q && !c.vq && !c.xv && !c.hv && !c.f && !c.b && !c.mv && !c.pv && !c.hide && !c.ns && !c.loc; }
 function applyDirty(base,d){
   const r=JSON.parse(JSON.stringify(base||{}));
   Object.entries(d||{}).forEach(([k,v])=>{
@@ -374,7 +374,7 @@ function renderMain(){
   document.querySelectorAll(".chip[data-f]").forEach(b=>b.setAttribute("aria-pressed",String(S.filter===b.dataset.f)));
   $("#clearF").hidden=!S.filter;
   const v=$("#view");
-  if(S.near){ $("#title").textContent="Autour de moi"; $("#crumb").textContent="Pièces vendues près d'ici"; mb.hidden=true; v.innerHTML=nearHTML(); renderFoot(allTokens().filter(t=>GEO[t.id]&&recentUnits(t).length),"Pièces 2025-2027 sur la carte"); return; }
+  if(S.near){ $("#title").textContent="Autour de moi"; $("#crumb").textContent="Pièces vendues près d'ici"; mb.hidden=true; v.innerHTML=nearHTML(); renderFoot(allTokens().filter(t=>geoOf(t.id)&&(S.nearY==="all"||recentUnits(t).length)),"Pièces sur la carte"); return; }
   if(!S.cat && !S.q){ v.innerHTML=homeHTML(); renderFoot(allTokens(),"Toute la collection"); return; }
   const pool=allTokens().filter(t=>(!S.cat||inCat(t,S.cat)));
   const srt=mmode==="letter"?((a,b)=>a.name.localeCompare(b.name,"fr")):((a,b)=>String(a.years).localeCompare(String(b.years))||a.name.localeCompare(b.name));
@@ -436,7 +436,7 @@ function nearHTML(){
   if(!NEAR||NEAR.wait) return `<div class="empty">📍 Recherche de ta position…<br><small>Si le téléphone te demande l'autorisation de localisation, accepte.</small></div>`;
   if(NEAR.err) return `<div class="empty">${NEAR.err==="refus"?`L'appli n'a pas le droit de connaître ta position.<br><small>Sur le téléphone : touche le petit cadenas (ou ⓘ) à gauche de l'adresse du site → <b>Autorisations</b> → <b>Position</b> → <b>Autoriser</b>. Puis reviens ici.</small>`:esc(NEAR.err)}<br><button class="addbtn" id="nearRetry">Réessayer</button></div>`;
   const places=new Map(), R=S.nearR||10, rec=S.nearY!=="all"; let gone=0;
-  allTokens().forEach(t=>{ const g=GEO[t.id]; if(!g) return; const ru=rec?recentUnits(t):units(t); if(!ru.length) return;
+  allTokens().forEach(t=>{ const g=geoOf(t.id); if(!g) return; const ru=rec?recentUnits(t):units(t); if(!ru.length) return;
     const miss=ru.some(x=>!(x.q>0)); if(!S.nearAll&&!miss) return;
     if(st(t.id).ns){ if(kmTo(NEAR.lat,NEAR.lon,g[0],g[1])<=R) gone++; return; }
     const k=g[0]+","+g[1]; if(!places.has(k)) places.set(k,{lat:g[0],lon:g[1],prec:g[2],label:g[3]||"",ts:[],d:kmTo(NEAR.lat,NEAR.lon,g[0],g[1])});
@@ -492,10 +492,13 @@ function hugoBtn(t,k){ const on=!!((st(t.id).hv||{})[k]); return `<button class=
 function cjtUrl(t){ const m=/[A-Z]{2}[0-9AB]{2}-(\d{4})/.exec(t.ref||""); return m?"https://www.collection-jetons-touristiques.com/jeton/"+parseInt(m[1],10):""; }
 /* lieu de vente d'une pièce récente (geo.json : lat, lon, précision, nom, adresse) */
 const WOPEN=new Set(); let INSHEET=false;
+// lieu de vente : celui indiqué par Nico (loc) passe avant celui trouvé par le robot
+function geoOf(id){ const l=st(id).loc; return l?[l[0],l[1],"u",l[2],l[3]]:GEO[id]; }
 function whereHTML(t){
-  const g=GEO[t.id]; if(!g) return "";
+  const g=geoOf(t.id);
+  if(!g) return INSHEET?`<div class="where"><div class="wbody wnone"><b>📍 Où l'acheter</b><div class="wnote">Lieu de vente inconnu pour cette pièce.</div><button class="wgo" type="button" data-wedit="${t.id}">➕ Indiquer où elle est vendue</button></div></div>`:"";
   const [lat,lon,prec,label,addr]=g, open=INSHEET||WOPEN.has(t.id), ns=st(t.id).ns;
-  const note=prec==="o"?"Office de tourisme le plus proche — en général, il vend les pièces de la ville":prec==="v"?"Position approximative : centre de la ville":"";
+  const note=prec==="u"?"Lieu indiqué par toi":prec==="o"?"Office de tourisme le plus proche — en général, il vend les pièces de la ville":prec==="v"?"Position approximative : centre de la ville":"";
   const dist=NEAR&&NEAR.lat?` · à ${fmtKm(kmTo(NEAR.lat,NEAR.lon,lat,lon))}`:"";
   const name=label||"Lieu de vente", dl=0.0035;
   const gone=ns?`<div class="wgone">⚠️ Signalée <b>plus en vente ici</b> le ${new Date(ns).toLocaleDateString("fr-FR")}. <button class="linkbtn" type="button" data-nsundo="${t.id}">Annuler le signalement</button></div>`:"";
@@ -503,10 +506,45 @@ function whereHTML(t){
     <div class="wbody"><div class="wname">${esc(name)}</div>${addr?`<div class="waddr">${esc(addr)}</div>`:""}${note?`<div class="wnote">${note}</div>`:""}
     <iframe class="wmap" loading="lazy" title="Plan" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-dl*1.6},${lat-dl},${lon+dl*1.6},${lat+dl}&layer=mapnik&marker=${lat},${lon}"></iframe>
     <div class="wbtns"><a class="wgo main" href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" rel="noopener">🧭 Y aller avec Google Maps</a><button class="wgo" type="button" data-wcopy="${t.id}">Copier l'adresse</button></div>
-    ${ns?"":`<button class="wbad" type="button" data-ns="${t.id}">🚫 Signaler : plus en vente ici</button><div class="wnote">Rien ne garantit qu'elle soit encore en vente : si ce n'est plus le cas, signale-le.</div>`}</div>`:""}</div>`;
+    <div class="wbtns">${ns?"":`<button class="wbad" type="button" data-ns="${t.id}">🚫 Plus en vente ici</button>`}<button class="wbad" type="button" data-wedit="${t.id}">✏️ Pas le bon endroit / vendue ailleurs</button>${prec==="u"&&GEO[t.id]?`<button class="wbad" type="button" data-wreset="${t.id}">↩︎ Remettre le lieu proposé</button>`:""}</div>
+    <div class="wnote">Rien ne garantit qu'elle soit encore en vente. Mauvais endroit ou trouvée ailleurs ? Corrige le lieu : l'appli s'en souviendra.</div></div>`:""}</div>`;
+}
+function showEditPlace(id){
+  const t=byId(id); if(!t) return; const sh=$("#sheet"), old=geoOf(id);
+  const mates=old?allTokens().filter(x=>x.id!==id&&(g=>g&&g[0]===old[0]&&g[1]===old[1])(geoOf(x.id))):[];
+  const back=()=>{ if(PIECE===id) renderPiece(); else { closeSheet(); rerender(); } };
+  const save=(lat,lon,label,addr)=>{ sh.innerHTML=`<div class="in"><h2>Enregistrer ce lieu ?</h2><p><b>${esc(label)}</b>${addr?`<br>${esc(addr)}`:""}</p><p>Pour la pièce <b>${esc(t.name)}</b>.</p>
+      ${mates.length?`<label class="check"><input type="checkbox" id="plAll"> Appliquer aussi aux ${mates.length} autre${mates.length>1?"s":""} pièce${mates.length>1?"s":""} placée${mates.length>1?"s":""} au même endroit (${esc(old[3]||"")})</label>`:""}
+      <div class="row"><button class="btn" type="button" id="plOk">Oui, enregistrer</button><button class="btn ghost" type="button" id="plNo">Annuler</button></div></div>`;
+    $("#plNo").onclick=back;
+    $("#plOk").onclick=()=>{ const loc=[+(+lat).toFixed(5),+(+lon).toFixed(5),label,addr||""]; const ids=[id].concat($("#plAll")&&$("#plAll").checked?mates.map(x=>x.id):[]);
+      ids.forEach(x=>patch(x,{loc,ns:""})); rerender(); back(); toast(ids.length>1?`Lieu mis à jour pour ${ids.length} pièces`:"Lieu de vente mis à jour"); }; };
+  const addrOf=a=>{ a=a||{}; const street=[a.housenumber||a.house_number,a.street||a.road||a.pedestrian||a.square].filter(Boolean).join(" "), town=a.city||a.town||a.village||a.municipality||"";
+    return [street,[a.postcode,town].filter(Boolean).join(" ")].filter(Boolean).join(", "); };
+  sh.innerHTML=`<div class="in"><h2>Où est-elle vendue ?</h2><p class="note">${esc(t.name)}</p>
+    <button class="btn" type="button" id="plHere">📍 Je suis sur place : utiliser ma position</button>
+    <p class="note" style="margin-top:14px">Ou cherche le lieu (nom, ville ou adresse) :</p>
+    <form id="plForm" class="row"><label class="field" style="flex:1"><input id="plQ" type="search" placeholder="ex. Office de tourisme de Cabourg" autocomplete="off" aria-label="Lieu à chercher"></label><button class="btn" type="submit">Chercher</button></form>
+    <div id="plRes" class="plres"></div>
+    <div class="row"><button class="btn ghost" type="button" id="plCancel">Annuler</button></div></div>`;
+  sh.hidden=false; $("#sheetBg").hidden=false; $("#plCancel").onclick=back;
+  $("#plHere").onclick=()=>{ const b=$("#plHere"); b.disabled=true; b.textContent="Recherche de ta position…";
+    navigator.geolocation.getCurrentPosition(async p=>{ const lat=p.coords.latitude, lon=p.coords.longitude; let label="", addr="";
+      try{ const j=await (await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&lat=${lat}&lon=${lon}`)).json(); label=j.name||""; addr=addrOf(j.address); }catch(e){}
+      const nm=prompt2(label); save(lat,lon,nm||label||"Lieu de vente",addr); },
+      ()=>{ b.disabled=false; b.textContent="📍 Je suis sur place : utiliser ma position"; toast("Position introuvable : autorise la localisation ou cherche le lieu"); },{enableHighAccuracy:true,timeout:20000}); };
+  const prompt2=v=>v; // le nom proposé par la carte est gardé (modifiable plus tard en recommençant)
+  $("#plForm").onsubmit=async ev=>{ ev.preventDefault(); const q=$("#plQ").value.trim(); if(q.length<3) return; const box=$("#plRes"); box.innerHTML='<p class="note">Recherche…</p>';
+    const bias=NEAR&&NEAR.lat?`&lat=${NEAR.lat}&lon=${NEAR.lon}`:(old?`&lat=${old[0]}&lon=${old[1]}`:"");
+    let res=[]; try{ const j=await (await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lang=fr${bias}`)).json();
+      res=(j.features||[]).map(f=>({lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],label:f.properties.name||q,addr:addrOf(f.properties)})); }catch(e){}
+    if(!res.length) try{ const j=await (await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&q=${encodeURIComponent(q)}`)).json();
+      res=j.map(r=>({lat:+r.lat,lon:+r.lon,label:r.name||q,addr:addrOf(r.address)})); }catch(e){}
+    box.innerHTML=res.length?res.map((r,i)=>`<button class="plhit" type="button" data-i="${i}"><b>${esc(r.label)}</b><small>${esc(r.addr||"")}</small></button>`).join(""):'<p class="note">Rien trouvé. Essaie avec la ville, ou « Je suis sur place ».</p>';
+    box.querySelectorAll(".plhit").forEach(b=>b.onclick=()=>{ const r=res[+b.dataset.i]; save(r.lat,r.lon,r.label,r.addr); }); };
 }
 function showNotSold(id){
-  const t=byId(id), g=GEO[id]; if(!t||!g) return; const sh=$("#sheet");
+  const t=byId(id), g=geoOf(id); if(!t||!g) return; const sh=$("#sheet");
   const step1=()=>{ sh.innerHTML=`<div class="in"><h2>Plus en vente ici ?</h2><p>Es-tu sûr de vouloir indiquer que la pièce <b>${esc(t.name)}</b> n'est plus vendue à <b>${esc(g[3]||"cet endroit")}</b> ?</p>
     <div class="row"><button class="btn ghost" type="button" id="nsNo">Annuler</button><button class="btn" type="button" id="nsYes">Oui, elle n'est plus vendue</button></div></div>`;
     $("#nsNo").onclick=back; $("#nsYes").onclick=step2; };
@@ -614,7 +652,7 @@ document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
   if(b.dataset.cat){ if(!S.cat){ S.homeQ=S.q; HOMEY=scrollY; } OPEN.clear(); S.mosaic=true; S.addOpen=false; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
   if(b.dataset.where){ const id=b.dataset.where; if(PIECE===id) return; WOPEN.has(id)?WOPEN.delete(id):WOPEN.add(id); rerender(); return; }
-  if(b.dataset.wcopy){ const g=GEO[b.dataset.wcopy]||[], txt=[g[3],g[4]].filter(Boolean).join(", ")||`${g[0]}, ${g[1]}`;
+  if(b.dataset.wcopy){ const g=geoOf(b.dataset.wcopy)||[], txt=[g[3],g[4]].filter(Boolean).join(", ")||`${g[0]}, ${g[1]}`;
     (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast("Adresse copiée"),()=>toast(txt)); return; }
   if(b.id==="mosaicBtn"){ S.mosaic=!S.mosaic; render(); scrollTo(0,0); return; }
   if(b.dataset.jy){ const y=b.dataset.jy; jumpTo(t=>(yearOf(t)||"Sans année")===y); return; }
@@ -632,6 +670,8 @@ document.addEventListener("click",e=>{
   if(b.id==="nearY"){ S.nearY=S.nearY==="all"?"rec":"all"; S.nearMore=false; render(); return; }
   if(b.id==="nearMore"){ S.nearMore=true; rerender(); return; }
   if(b.dataset.ns){ showNotSold(b.dataset.ns); return; }
+  if(b.dataset.wedit){ showEditPlace(b.dataset.wedit); return; }
+  if(b.dataset.wreset){ const id=b.dataset.wreset; patch(id,{loc:""}); toast("Lieu proposé remis"); rerender(); if(PIECE===id) renderPiece(); return; }
   if(b.dataset.nsundo){ const id=b.dataset.nsundo; patch(id,{ns:""}); toast("Signalement annulé"); rerender(); if(PIECE===id) renderPiece(); return; }
   if(b.id==="backBtn"&&S.near&&!S.cat){ exitNear(); return; }
   if(b.id==="backBtn"){ OPEN.clear(); S.mosaic=false; S.addOpen=false; S.cat=null; S.q=S.homeQ||""; $("#q").value=S.q; render(); backHome(); return; }
