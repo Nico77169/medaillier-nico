@@ -173,12 +173,21 @@ async function flush(){
   }catch(e){ console.warn(e); failed=true; setSync("off","Envoi impossible pour l'instant, nouvel essai automatique"); clearTimeout(retryTimer); retryTimer=setTimeout(flush,30000); }
   finally{ syncing=false; if(!failed&&Object.keys(Q()).length) setTimeout(flush,800); }
 }
+// le serveur renvoie au maximum 1000 lignes par demande : on lit la collection page par page
+async function fetchAll(){
+  const all=[], N=1000;
+  for(let from=0;;from+=N){
+    const {data,error}=await supa.from("collection").select("token_id,data").order("token_id").range(from,from+N-1);
+    if(error) return {data:null,error};
+    all.push(...(data||[])); if(!data||data.length<N) return {data:all,error:null};
+  }
+}
 async function pull(){
   if(!UID) return;
   if(syncing){ setTimeout(pull,1500); return; }
   const t0=Date.now();
   let data=null, error=null;
-  try{ ({data,error}=await supa.from("collection").select("token_id,data")); }catch(e){ error=e; }
+  try{ ({data,error}=await fetchAll()); }catch(e){ error=e; }
   if(error){ setSync("off","Serveur injoignable : tu travailles sur la copie du téléphone");
     // une connexion faible fait souvent échouer une seule tentative : on réessaie 2 fois avant d'afficher le bandeau
     PULLFAIL++; if(PULLFAIL<3){ setTimeout(pull,15000); return; }
