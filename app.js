@@ -498,12 +498,12 @@ function whereHTML(t){
   const note=prec==="o"?"Office de tourisme le plus proche — en général, il vend les pièces de la ville":prec==="v"?"Position approximative : centre de la ville":"";
   const dist=NEAR&&NEAR.lat?` · à ${fmtKm(kmTo(NEAR.lat,NEAR.lon,lat,lon))}`:"";
   const name=label||"Lieu de vente", dl=0.0035;
-  return `<div class="where${open?" open":""}"><button class="wtog" type="button" data-where="${t.id}"><span>📍</span><b>Où l'acheter</b><small>${ns?"⚠️ plus en vente · ":""}${esc(name)}${dist}</small><i>${open?"▴":"▾"}</i></button>${open?`
+  const gone=ns?`<div class="wgone">⚠️ Signalée <b>plus en vente ici</b> le ${new Date(ns).toLocaleDateString("fr-FR")}. <button class="linkbtn" type="button" data-nsundo="${t.id}">Annuler le signalement</button></div>`:"";
+  return `${gone}<div class="where${open?" open":""}${ns?" gone":""}">${ns?`<div class="tape" aria-hidden="true"><span>PLUS EN VENTE ICI · PLUS EN VENTE ICI · PLUS EN VENTE ICI</span></div>`:""}<button class="wtog" type="button" data-where="${t.id}"><span>📍</span><b>Où l'acheter</b><small>${ns?"⚠️ plus en vente · ":""}${esc(name)}${dist}</small><i>${open?"▴":"▾"}</i></button>${open?`
     <div class="wbody"><div class="wname">${esc(name)}</div>${addr?`<div class="waddr">${esc(addr)}</div>`:""}${note?`<div class="wnote">${note}</div>`:""}
     <iframe class="wmap" loading="lazy" title="Plan" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-dl*1.6},${lat-dl},${lon+dl*1.6},${lat+dl}&layer=mapnik&marker=${lat},${lon}"></iframe>
     <div class="wbtns"><a class="wgo main" href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" rel="noopener">🧭 Y aller avec Google Maps</a><button class="wgo" type="button" data-wcopy="${t.id}">Copier l'adresse</button></div>
-    ${ns?`<div class="wgone">⚠️ Signalée <b>plus en vente ici</b> le ${new Date(ns).toLocaleDateString("fr-FR")}. <button class="linkbtn" type="button" data-nsundo="${t.id}">Annuler le signalement</button></div>`
-      :`<button class="wbad" type="button" data-ns="${t.id}">🚫 Signaler : plus en vente ici</button><div class="wnote">Rien ne garantit qu'elle soit encore en vente : si ce n'est plus le cas, signale-le.</div>`}</div>`:""}</div>`;
+    ${ns?"":`<button class="wbad" type="button" data-ns="${t.id}">🚫 Signaler : plus en vente ici</button><div class="wnote">Rien ne garantit qu'elle soit encore en vente : si ce n'est plus le cas, signale-le.</div>`}</div>`:""}</div>`;
 }
 function showNotSold(id){
   const t=byId(id), g=GEO[id]; if(!t||!g) return; const sh=$("#sheet");
