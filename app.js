@@ -887,8 +887,9 @@ function showCrop(){
     cv.width=S*dpr; cv.height=S*dpr; cv.style.width=cv.style.height=S+"px";
     const r=S*0.47, base=(2*r)/Math.min(img.naturalWidth,img.naturalHeight);
     CR={img,S,r,dpr,base,z:1,ox:0,oy:0,cv,ptr:new Map(),pinch:null};
+    autoFit();
     drawCrop();
-    const zoom=$("#cropZoom");
+    const zoom=$("#cropZoom"); zoom.value=CR.z;
     zoom.oninput=()=>{ CR.z=+zoom.value; drawCrop(); };
     cv.addEventListener("pointerdown",e=>{ cv.setPointerCapture(e.pointerId); CR.ptr.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(CR.ptr.size===2){ const [a,b]=[...CR.ptr.values()]; CR.pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:CR.z}; } });
     cv.addEventListener("pointermove",e=>{ const p=CR.ptr.get(e.pointerId); if(!p) return;
@@ -902,6 +903,37 @@ function showCrop(){
   };
   img.onerror=()=>{ toast("Photo illisible, reprends-la"); closeSheet(); };
   img.src=NP.url;
+}
+/* pré-zoom : repère la pièce sur le fond (couleur des bords, blanc) et la cale dans le cercle */
+function findCoin(img){
+  try{
+    const W=img.naturalWidth, H=img.naturalHeight, k=Math.min(1,220/Math.max(W,H)), w=Math.max(1,Math.round(W*k)), h=Math.max(1,Math.round(H*k));
+    const cv=document.createElement("canvas"); cv.width=w; cv.height=h; const c=cv.getContext("2d",{willReadFrequently:true});
+    c.drawImage(img,0,0,w,h); const d=c.getImageData(0,0,w,h).data;
+    const px=(x,y)=>{ const i=(y*w+x)*4; return [d[i],d[i+1],d[i+2]]; };
+    const br=[]; for(let x=0;x<w;x++){ br.push(px(x,0),px(x,h-1)); } for(let y=0;y<h;y++){ br.push(px(0,y),px(w-1,y)); }
+    const med=j=>{ const a=br.map(p=>p[j]).sort((m,n)=>m-n); return a[a.length>>1]; }, bg=[med(0),med(1),med(2)];
+    const near=br.filter(p=>Math.abs(p[0]-bg[0])+Math.abs(p[1]-bg[1])+Math.abs(p[2]-bg[2])<60).length/br.length;
+    if(near<0.6) return null; // fond pas uni : photo déjà cadrée
+    const rows=new Array(h).fill(0), cols=new Array(w).fill(0);
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const [r,g,b]=px(x,y), mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+      const isBg=Math.abs(r-bg[0])+Math.abs(g-bg[1])+Math.abs(b-bg[2])<60 || (mn>228&&mx-mn<22);
+      if(!isBg){ rows[y]++; cols[x]++; } }
+    const tr=Math.max(2,w*0.06), tc=Math.max(2,h*0.06);
+    let y0=rows.findIndex(v=>v>tr), y1=h-1-[...rows].reverse().findIndex(v=>v>tr);
+    let x0=cols.findIndex(v=>v>tc), x1=w-1-[...cols].reverse().findIndex(v=>v>tc);
+    if(y0<0||x0<0) return null;
+    const bw=x1-x0+1, bh=y1-y0+1;
+    if(Math.max(bw/w,bh/h)>0.97 && Math.min(bw/w,bh/h)>0.9) return null; // pièce déjà pleine
+    if(Math.min(bw,bh)<Math.max(w,h)*0.12) return null; // trop petit : on ne devine pas
+    return {cx:(x0+x1+1)/2/k, cy:(y0+y1+1)/2/k, d:Math.max(bw,bh)/k};
+  }catch(e){ return null; }
+}
+function autoFit(){
+  const f=findCoin(CR.img); if(!f) return;
+  const W=CR.img.naturalWidth, H=CR.img.naturalHeight;
+  const z=Math.min(4,Math.max(1,(2*CR.r*0.97)/(f.d*CR.base))), sc=CR.base*z;
+  CR.z=z; CR.ox=-(f.cx-W/2)*sc; CR.oy=-(f.cy-H/2)*sc;
 }
 function cropRect(){ const {img,S,base,z,ox,oy}=CR, sc=base*z, w=img.naturalWidth*sc, h=img.naturalHeight*sc; return {x:S/2+ox-w/2,y:S/2+oy-h/2,w,h}; }
 function drawCrop(){
