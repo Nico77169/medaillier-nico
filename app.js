@@ -324,14 +324,24 @@ function mosaicMode(pool){
   const cnt={}; pool.forEach(t=>{ const y=yearOf(t)||"?"; cnt[y]=(cnt[y]||0)+1; });
   return Math.max(...Object.values(cnt))/pool.length>=0.8 ? "letter" : "year";
 }
+/* boutons par année (Disney, Beauval) : toutes les pièces frappées cette année-là, refrappes comprises */
+function isYrCat(){ return S.cat==="disney"||S.cat==="beauval"; }
+function yrsOf(t){ return [...new Set(eff(t).us.map(x=>String(x.y)).filter(Boolean))]; }
+function yrChips(){
+  if(!isYrCat()) return "";
+  const pool=allTokens().filter(t=>inCat(t,S.cat)), ys=[...new Set(pool.flatMap(yrsOf))].filter(y=>/^\d{4}$/.test(y)).sort((a,b)=>b-a);
+  if(ys.length<2) return "";
+  const n=y=>pool.filter(t=>yrsOf(t).includes(y)).length;
+  return `<div class="yrchips" role="tablist" aria-label="Année">`+[["","Toutes",pool.length],...ys.map(y=>[y,y,n(y)])].map(([y,l,c])=>`<button class="yrchip${(S.yr||"")===y?" on":""}" data-yr="${y}" role="tab" aria-selected="${(S.yr||"")===y}"><b>${l}</b><small>${c}</small></button>`).join("")+`</div>`;
+}
 function mosaicHTML(list,mode){
-  if(!list.length) return `<div class="empty">Aucune médaille ne correspond${S.filter?" avec ce filtre":""}.</div>`;
+  if(!list.length) return yrChips()+`<div class="empty">Aucune médaille ne correspond${S.filter?" avec ce filtre":""}.</div>`;
   const byL=mode==="letter", none=byL?"#":"Sans année", groups=new Map();
-  list.forEach(t=>{ const k=byL?letterOf(t):(yearOf(t)||none); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(t); });
-  const keys=[...groups.keys()].sort((a,b)=>(a===none)-(b===none)||a.localeCompare(b));
+  list.forEach(t=>{ const k=byL?letterOf(t):(S.yr||yearOf(t)||none); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(t); });
+  const keys=[...groups.keys()].sort((a,b)=>(a===none)-(b===none)||(byL?a.localeCompare(b):b.localeCompare(a))); // années : les plus récentes en haut
   const idx=byL?`<nav class="mabc">${keys.map(k=>`<button data-ml="ml-${k==="#"?"0":k}">${esc(k)}</button>`).join("")}</nav>`:"";
   // une ligne par année : étiquette à gauche (année + compte), pièces à droite
-  return `<p class="mhint">Touche une pièce pour ouvrir sa fiche, ou ${byL?"une lettre":"une année"} pour la voir dans la liste.</p>`+idx+keys.map(k=>{
+  return yrChips()+`<p class="mhint">Touche une pièce pour ouvrir sa fiche, ou ${byL?"une lettre":"une année"} pour la voir dans la liste.</p>`+idx+keys.map(k=>{
     const ts=groups.get(k), own=ts.filter(t=>eff(t).qty>0).length;
     return `<section class="mrow"${byL?` id="ml-${k==="#"?"0":k}"`:""}><button class="mlab${own===ts.length?" full":""}" data-j${byL?"l":"y"}="${esc(k)}" aria-label="${esc(k)} : ${own} sur ${ts.length} possédée${own>1?"s":""}"><b>${esc(k==="Sans année"?"?":k)}</b><small>${own}/${ts.length}</small></button><div class="mgrid four">${ts.map(mtileHTML).join("")}</div></section>`; }).join("");
 }
@@ -376,8 +386,8 @@ function renderMain(){
   const v=$("#view");
   if(S.near){ $("#title").textContent="Autour de moi"; $("#crumb").textContent="Pièces vendues près d'ici"; mb.hidden=true; v.innerHTML=nearHTML(); renderFoot(allTokens().filter(t=>geoOf(t.id)&&(S.nearY!=="rec"||recentUnits(t).length)),"Pièces sur la carte"); return; }
   if(!S.cat && !S.q){ v.innerHTML=homeHTML(); renderFoot(allTokens(),"Toute la collection"); return; }
-  const pool=allTokens().filter(t=>(!S.cat||inCat(t,S.cat)));
-  const srt=mmode==="letter"?((a,b)=>a.name.localeCompare(b.name,"fr")):((a,b)=>String(a.years).localeCompare(String(b.years))||a.name.localeCompare(b.name));
+  const pool=allTokens().filter(t=>(!S.cat||inCat(t,S.cat))&&(!S.yr||!isYrCat()||yrsOf(t).includes(S.yr)));
+  const srt=mmode==="letter"?((a,b)=>a.name.localeCompare(b.name,"fr")):((a,b)=>String(b.years).localeCompare(String(a.years))||a.name.localeCompare(b.name)); // plus récentes d'abord
   let list, APPROX=false;
   if(!S.q) list=pool.filter(passFilter).sort(srt);
   else { const sc=new Map(); pool.forEach(t=>{ if(passFilter(t)) sc.set(t,score(t,S.q)); });
@@ -387,11 +397,12 @@ function renderMain(){
   S.approx=APPROX;
   if(mos&&!S.addOpen){ v.innerHTML=mosaicHTML(list,mmode); renderFoot(pool,"Total "+catOf(S.cat).name); return; }
   if(!S.cat&&S.q){ const dm=matchDeps(S.q).map(c=>c.id); if(dm.length){ const first=t=>dm.includes(catT(t))||(t.dept&&dm.includes("d"+t.dept))?0:1; list.sort((a,b)=>first(a)-first(b)); } } // pièces du département tapé en premier
-  const vk=[S.cat,S.q,S.filter].join("§"); if(vk!==VIEWKEY){ VIEWKEY=vk; S.shown=PAGE; }
+  const vk=[S.cat,S.q,S.filter,S.yr].join("§"); if(vk!==VIEWKEY){ VIEWKEY=vk; S.shown=PAGE; }
   S.list=list; const part=list.slice(0,S.shown), rest=list.length-part.length;
   let h="";
   if(!S.cat){ const dm=matchDeps(S.q); if(dm.length) h+=`<p class="sect-title">Département${dm.length>1?"s":""}</p><div class="deps">${depTiles(dm,groupByCat())}</div>`;
     h+=`<p class="sect-title">${S.approx?"Rien d'exact — pièces les plus proches":`${list.length} pièce${list.length>1?"s":""} trouvée${list.length>1?"s":""}`}</p>`; }
+  h+=yrChips();
   h+= list.length?`<div class="list">${part.map(cardHTML).join("")}</div>${rest>0?`<button class="addbtn more" id="moreBtn">Afficher la suite (${rest} pièce${rest>1?"s":""})</button>`:""}`:`<div class="empty">Aucune médaille ne correspond${S.filter?" avec ce filtre":""}.</div>`;
   if(S.cat&&!isVirtual(S.cat)) h+=S.addOpen?`<div id="addPanel">${addFormHTML()}</div>`:`<button class="addbtn" id="addBtn">+ Ajouter une médaille absente du catalogue</button><div id="addPanel"></div>`;
   const y0=scrollY; v.innerHTML=h; if(KEEPY){ scrollTo(0,y0); KEEPY=false; }
@@ -650,12 +661,12 @@ function numUrlSafe(t){ return numUrl(t); }
 /* ---------- interactions ---------- */
 document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
-  if(b.dataset.cat){ if(!S.cat){ S.homeQ=S.q; HOMEY=scrollY; } OPEN.clear(); S.mosaic=true; S.addOpen=false; S.cat=b.dataset.cat; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
+  if(b.dataset.cat){ if(!S.cat){ S.homeQ=S.q; HOMEY=scrollY; } OPEN.clear(); S.mosaic=true; S.addOpen=false; S.cat=b.dataset.cat; S.yr=""; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
   if(b.dataset.where){ const id=b.dataset.where; if(PIECE===id) return; WOPEN.has(id)?WOPEN.delete(id):WOPEN.add(id); rerender(); return; }
   if(b.dataset.wcopy){ const g=geoOf(b.dataset.wcopy)||[], txt=[g[3],g[4]].filter(Boolean).join(", ")||`${g[0]}, ${g[1]}`;
     (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast("Adresse copiée"),()=>toast(txt)); return; }
   if(b.id==="mosaicBtn"){ S.mosaic=!S.mosaic; render(); scrollTo(0,0); return; }
-  if(b.dataset.jy){ const y=b.dataset.jy; jumpTo(t=>(yearOf(t)||"Sans année")===y); return; }
+  if(b.dataset.jy){ const y=b.dataset.jy; jumpTo(t=>(S.yr&&isYrCat()?S.yr:(yearOf(t)||"Sans année"))===y); return; }
   if(b.dataset.ml){ const g=document.getElementById(b.dataset.ml); if(g) scrollTo({top:g.getBoundingClientRect().top+scrollY-($(".top").offsetHeight+10),behavior:"smooth"}); return; }
   if(b.dataset.jl){ jumpTo(t=>letterOf(t)===b.dataset.jl); return; }
   if(b.dataset.jt){ openPiece(b.dataset.jt); return; }
@@ -700,6 +711,7 @@ document.addEventListener("click",e=>{
   if(b.dataset.dec){ const id=b.dataset.dec; patch(id,{q:Math.max(0,eff(byId(id)).qty-1)}); rerender(); return; }
   if(b.dataset.hu){ const key=b.dataset.hu, i=key.indexOf("~"), id=key.slice(0,i), k=key.slice(i+1);
     const hv={...(st(id).hv||{})}; if(hv[k]) delete hv[k]; else hv[k]=1; OPEN.add(id); patch(id,{hv}); rerender(); return; }
+  if(b.dataset.yr!==undefined){ S.yr=b.dataset.yr; render(); const c=$(".yrchips"); if(c) c.scrollIntoView({block:"nearest"}); return; }
   if(b.dataset.zoom){ showZoom(b.dataset.zoom,b.dataset.side); return; }
   if(b.id==="zoomClose"){ closeZoom(); return; }
   if(b.dataset.photo){ const y=ZOOMY!=null?ZOOMY:scrollY; closeZoom(); NP={target:{id:b.dataset.photo,side:b.dataset.side},y}; showPick(); return; }
@@ -1025,7 +1037,7 @@ async function saveNew(ev){
     S.items[id]={q:1,f:ref};
     saveCustom(id);
   }
-  DRAFT.clear(); closeSheet(); S.cat=(t?catT(t):cat); S.q=""; $("#q").value=""; S.mosaic=true; render(); openPiece(id);
+  DRAFT.clear(); closeSheet(); S.yr=""; S.cat=(t?catT(t):cat); S.q=""; $("#q").value=""; S.mosaic=true; render(); openPiece(id);
   toast(t?"Ajoutée à ta collection":"Pièce ajoutée et cochée");
 }
 function shrink(file,max,q){ return new Promise((res,rej)=>{ const img=new Image(); const u=URL.createObjectURL(file);
