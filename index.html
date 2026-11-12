@@ -265,8 +265,8 @@ img{max-width:100%}
 .wmap{width:100%;height:200px;border:0;border-radius:12px;background:var(--line)}
 .wbtns{display:flex;flex-wrap:wrap;gap:6px}.wgo{text-decoration:none;font-weight:700;font-size:.82rem;color:var(--gold);background:var(--gold-soft);border:0;border-radius:999px;padding:8px 12px}.wgo.main{background:var(--gold);color:#fff}
 .yrchips{display:flex;gap:5px;overflow-x:auto;margin:2px 0 8px;padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.yrchips::-webkit-scrollbar{display:none}
-.yrchip{flex:0 0 auto;display:inline-flex;align-items:baseline;gap:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 11px;line-height:1.2}
-.yrchip b{font-size:.82rem;font-weight:700}.yrchip small{font-size:.68rem;color:var(--muted)}.yrchip.on{background:var(--gold);border-color:var(--gold);color:#fff}.yrchip.on small{color:#fff;opacity:.85}
+.yrchip{flex:0 0 auto;display:inline-flex;align-items:baseline;gap:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 9px;line-height:1.2}
+.yrchip b{font-size:.74rem;font-weight:700}.yrchip small{font-size:.64rem;color:var(--muted)}.yrchip.on{background:var(--gold);border-color:var(--gold);color:#fff}.yrchip.on small{color:#fff;opacity:.85}
 .nchips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
 .nchip{display:grid;gap:1px;justify-items:center;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:8px 4px}
 .nchip b{font-size:.95rem}.nchip small{font-size:.68rem;color:var(--muted)}.nchip.on{background:var(--gold);border-color:var(--gold);color:#fff}.nchip.on small{color:#fff;opacity:.85}
@@ -331,6 +331,11 @@ img{max-width:100%}
 .mtile.pend{opacity:1;filter:none;box-shadow:0 0 0 3px var(--warn)}.mok.mpend{background:var(--warn)}
 .kpend b{color:var(--warn)}
 @media (max-width:420px){.filters{gap:4px}.chip{padding:6px 9px;font-size:.78rem}}
+/* filtres sur une seule ligne, fins (glisse si l'écran est trop étroit) */
+.filters{flex-wrap:nowrap;overflow-x:auto;gap:5px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.filters::-webkit-scrollbar{display:none}
+.filters{gap:4px}.filters .chip{flex:0 0 auto;padding:4px 6px;font-size:.7rem;line-height:1.2}
+@media (max-width:380px){.filters{gap:3px}.filters .chip{padding:4px 5px;font-size:.66rem}}
+.filters .chip.clear{display:none} /* on retire un filtre en retouchant le même bouton */
 @media (max-width:420px){.foot .kpi span{letter-spacing:0;font-size:.54rem}.foot .in{gap:2px}}
 @media (max-width:380px){.foot .kpi span{font-size:.47rem}.foot .in{grid-template-columns:1.5fr 1.5fr 86px 1fr 1fr 1fr}}
 .addyr{border:1px dashed var(--line);background:none;color:var(--gold);font-weight:700;font-size:.86rem;border-radius:12px;padding:8px 12px;text-align:left}
@@ -371,7 +376,7 @@ img{max-width:100%}
       <button class="chip" data-f="pend">En attente</button>
       <button class="chip" data-f="dup">Doublons</button>
       <button class="chip chip-hugo" data-f="hugo">Hugo</button>
-      <button class="chip clear" id="clearF" hidden>Retirer le filtre</button>
+      <button class="chip clear" id="clearF" hidden aria-label="Retirer le filtre">✕</button>
     </div>
   </header>
   <input type="file" id="newCam" class="vh" accept="image/*" capture="environment" tabindex="-1">
