@@ -1224,7 +1224,7 @@ async function psLearnSoon(){
       await psNet();
       for(const r of todo){ if(PS.busy) break; if(PS.emb[r.ref]) continue;
         try{ const b=await psBlob(r.ref); if(b){ PS.emb[r.ref]=Array.from(psEmbed(psCanvas(await psImg(b),0)),x=>Math.round(x*1e4)/1e4); psSave(); } }catch(e){}
-        await new Promise(res=>setTimeout(res,250)); }      // doucement, pour ne pas ralentir l'appli
+        await new Promise(res=>setTimeout(res,60)); }       // petite pause entre deux photos, pour ne pas ralentir l'appli
     }while(PS.again&&!PS.busy);
   }catch(e){} finally{ PSRUN=false; }
 }
@@ -1239,14 +1239,10 @@ async function photoSearch(blob){
     await psLoadEmb();
     const refs=psRefs(), todo=refs.filter(r=>!PS.emb[r.ref]);
     if(!refs.length){ sh.innerHTML=`<div class="in"><h2>Aucune photo enregistrée</h2><p class="note">La recherche compare aux photos déjà prises dans l'appli. Ajoute des photos à tes pièces, puis réessaie.</p><button type="button" class="btn" id="psClose">OK</button></div>`; $("#psClose").onclick=closeSheet; return; }
-    let n=0, miss=0;
-    for(const r of todo){ if(stop) return;
-      msg(`J'apprends tes photos (une seule fois) : ${n+1} / ${todo.length}`); bar(n/todo.length); n++;
-      try{ const b=await psBlob(r.ref); if(!b){ miss++; continue; } PS.emb[r.ref]=Array.from(psEmbed(psCanvas(await psImg(b),0)),x=>Math.round(x*1e4)/1e4); }catch(e){ miss++; }
-      if(n%20===0) idb.put("ps:emb2",PS.emb).catch(()=>{});
-      await new Promise(r=>setTimeout(r,0)); }
-    if(todo.length) idb.put("ps:emb2",PS.emb).catch(()=>{});
-    PS.busy=false;
+    // plus d'attente : on compare tout de suite avec les photos déjà apprises, les autres s'apprennent en fond
+    const known=refs.length-todo.length, miss=0;
+    if(!refs.some(r=>PS.emb[r.ref]&&!r.ref.startsWith("cat:"))&&todo.length){ PS.busy=false; psLearnSoon();
+      sh.innerHTML=`<div class="in"><h2>Encore un peu de patience</h2><p class="note">L'appli apprend tes photos en arrière-plan (${known} / ${refs.length}). Tu peux continuer à utiliser l'appli normalement ; réessaie la recherche dans quelques minutes.</p><button type="button" class="btn" id="psClose">OK</button></div>`; $("#psClose").onclick=closeSheet; return; }
     msg("Je compare…"); bar(1);
     const img=await psImg(blob), Q=[]; for(let a=0;a<360;a+=30) Q.push(psEmbed(psCanvas(img,a)));
     const best={};
@@ -1256,12 +1252,13 @@ async function photoSearch(blob){
     const top=Object.values(best).sort((a,b)=>b.s-a.s).slice(0,6);
     const mine=URL.createObjectURL(blob);
     sh.innerHTML=`<div class="in"><h2>Ça ressemble à…</h2>
-      <div class="psme"><img src="${mine}" alt="Ta photo"><p class="note">Touche la bonne pièce pour ouvrir sa fiche.${miss?` <br>(${miss} photo${miss>1?"s":""} pas accessible${miss>1?"s":""} pour l'instant, réessaie avec internet.)`:""}</p></div>
+      <div class="psme"><img src="${mine}" alt="Ta photo"><p class="note">Touche la bonne pièce pour ouvrir sa fiche.${todo.length?` <br><b>${todo.length} photo${todo.length>1?"s":""} encore en apprentissage</b> (en arrière-plan) : refais la recherche dans quelques minutes pour des résultats complets.`:""}</p></div>
       <div class="psres">${top.map((r,i)=>{ const t=byId(r.id); return `<button type="button" class="psit" data-psopen="${esc(r.id)}">
         ${r.ref.startsWith("cat:")?`<img src="${esc(r.ref.slice(4))}" alt="">`:`<img data-ph="${esc(r.ref)}" src="${ownSrc(r.ref)}" alt="">`}<span><b>${esc(t.name)}</b><small>${esc(t.ref||"")} · ${esc(t.years||"")}</small></span>${i===0?`<em>${top[1]&&r.s-top[1].s>=0.05?"Très probable":"Le plus proche"}</em>`:""}</button>`; }).join("")}</div>
       <p class="note">Pas dedans ? Soit la pièce n'a pas encore de photo dans l'appli, soit refais la photo plus nette, bien dans le cercle.</p>
       <div class="row"><button type="button" class="btn ghost" id="psAgain">Autre photo</button><button type="button" class="btn ghost" id="psClose">Fermer</button></div></div>`;
     $("#psClose").onclick=closeSheet; $("#psAgain").onclick=()=>{ NP={search:true}; showPick(); };
+    if(todo.length){ PS.busy=false; psLearnSoon(); }
   }catch(e){
     sh.innerHTML=`<div class="in"><h2>Recherche impossible</h2><p class="note">La reconnaissance d'image n'a pas pu démarrer sur ce téléphone (${esc(e&&e.message||String(e))}). Vérifie la connexion internet la première fois, puis réessaie.</p><button type="button" class="btn" id="psClose">OK</button></div>`;
     $("#psClose").onclick=closeSheet;
