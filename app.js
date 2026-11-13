@@ -119,6 +119,7 @@ function phLog(msg){ const l=ls.get("nico_phlog")||[]; l.unshift(new Date().toLo
 async function storeBlob(blob){
   const key="idb:"+(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));
   MEM[key]=blob; URLS[key]=URL.createObjectURL(blob);
+  setTimeout(()=>psLearnSoon(),1500); // la recherche par photo l'apprend tout de suite, en arrière-plan
   try{ await idb.put(key,blob); }catch(e){ phLog("copie téléphone impossible : "+(e&&e.message||e)); }
   return key;
 }
@@ -186,7 +187,7 @@ async function uploadPending(id){
     const path=`${UID}/${id}_${side}_${Date.now()}.png`;
     const {error}=await supa.storage.from("photos").upload(path,blob,{contentType:blob.type||"image/png",upsert:true});
     if(error){ phLog("envoi refusé ("+id+") : "+(error.message||error)); throw error; }
-    const nref="sb:"+path; delete MEM[ref]; await idb.put(nref,blob).catch(()=>{}); URLS[nref]=URLS[ref]; it[side]=nref;
+    const nref="sb:"+path; delete MEM[ref]; await idb.put(nref,blob).catch(()=>{}); URLS[nref]=URLS[ref]; it[side]=nref; psRename(ref,nref);
     if(DIRTY[id]&&DIRTY[id]["="+side]===ref){ DIRTY[id]["="+side]=nref; ls.set("nico_dirty",DIRTY); }
   }
 }
@@ -1182,6 +1183,23 @@ function psRefs(){ const out=[]; for(const id of Object.keys(S.items)){ if(id[0]
   // + photos du catalogue fournies avec l'appli (Disney, Beauval) : retrouve aussi celles que Nico n'a pas encore prises en photo
   for(const [id,p] of Object.entries(PHOTOS)) if(p.f&&/^img\//.test(String(p.f.src))&&byId(id)) out.push({id,side:"f",ref:"cat:"+p.f.src});
   return out; }
+/* apprentissage en arrière-plan : dès qu'une photo arrive (nouvelle, ou au démarrage pour celles pas encore apprises),
+   pour que la recherche n'ait jamais rien à apprendre */
+async function psLoadEmb(){ if(!PS.emb){ let e=null; try{ e=await idb.get("ps:emb"); }catch(x){} PS.emb=PS.emb||e||{}; } return PS.emb; }
+function psSave(){ clearTimeout(PS.st); PS.st=setTimeout(()=>idb.put("ps:emb",PS.emb).catch(()=>{}),800); }
+async function psRename(a,b){ await psLoadEmb(); if(PS.emb[a]&&!PS.emb[b]){ PS.emb[b]=PS.emb[a]; delete PS.emb[a]; psSave(); } }
+let PSRUN=false;
+async function psLearnSoon(){
+  if(PSRUN) { PS.again=true; return; } PSRUN=true;
+  try{ do{ PS.again=false;
+      await psLoadEmb(); const todo=psRefs().filter(r=>!PS.emb[r.ref]); if(!todo.length) break;
+      await psNet();
+      for(const r of todo){ if(PS.busy) break; if(PS.emb[r.ref]) continue;
+        try{ const b=await psBlob(r.ref); if(b){ PS.emb[r.ref]=Array.from(psEmbed(psCanvas(await psImg(b),0)),x=>Math.round(x*1e4)/1e4); psSave(); } }catch(e){}
+        await new Promise(res=>setTimeout(res,250)); }      // doucement, pour ne pas ralentir l'appli
+    }while(PS.again&&!PS.busy);
+  }catch(e){} finally{ PSRUN=false; }
+}
 async function photoSearch(blob){
   const sh=$("#sheet"); let stop=false;
   sh.innerHTML=`<div class="in"><h2>Je cherche…</h2><p class="note" id="psMsg">Préparation de la reconnaissance d'image…</p><div class="psbar"><i id="psBar"></i></div>
@@ -1189,8 +1207,8 @@ async function photoSearch(blob){
   sh.hidden=false; $("#sheetBg").hidden=false; $("#psCancel").onclick=()=>{ stop=true; closeSheet(); };
   const msg=t=>{ const m=$("#psMsg"); if(m) m.textContent=t; }, bar=f=>{ const b=$("#psBar"); if(b) b.style.width=Math.round(f*100)+"%"; };
   try{
-    await psNet(); if(stop) return;
-    if(!PS.emb){ PS.emb={}; try{ PS.emb=(await idb.get("ps:emb"))||{}; }catch(e){} }
+    PS.busy=true; await psNet(); if(stop) return;
+    await psLoadEmb();
     const refs=psRefs(), todo=refs.filter(r=>!PS.emb[r.ref]);
     if(!refs.length){ sh.innerHTML=`<div class="in"><h2>Aucune photo enregistrée</h2><p class="note">La recherche compare aux photos déjà prises dans l'appli. Ajoute des photos à tes pièces, puis réessaie.</p><button type="button" class="btn" id="psClose">OK</button></div>`; $("#psClose").onclick=closeSheet; return; }
     let n=0, miss=0;
@@ -1200,6 +1218,7 @@ async function photoSearch(blob){
       if(n%20===0) idb.put("ps:emb",PS.emb).catch(()=>{});
       await new Promise(r=>setTimeout(r,0)); }
     if(todo.length) idb.put("ps:emb",PS.emb).catch(()=>{});
+    PS.busy=false;
     msg("Je compare…"); bar(1);
     const img=await psImg(blob), Q=[]; for(let a=0;a<360;a+=30) Q.push(psEmbed(psCanvas(img,a)));
     const best={};
@@ -1218,7 +1237,7 @@ async function photoSearch(blob){
   }catch(e){
     sh.innerHTML=`<div class="in"><h2>Recherche impossible</h2><p class="note">La reconnaissance d'image n'a pas pu démarrer sur ce téléphone (${esc(e&&e.message||String(e))}). Vérifie la connexion internet la première fois, puis réessaie.</p><button type="button" class="btn" id="psClose">OK</button></div>`;
     $("#psClose").onclick=closeSheet;
-  }
+  }finally{ PS.busy=false; }
 }
 ["#newCam","#newGal"].forEach(sel=>$(sel).addEventListener("change",e=>{ const f=e.target.files[0]; if(!f) return; stopCam();
   NP=NP||{}; if(NP.url) URL.revokeObjectURL(NP.url); NP.file=f; NP.url=URL.createObjectURL(f); showCrop(); e.target.value=""; }));
@@ -1254,7 +1273,8 @@ let BOOT=true, BOOTT=null;
 function showBoot(msg){ BOOT=true; $("#bootMsg").textContent=msg||"Mise à jour de ta collection…"; $("#boot").hidden=false;
   clearTimeout(BOOTT); BOOTT=setTimeout(()=>bootDone("Connexion lente : la mise à jour continue en arrière-plan."),15000); }
 function bootMsg(m){ if(BOOT) $("#bootMsg").textContent=m; }
-function bootDone(msg){ clearTimeout(BOOTT); if(!BOOT) return; BOOT=false; $("#boot").hidden=true; if(msg) toast(msg); }
+function bootDone(msg){ clearTimeout(BOOTT); if(!BOOT) return; BOOT=false; $("#boot").hidden=true; if(msg) toast(msg);
+  setTimeout(()=>psLearnSoon(),8000); } // photos pas encore apprises par la recherche par photo : apprises en fond
 /* ---------- démarrage ---------- */
 async function loadCatalogue(){
   const r=await fetch("catalogue.json",{cache:"no-cache"}); const c=await r.json();
