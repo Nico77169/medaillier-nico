@@ -974,12 +974,40 @@ function findCoin(img){
       if(!best||a>best.a) best={a,x0,x1,y0,y1}; }
     if(!best) return null;
     const bw=best.x1-best.x0+1, bh=best.y1-best.y0+1;
-    if(bw>w*0.96&&bh>h*0.96) return null; // la pièce remplit déjà la photo
+    if(bw>w*0.96&&bh>h*0.96) return {full:true}; // la pièce remplit déjà la photo
     return {cx:(best.x0+best.x1+1)/2/k, cy:(best.y0+best.y1+1)/2/k, d:Math.max(bw,bh)/k};
   }catch(e){ return null; }
 }
+/* photo prise à la main (doigts, boîte, canapé autour) : on cherche le grand rond de la pièce (transformée de Hough) */
+function houghCoin(img){
+  const W=img.naturalWidth||img.width, H=img.naturalHeight||img.height, k=Math.min(1,200/Math.max(W,H)), w=Math.round(W*k), h=Math.round(H*k);
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const c=cv.getContext('2d',{willReadFrequently:true});
+  c.fillStyle='#808080'; c.fillRect(0,0,w,h); c.drawImage(img,0,0,w,h); const d=c.getImageData(0,0,w,h).data;
+  const g=new Float32Array(w*h); for(let i=0;i<w*h;i++) g[i]=0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2];
+  // flou léger
+  const s=new Float32Array(w*h); for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){let a=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)a+=g[(y+dy)*w+x+dx];s[y*w+x]=a/9;}
+  const mag=new Float32Array(w*h), gx=new Float32Array(w*h), gy=new Float32Array(w*h);
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;
+    const X=-s[i-w-1]-2*s[i-1]-s[i+w-1]+s[i-w+1]+2*s[i+1]+s[i+w+1], Y=-s[i-w-1]-2*s[i-w]-s[i-w+1]+s[i+w-1]+2*s[i+w]+s[i+w+1];
+    gx[i]=X; gy[i]=Y; mag[i]=Math.hypot(X,Y);}
+  const sorted=Array.from(mag).sort((a,b)=>b-a), th=sorted[Math.floor(w*h*0.12)]||1;
+  const m=Math.min(w,h), r0=Math.round(m*0.15), r1=Math.round(m*0.5), nr=r1-r0+1;
+  const acc=new Float32Array(w*h*nr);
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x; if(mag[i]<th) continue; const ux=gx[i]/mag[i], uy=gy[i]/mag[i];
+    for(let r=r0;r<=r1;r++) for(const sg of [1,-1]){ const cx=Math.round(x+sg*ux*r), cy=Math.round(y+sg*uy*r); if(cx<0||cy<0||cx>=w||cy>=h) continue; acc[(r-r0)*w*h+cy*w+cx]+=1; } }
+  let best=null;
+  for(let ri=0;ri<nr;ri++){ const r=ri+r0, base=ri*w*h;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){ // somme 3x3 pour tolérer l'ellipse
+      let v=0; for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy; if(X>=0&&Y>=0&&X<w&&Y<h) v+=acc[base+Y*w+X];}
+      const sc=v/(2*Math.PI*r)*Math.sqrt(r/m);
+      if(!best||sc>best.sc) best={sc,x,y,r}; } }
+  return best&&{cx:best.x/k,cy:best.y/k,d:2*best.r/k,sc:best.sc};
+}
+function coinBox(img){ const f=findCoin(img); if(f&&f.full) return null; if(f) return f;
+  try{ const W=img.naturalWidth||img.width, H=img.naturalHeight||img.height, h=houghCoin(img); if(h&&h.sc>0.08&&h.d<Math.min(W,H)*0.93) return h; }catch(e){}
+  return null; }
 function autoFit(){
-  const f=findCoin(CR.img); if(!f) return;
+  const f=coinBox(CR.img); if(!f) return;
   const W=CR.img.naturalWidth, H=CR.img.naturalHeight;
   const z=Math.min(4,Math.max(1,(2*CR.r)/(f.d*CR.base))), sc=CR.base*z;
   CR.z=z; CR.ox=-(f.cx-W/2)*sc; CR.oy=-(f.cy-H/2)*sc;
@@ -1164,7 +1192,7 @@ async function psNet(){
 function psCanvas(img,ang){ const N=224, cv=document.createElement("canvas"); cv.width=cv.height=N; const c=cv.getContext("2d");
   c.fillStyle="#808080"; c.fillRect(0,0,N,N); c.save(); c.beginPath(); c.arc(N/2,N/2,N/2,0,Math.PI*2); c.clip();
   c.translate(N/2,N/2); c.rotate((ang||0)*Math.PI/180); const W=img.naturalWidth||img.width, H=img.naturalHeight||img.height;
-  const f=findCoin(img); // pièce recadrée bord à bord, quelle que soit la photo
+  const f=coinBox(img); // pièce recadrée bord à bord, quelle que soit la photo
   if(f){ const k=N/f.d; c.drawImage(img,-f.cx*k,-f.cy*k,W*k,H*k); } else { const k=N/Math.min(W,H); c.drawImage(img,-W*k/2,-H*k/2,W*k,H*k); }
   c.restore(); return cv; }
 function psEmbed(cv){ return tf.tidy(()=>{ let x=tf.browser.fromPixels(cv).toFloat().div(127.5).sub(1).expandDims(0);
@@ -1185,8 +1213,8 @@ function psRefs(){ const out=[]; for(const id of Object.keys(S.items)){ if(id[0]
   return out; }
 /* apprentissage en arrière-plan : dès qu'une photo arrive (nouvelle, ou au démarrage pour celles pas encore apprises),
    pour que la recherche n'ait jamais rien à apprendre */
-async function psLoadEmb(){ if(!PS.emb){ let e=null; try{ e=await idb.get("ps:emb"); }catch(x){} PS.emb=PS.emb||e||{}; } return PS.emb; }
-function psSave(){ clearTimeout(PS.st); PS.st=setTimeout(()=>idb.put("ps:emb",PS.emb).catch(()=>{}),800); }
+async function psLoadEmb(){ if(!PS.emb){ let e=null; try{ e=await idb.get("ps:emb2"); }catch(x){} PS.emb=PS.emb||e||{}; } return PS.emb; }
+function psSave(){ clearTimeout(PS.st); PS.st=setTimeout(()=>idb.put("ps:emb2",PS.emb).catch(()=>{}),800); }
 async function psRename(a,b){ await psLoadEmb(); if(PS.emb[a]&&!PS.emb[b]){ PS.emb[b]=PS.emb[a]; delete PS.emb[a]; psSave(); } }
 let PSRUN=false;
 async function psLearnSoon(){
@@ -1215,9 +1243,9 @@ async function photoSearch(blob){
     for(const r of todo){ if(stop) return;
       msg(`J'apprends tes photos (une seule fois) : ${n+1} / ${todo.length}`); bar(n/todo.length); n++;
       try{ const b=await psBlob(r.ref); if(!b){ miss++; continue; } PS.emb[r.ref]=Array.from(psEmbed(psCanvas(await psImg(b),0)),x=>Math.round(x*1e4)/1e4); }catch(e){ miss++; }
-      if(n%20===0) idb.put("ps:emb",PS.emb).catch(()=>{});
+      if(n%20===0) idb.put("ps:emb2",PS.emb).catch(()=>{});
       await new Promise(r=>setTimeout(r,0)); }
-    if(todo.length) idb.put("ps:emb",PS.emb).catch(()=>{});
+    if(todo.length) idb.put("ps:emb2",PS.emb).catch(()=>{});
     PS.busy=false;
     msg("Je compare…"); bar(1);
     const img=await psImg(blob), Q=[]; for(let a=0;a<360;a+=30) Q.push(psEmbed(psCanvas(img,a)));
