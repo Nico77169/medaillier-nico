@@ -27,9 +27,11 @@ function st(id){ return S.items[id]||{}; }
 // lignes toujours rangées par année puis par revers (une année ajoutée se met à sa place)
 const byYear=(a,b)=>(+a.y||9999)-(+b.y||9999)||String(a.r).localeCompare(String(b.r),"fr",{numeric:true});
 function units(t){ return unitsRaw(t).sort(byYear); }
-function unitsRaw(t){ const u=st(t.id);
-  if(t.v) return t.v.concat((u.xv||[]).filter(([y,r])=>!t.v.some(v=>v[0]==y&&v[1]===r)).map(x=>[x[0],x[1],null,1])).map(([y,r,c,a])=>{const k=y+"|"+r; return {k,y,r,c:c||null,q:(u.vq||{})[k]||0,p:!!(u.pv||{})[k],added:!!a};});
-  return [{k:"_",y:yearOf(t),r:t.rev||"",q:u.q||0,c:null,p:!!(u.pv||{})._}]
+/* vx : lignes du catalogue corrigées par Nico (clé d'origine -> "année|revers", ou "-" = masquée). La clé ne change pas : les coches restent. */
+function fixLine(u,o){ const vx=u.vx||{}, n=vx[o.k]; if(!n) return o; const [a,...b]=n.split("|"); return {...o,y:+a||a,r:b.join("|"),ed:true,y0:o.y,r0:o.r}; }
+function unitsRaw(t){ const u=st(t.id), vx=u.vx||{};
+  if(t.v) return t.v.concat((u.xv||[]).filter(([y,r])=>!t.v.some(v=>v[0]==y&&v[1]===r)).map(x=>[x[0],x[1],null,1])).map(([y,r,c,a])=>{const k=y+"|"+r; return fixLine(u,{k,y,r,c:c||null,q:(u.vq||{})[k]||0,p:!!(u.pv||{})[k],added:!!a});}).filter(x=>x.added||vx[x.k]!=="-");
+  return [fixLine(u,{k:"_",y:yearOf(t),r:t.rev||"",q:u.q||0,c:null,p:!!(u.pv||{})._})]
     .concat((u.xv||[]).map(([y,r])=>{const k=y+"|"+r; return {k,y,r,c:null,q:(u.vq||{})[k]||0,p:!!(u.pv||{})[k],added:true};})); }
 function eff(t){ const u=st(t.id); const us=units(t); return {
   us, qty:us.reduce((a,x)=>a+x.q,0), paid:num(u.paid), val: u.val!=null&&u.val!==""?num(u.val):(t.value??null),
@@ -135,7 +137,7 @@ function saveFilter(){ ls.set("nico_filter",S.filter); }
 /* Journal des modifs : on n'envoie au serveur QUE ce qui a été touché (champ par champ, année par année),
    appliqué par-dessus la version du serveur. Un téléphone pas à jour ne peut donc plus écraser d'autres coches. */
 const DIRTY=ls.get("nico_dirty")||{}, DV={};
-const MAPS=["vq","hv","pv","hide"];
+const MAPS=["vq","hv","pv","hide","vx"];
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 function markDirty(id,before,after){
   before=before||{}; after=after||{}; const d=DIRTY[id]||(DIRTY[id]={});
@@ -148,7 +150,7 @@ function markDirty(id,before,after){
   });
   DV[id]=(DV[id]||0)+1; ls.set("nico_dirty",DIRTY);
 }
-function emptyItem(c){ return !c.q && !c.vq && !c.xv && !c.hv && !c.f && !c.b && !c.mv && !c.pv && !c.hide && !c.ns && !c.loc; }
+function emptyItem(c){ return !c.q && !c.vq && !c.xv && !c.hv && !c.f && !c.b && !c.mv && !c.pv && !c.hide && !c.ns && !c.loc && !c.vx; }
 function applyDirty(base,d){
   const r=JSON.parse(JSON.stringify(base||{}));
   Object.entries(d||{}).forEach(([k,v])=>{
@@ -169,6 +171,7 @@ function patch(id,obj){
   if(cur.hv && !Object.keys(cur.hv).length) delete cur.hv;
   if(cur.pv && !Object.keys(cur.pv).length) delete cur.pv;
   if(cur.hide && !Object.keys(cur.hide).length) delete cur.hide;
+  if(cur.vx && !Object.keys(cur.vx).length) delete cur.vx;
   if(emptyItem(cur)) delete S.items[id]; else S.items[id]=cur;
   markDirty(id,before,S.items[id]);
   if(S.custom[id]) saveCustom(id); else saveItem(id);
@@ -736,17 +739,43 @@ document.addEventListener("error",e=>{ const i=e.target; if(i.tagName==="IMG"&&i
 /* ---------- Déplacer une pièce mal rangée ----------
    Volontairement caché pour éviter les erreurs : appui long (2 s) sur le code de la pièce, puis double confirmation. */
 let LP=null, NOCLICK=false, LPV=null;
-/* Appui long (2 s) sur une ligne AJOUTÉE par Nico (année/revers) : la modifier ou la supprimer. Les lignes du catalogue ne réagissent pas. */
-document.addEventListener("pointerdown",e=>{ const r=e.target.closest('.vtog[data-xa="1"]'); if(!r) return;
+/* Appui long (2 s) sur une ligne (année/revers) : la corriger, ou la supprimer/masquer. Lignes du catalogue : la correction reste chez Nico. */
+document.addEventListener("pointerdown",e=>{ const r=e.target.closest('.vtog[data-vt]'); if(!r) return;
   const key=r.dataset.vt; LPV={x:e.clientX,y:e.clientY,el:r,t:setTimeout(()=>{ r.classList.remove("hold"); LPV=null; NOCLICK=true; setTimeout(()=>{NOCLICK=false;},700);
     if(navigator.vibrate) try{navigator.vibrate(30)}catch(_){} showEditLine(key); },2000)}; r.classList.add("hold"); });
 const cancelLPV=()=>{ if(LPV){ clearTimeout(LPV.t); LPV.el.classList.remove("hold"); LPV=null; } };
 document.addEventListener("pointerup",cancelLPV); document.addEventListener("pointercancel",cancelLPV);
 document.addEventListener("pointermove",e=>{ if(LPV&&Math.hypot(e.clientX-LPV.x,e.clientY-LPV.y)>12) cancelLPV(); });
 document.addEventListener("scroll",cancelLPV,{passive:true,capture:true});
-document.addEventListener("contextmenu",e=>{ if(e.target.closest('.vtog[data-xa="1"]')) e.preventDefault(); });
+document.addEventListener("contextmenu",e=>{ if(e.target.closest('.vtog[data-vt]')) e.preventDefault(); });
+function showEditCat(t,ln){
+  const id=t.id, k=ln.k, sh=$("#sheet"), y0=ln.ed?ln.y0:ln.y, r0=ln.ed?ln.r0:ln.r;
+  sh.innerHTML=`<form class="in" id="elForm"><h2>Corriger cette ligne</h2>
+    <p class="note"><b>${esc(t.name)}</b><br>Ligne du catalogue : ${esc(y0||"")} ${esc(r0||"")}${ln.ed?`<br>Corrigée en : <b>${esc(ln.y)} ${esc(ln.r)}</b>`:""}</p>
+    <div class="fields">
+      <label class="field">Année<input id="el-year" inputmode="numeric" maxlength="4" required value="${esc(ln.y||"")}"></label>
+      <label class="field full">Revers<input id="el-rev" value="${esc(ln.r||"")}"></label></div>
+    <p class="note">Tes coches, doubles et « En attente » de cette ligne sont gardés.</p>
+    <div class="row"><button class="btn" type="submit">Enregistrer</button><button class="btn ghost" type="button" id="elCancel">Annuler</button></div>
+    ${ln.ed?`<div class="row"><button type="button" class="linkbtn" id="elReset">↩︎ Remettre comme au catalogue (${esc(y0||"")})</button></div>`:""}
+    ${k!=="_"?`<div class="row" id="elDelWrap"><button type="button" class="linkbtn danger" id="elDel">Cette ligne n'existe pas : la retirer</button></div>`:""}</form>`;
+  sh.hidden=false; $("#sheetBg").hidden=false; sh.scrollTop=0;
+  $("#elCancel").onclick=closeSheet;
+  const setVx=v=>{ const vx={...(st(id).vx||{})}; if(v==null) delete vx[k]; else vx[k]=v; OPEN.add(id); patch(id,{vx}); closeSheet(); rerender(); };
+  $("#elForm").onsubmit=ev=>{ ev.preventDefault();
+    const y=$("#el-year").value.trim(), r=$("#el-rev").value.trim();
+    if(!/^\d{4}$/.test(y)){ toast("Mets l'année sur 4 chiffres"); return; }
+    if(units(t).some(x=>x.k!==k&&String(x.y)===y&&String(x.r||"")===r)){ toast("Cette ligne existe déjà"); return; }
+    if(y===String(y0)&&r===String(r0||"")) setVx(null); else setVx(y+"|"+r);
+    toast("Ligne corrigée"); };
+  if($("#elReset")) $("#elReset").onclick=()=>{ setVx(null); toast("Ligne remise comme au catalogue"); };
+  if($("#elDel")) $("#elDel").onclick=()=>{ $("#elDelWrap").innerHTML=`<p class="note full" style="margin:0">Sûr ? La ligne ${esc(ln.y)} ${esc(ln.r)} ne s'affichera plus pour cette pièce.${ln.q>0?" <b>Attention, elle est cochée.</b>":""}</p><button type="button" class="btn" id="elYes">Oui, la retirer</button><button type="button" class="btn ghost" id="elNo">Non</button>`;
+    $("#elYes").onclick=()=>{ setVx("-"); toast("Ligne retirée"); }; $("#elNo").onclick=closeSheet; };
+}
 function showEditLine(key){
   const i=key.indexOf("~"), id=key.slice(0,i), k=key.slice(i+1), t=byId(id); if(!t) return;
+  const ln=units(t).find(x=>x.k===k); if(!ln) return;
+  if(!ln.added) return showEditCat(t,ln);
   const [y0,...rr]=k.split("|"), r0=rr.join("|");
   const sh=$("#sheet");
   sh.innerHTML=`<form class="in" id="elForm"><h2>Modifier cette ligne</h2>
@@ -791,7 +820,7 @@ function showHelp(){
     <h3 class="htitle">Pièce en attente</h3>
     <p class="note"><b>Double appui</b> sur une ligne (année + revers) : elle passe en <b>orange « En attente »</b> (commandée, en cours d'échange…). Elle ne compte pas encore comme possédée. Un simple appui ensuite la coche en vert ; un nouveau double appui enlève « En attente ». Le filtre <b>En attente</b> en haut les retrouve toutes, et le compteur <b>Attente</b> en bas les compte.</p>
     <h3 class="htitle">Année ou revers manquant</h3>
-    <p class="note">Dans la fiche d'une pièce, touche <b>+ Ajouter une année ou un revers</b> sous ses lignes. L'année suivante et le revers sont proposés (ex. 2013 · 13 MDP-2), tu corriges si besoin. Pour <b>corriger ou supprimer</b> une ligne que tu as ajoutée : <b>garde le doigt 2 secondes dessus</b> (elle devient orange), puis Modifier ou Supprimer. Les lignes du catalogue ne sont pas modifiables.</p>
+    <p class="note">Dans la fiche d'une pièce, touche <b>+ Ajouter une année ou un revers</b> sous ses lignes. L'année suivante et le revers sont proposés (ex. 2013 · 13 MDP-2), tu corriges si besoin. Pour <b>corriger ou supprimer</b> une ligne que tu as ajoutée : <b>garde le doigt 2 secondes dessus</b> (elle devient orange), puis Modifier ou Supprimer. Pareil pour une ligne du catalogue qui est fausse (mauvaise année, revers) : garde le doigt 2 secondes dessus pour la <b>corriger</b> ; tes coches restent.</p>
     <h3 class="htitle">Saisie gardée</h3>
     <p class="note">Si tu quittes l'appli en pleine saisie (pour chercher une info), tu retrouves le formulaire et ce que tu avais écrit en revenant.</p>
     <h3 class="htitle">Mosaïque</h3>
@@ -919,32 +948,38 @@ function showCrop(){
 /* pré-zoom : repère la pièce sur le fond (couleur des bords, blanc) et la cale dans le cercle */
 function findCoin(img){
   try{
-    const W=img.naturalWidth, H=img.naturalHeight, k=Math.min(1,220/Math.max(W,H)), w=Math.max(1,Math.round(W*k)), h=Math.max(1,Math.round(H*k));
+    const W=img.naturalWidth, H=img.naturalHeight, k=Math.min(1,240/Math.max(W,H)), w=Math.max(1,Math.round(W*k)), h=Math.max(1,Math.round(H*k));
     const cv=document.createElement("canvas"); cv.width=w; cv.height=h; const c=cv.getContext("2d",{willReadFrequently:true});
     c.drawImage(img,0,0,w,h); const d=c.getImageData(0,0,w,h).data;
-    const px=(x,y)=>{ const i=(y*w+x)*4; return [d[i],d[i+1],d[i+2]]; };
-    const br=[]; for(let x=0;x<w;x++){ br.push(px(x,0),px(x,h-1)); } for(let y=0;y<h;y++){ br.push(px(0,y),px(w-1,y)); }
-    const med=j=>{ const a=br.map(p=>p[j]).sort((m,n)=>m-n); return a[a.length>>1]; }, bg=[med(0),med(1),med(2)];
-    const near=br.filter(p=>Math.abs(p[0]-bg[0])+Math.abs(p[1]-bg[1])+Math.abs(p[2]-bg[2])<60).length/br.length;
-    if(near<0.6) return null; // fond pas uni : photo déjà cadrée
-    const rows=new Array(h).fill(0), cols=new Array(w).fill(0);
-    for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const [r,g,b]=px(x,y), mx=Math.max(r,g,b), mn=Math.min(r,g,b);
-      const isBg=Math.abs(r-bg[0])+Math.abs(g-bg[1])+Math.abs(b-bg[2])<60 || (mn>228&&mx-mn<22);
-      if(!isBg){ rows[y]++; cols[x]++; } }
-    const tr=Math.max(2,w*0.06), tc=Math.max(2,h*0.06);
-    let y0=rows.findIndex(v=>v>tr), y1=h-1-[...rows].reverse().findIndex(v=>v>tr);
-    let x0=cols.findIndex(v=>v>tc), x1=w-1-[...cols].reverse().findIndex(v=>v>tc);
-    if(y0<0||x0<0) return null;
-    const bw=x1-x0+1, bh=y1-y0+1;
-    if(Math.max(bw/w,bh/h)>0.97 && Math.min(bw/w,bh/h)>0.9) return null; // pièce déjà pleine
-    if(Math.min(bw,bh)<Math.max(w,h)*0.12) return null; // trop petit : on ne devine pas
-    return {cx:(x0+x1+1)/2/k, cy:(y0+y1+1)/2/k, d:Math.max(bw,bh)/k};
+    // couleur de fond = la plus fréquente sur le tour de l'image (capture d'écran, fond blanc, nappe unie…)
+    const hist=new Map(), q=i=>((d[i]>>5)<<6)|((d[i+1]>>5)<<3)|(d[i+2]>>5), brd=[];
+    for(let x=0;x<w;x++) brd.push((0*w+x)*4,((h-1)*w+x)*4); for(let y=0;y<h;y++) brd.push((y*w)*4,(y*w+w-1)*4);
+    brd.forEach(i=>{ const b=q(i); hist.set(b,(hist.get(b)||0)+1); });
+    const top=[...hist.entries()].sort((a,b)=>b[1]-a[1])[0]; if(top[1]/brd.length<0.3) return null;
+    const sel=brd.filter(i=>q(i)===top[0]), bg=[0,1,2].map(j=>sel.reduce((a,i)=>a+d[i+j],0)/sel.length);
+    // masque : ce qui n'est ni le fond ni du blanc
+    const m=new Uint8Array(w*h);
+    for(let p=0;p<w*h;p++){ const i=p*4, r=d[i], g=d[i+1], b=d[i+2], mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+      m[p]=(Math.abs(r-bg[0])+Math.abs(g-bg[1])+Math.abs(b-bg[2])<60 || (mn>228&&mx-mn<22))?0:1; }
+    // morceaux d'un seul tenant : on garde le plus gros qui a une forme de pièce (à peu près carré)
+    const lab=new Int32Array(w*h), st=[]; let best=null, n=0;
+    for(let p0=0;p0<w*h;p0++){ if(!m[p0]||lab[p0]) continue; n++; lab[p0]=n; st.push(p0);
+      let a=0,x0=w,x1=0,y0=h,y1=0;
+      while(st.length){ const p=st.pop(), x=p%w, y=(p/w)|0; a++; if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+        for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const X=x+dx, Y=y+dy; if(X<0||Y<0||X>=w||Y>=h) continue; const P=Y*w+X; if(m[P]&&!lab[P]){ lab[P]=n; st.push(P); } } }
+      const bw=x1-x0+1, bh=y1-y0+1, ar=bw/bh;
+      if(ar<0.8||ar>1.25||Math.min(bw,bh)<Math.min(w,h)*0.15||a<0.4*bw*bh) continue;
+      if(!best||a>best.a) best={a,x0,x1,y0,y1}; }
+    if(!best) return null;
+    const bw=best.x1-best.x0+1, bh=best.y1-best.y0+1;
+    if(bw>w*0.96&&bh>h*0.96) return null; // la pièce remplit déjà la photo
+    return {cx:(best.x0+best.x1+1)/2/k, cy:(best.y0+best.y1+1)/2/k, d:Math.max(bw,bh)/k};
   }catch(e){ return null; }
 }
 function autoFit(){
   const f=findCoin(CR.img); if(!f) return;
   const W=CR.img.naturalWidth, H=CR.img.naturalHeight;
-  const z=Math.min(4,Math.max(1,(2*CR.r*0.97)/(f.d*CR.base))), sc=CR.base*z;
+  const z=Math.min(4,Math.max(1,(2*CR.r)/(f.d*CR.base))), sc=CR.base*z;
   CR.z=z; CR.ox=-(f.cx-W/2)*sc; CR.oy=-(f.cy-H/2)*sc;
 }
 function cropRect(){ const {img,S,base,z,ox,oy}=CR, sc=base*z, w=img.naturalWidth*sc, h=img.naturalHeight*sc; return {x:S/2+ox-w/2,y:S/2+oy-h/2,w,h}; }
