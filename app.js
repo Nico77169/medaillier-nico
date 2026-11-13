@@ -665,6 +665,7 @@ function numUrlSafe(t){ return numUrl(t); }
 document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
   if(b.dataset.cat){ if(!S.cat){ S.homeQ=S.q; HOMEY=scrollY; } OPEN.clear(); S.mosaic=true; S.addOpen=false; S.cat=b.dataset.cat; S.yr=""; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
+  if(b.dataset.psopen){ closeSheet(); openPiece(b.dataset.psopen); return; }
   if(b.dataset.where){ const id=b.dataset.where; if(PIECE===id) return; WOPEN.has(id)?WOPEN.delete(id):WOPEN.add(id); rerender(); return; }
   if(b.dataset.wcopy){ const g=geoOf(b.dataset.wcopy)||[], txt=[g[3],g[4]].filter(Boolean).join(", ")||`${g[0]}, ${g[1]}`;
     (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast("Adresse copiée"),()=>toast(txt)); return; }
@@ -1087,7 +1088,7 @@ function stopCam(){ if(CAM&&CAM.stream) CAM.stream.getTracks().forEach(t=>t.stop
 async function showCamera(){
   const sh=$("#sheet");
   sh.innerHTML=`<div class="in">
-    <h2>${NP&&NP.target?(NP.target.side==="b"?"Photo du dos":"Photo de la face"):"Ajouter ma pièce"}</h2>
+    <h2>${NP&&NP.search?"Pièce à retrouver":NP&&NP.target?(NP.target.side==="b"?"Photo du dos":"Photo de la face"):"Ajouter ma pièce"}</h2>
     <div class="cam" id="camBox"><video id="camV" playsinline autoplay muted></video><div class="crop-mask"></div><div class="crop-ring"></div></div>
     <p class="note" id="camMsg" style="text-align:center">Place la pièce dans le cercle, puis appuie sur le bouton doré.</p>
     <label class="field full">Zoom<input type="range" id="camZoom" min="1" max="3" step="0.01" value="1"></label>
@@ -1116,6 +1117,7 @@ async function showCamera(){
   };
 }
 async function gotBlob(blob){
+  if(NP&&NP.search){ photoSearch(blob); return; }
   NP.blob=blob; if(NP.cropUrl) URL.revokeObjectURL(NP.cropUrl); NP.cropUrl=URL.createObjectURL(blob);
   if(NP.target){ const {id,side}=NP.target, y=NP.y; const ref=await storeBlob(blob); patch(id,{[side]:ref}); closeSheet(); render();
     const back=()=>scrollTo(0,y||0); back(); requestAnimationFrame(back); setTimeout(back,150); toast("Photo enregistrée"); return; }
@@ -1131,13 +1133,93 @@ async function restoreDraft(){
 function showPick(){
   const sh=$("#sheet");
   sh.innerHTML=`<div class="in">
-    <h2>${NP&&NP.target?"Photo de la pièce":"Ajouter ma pièce"}</h2>
+    <h2>${NP&&NP.search?"Retrouver une pièce en photo":NP&&NP.target?"Photo de la pièce":"Ajouter ma pièce"}</h2>
+    ${NP&&NP.search?`<p class="note">Prends la pièce en photo : l'appli la compare à toutes les photos déjà enregistrées (face et dos) et te montre celles qui lui ressemblent le plus.</p>`:""}
     <button type="button" class="pick" id="pickCam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Prendre une photo</button>
     <label class="pick alt" for="newGal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg>Choisir dans ma galerie</label>
     <button type="button" class="linkbtn" id="pickCancel">Annuler</button></div>`;
   sh.hidden=false; $("#sheetBg").hidden=false; $("#pickCancel").onclick=closeSheet; $("#pickCam").onclick=showCamera;
 }
 $("#fab").addEventListener("click",()=>{ NP={}; showPick(); });
+$("#psBtn").addEventListener("click",()=>{ NP={search:true}; showPick(); });
+
+/* ---------- recherche par photo : compare à toutes les photos déjà enregistrées (sur le téléphone, sans internet une fois prêt) ----------
+   Reconnaissance d'image MobileNet (poids Keras, Apache 2.0) exécutée avec TensorFlow.js. Chaque photo est résumée une fois
+   (« empreinte » gardée sur le téléphone), les nouvelles photos sont ajoutées toutes seules à la recherche suivante. */
+const PS={net:null,emb:null};
+function f16(h){ const o=new Float32Array(h.length); for(let i=0;i<h.length;i++){ const x=h[i], s=x&0x8000?-1:1, e=(x>>10)&31, m=x&1023;
+  o[i]=e===0?s*m*5.960464477539063e-8:e===31?(m?NaN:s*Infinity):s*Math.pow(2,e-15)*(1+m/1024); } return o; }
+async function psNet(){
+  if(PS.net) return PS.net;
+  if(!window.tf) await new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="vendor/tf.min.js?v=1"; sc.onload=res; sc.onerror=()=>rej(new Error("tf")); document.head.appendChild(sc); });
+  try{ await tf.setBackend("webgl"); }catch(e){} await tf.ready();
+  const [L,buf]=await Promise.all([fetch("vendor/mobilenet/model.json?v=1").then(r=>r.json()),fetch("vendor/mobilenet/w.bin?v=1").then(r=>r.arrayBuffer())]);
+  const w=f16(new Uint16Array(buf));
+  PS.net=L.map(l=>{ const n=l.k.reduce((a,b)=>a*b,1), out=l.t==="d"?l.k[2]:l.k[3];
+    return {t:l.t,s:l.s,K:tf.tensor(w.subarray(l.o,l.o+n),l.k),b:tf.tensor1d(w.subarray(l.o+n,l.o+n+out))}; });
+  return PS.net;
+}
+// image -> carré 224 px, pièce dans un rond sur fond gris (comme les photos enregistrées), tourné de « ang » degrés
+function psCanvas(img,ang){ const N=224, cv=document.createElement("canvas"); cv.width=cv.height=N; const c=cv.getContext("2d");
+  c.fillStyle="#808080"; c.fillRect(0,0,N,N); c.save(); c.beginPath(); c.arc(N/2,N/2,N/2,0,Math.PI*2); c.clip();
+  c.translate(N/2,N/2); c.rotate((ang||0)*Math.PI/180); const W=img.naturalWidth||img.width, H=img.naturalHeight||img.height;
+  const f=findCoin(img); // pièce recadrée bord à bord, quelle que soit la photo
+  if(f){ const k=N/f.d; c.drawImage(img,-f.cx*k,-f.cy*k,W*k,H*k); } else { const k=N/Math.min(W,H); c.drawImage(img,-W*k/2,-H*k/2,W*k,H*k); }
+  c.restore(); return cv; }
+function psEmbed(cv){ return tf.tidy(()=>{ let x=tf.browser.fromPixels(cv).toFloat().div(127.5).sub(1).expandDims(0);
+  for(const l of PS.net){ x=l.t==="d"?tf.depthwiseConv2d(x,l.K,l.s,"same"):tf.conv2d(x,l.K,l.s,"same"); x=x.add(l.b).clipByValue(0,6); }
+  const v=x.mean([1,2]).squeeze(); return v.div(v.norm()).dataSync().slice(); }); }
+function psImg(blob){ return new Promise((res,rej)=>{ const u=URL.createObjectURL(blob), i=new Image(); i.onload=()=>{ URL.revokeObjectURL(u); res(i); }; i.onerror=()=>{ URL.revokeObjectURL(u); rej(new Error("img")); }; i.src=u; }); }
+async function psBlob(ref){
+  if(ref.startsWith("cat:")){ const r=await fetch(ref.slice(4)); return r.ok?await r.blob():null; }
+  if(MEM[ref]) return MEM[ref];
+  let b=await idb.get(ref).catch(()=>null); if(b) return b;
+  if(ref.startsWith("sb:")&&UID){ const {data,error}=await supa.storage.from("photos").download(ref.slice(3)); if(!error&&data){ idb.put(ref,data).catch(()=>{}); return data; } }
+  return null;
+}
+function psRefs(){ const out=[]; for(const id of Object.keys(S.items)){ if(id[0]==="_") continue; const it=S.items[id]; if(!byId(id)) continue;
+  for(const side of ["f","b"]) if(it[side]&&typeof it[side]==="string"&&!REMOVED[it[side]]) out.push({id,side,ref:it[side]}); }
+  // + photos du catalogue fournies avec l'appli (Disney, Beauval) : retrouve aussi celles que Nico n'a pas encore prises en photo
+  for(const [id,p] of Object.entries(PHOTOS)) if(p.f&&/^img\//.test(String(p.f.src))&&byId(id)) out.push({id,side:"f",ref:"cat:"+p.f.src});
+  return out; }
+async function photoSearch(blob){
+  const sh=$("#sheet"); let stop=false;
+  sh.innerHTML=`<div class="in"><h2>Je cherche…</h2><p class="note" id="psMsg">Préparation de la reconnaissance d'image…</p><div class="psbar"><i id="psBar"></i></div>
+    <button type="button" class="linkbtn" id="psCancel">Annuler</button></div>`;
+  sh.hidden=false; $("#sheetBg").hidden=false; $("#psCancel").onclick=()=>{ stop=true; closeSheet(); };
+  const msg=t=>{ const m=$("#psMsg"); if(m) m.textContent=t; }, bar=f=>{ const b=$("#psBar"); if(b) b.style.width=Math.round(f*100)+"%"; };
+  try{
+    await psNet(); if(stop) return;
+    if(!PS.emb){ PS.emb={}; try{ PS.emb=(await idb.get("ps:emb"))||{}; }catch(e){} }
+    const refs=psRefs(), todo=refs.filter(r=>!PS.emb[r.ref]);
+    if(!refs.length){ sh.innerHTML=`<div class="in"><h2>Aucune photo enregistrée</h2><p class="note">La recherche compare aux photos déjà prises dans l'appli. Ajoute des photos à tes pièces, puis réessaie.</p><button type="button" class="btn" id="psClose">OK</button></div>`; $("#psClose").onclick=closeSheet; return; }
+    let n=0, miss=0;
+    for(const r of todo){ if(stop) return;
+      msg(`J'apprends tes photos (une seule fois) : ${n+1} / ${todo.length}`); bar(n/todo.length); n++;
+      try{ const b=await psBlob(r.ref); if(!b){ miss++; continue; } PS.emb[r.ref]=Array.from(psEmbed(psCanvas(await psImg(b),0)),x=>Math.round(x*1e4)/1e4); }catch(e){ miss++; }
+      if(n%20===0) idb.put("ps:emb",PS.emb).catch(()=>{});
+      await new Promise(r=>setTimeout(r,0)); }
+    if(todo.length) idb.put("ps:emb",PS.emb).catch(()=>{});
+    msg("Je compare…"); bar(1);
+    const img=await psImg(blob), Q=[]; for(let a=0;a<360;a+=30) Q.push(psEmbed(psCanvas(img,a)));
+    const best={};
+    for(const r of refs){ const e=PS.emb[r.ref]; if(!e) continue; let m=-1;
+      for(const q of Q){ let d=0; for(let i=0;i<q.length;i++) d+=q[i]*e[i]; if(d>m) m=d; }
+      if(!best[r.id]||m>best[r.id].s) best[r.id]={id:r.id,s:m,ref:r.ref}; }
+    const top=Object.values(best).sort((a,b)=>b.s-a.s).slice(0,6);
+    const mine=URL.createObjectURL(blob);
+    sh.innerHTML=`<div class="in"><h2>Ça ressemble à…</h2>
+      <div class="psme"><img src="${mine}" alt="Ta photo"><p class="note">Touche la bonne pièce pour ouvrir sa fiche.${miss?` <br>(${miss} photo${miss>1?"s":""} pas accessible${miss>1?"s":""} pour l'instant, réessaie avec internet.)`:""}</p></div>
+      <div class="psres">${top.map((r,i)=>{ const t=byId(r.id); return `<button type="button" class="psit" data-psopen="${esc(r.id)}">
+        ${r.ref.startsWith("cat:")?`<img src="${esc(r.ref.slice(4))}" alt="">`:`<img data-ph="${esc(r.ref)}" src="${ownSrc(r.ref)}" alt="">`}<span><b>${esc(t.name)}</b><small>${esc(t.ref||"")} · ${esc(t.years||"")}</small></span>${i===0?`<em>${top[1]&&r.s-top[1].s>=0.05?"Très probable":"Le plus proche"}</em>`:""}</button>`; }).join("")}</div>
+      <p class="note">Pas dedans ? Soit la pièce n'a pas encore de photo dans l'appli, soit refais la photo plus nette, bien dans le cercle.</p>
+      <div class="row"><button type="button" class="btn ghost" id="psAgain">Autre photo</button><button type="button" class="btn ghost" id="psClose">Fermer</button></div></div>`;
+    $("#psClose").onclick=closeSheet; $("#psAgain").onclick=()=>{ NP={search:true}; showPick(); };
+  }catch(e){
+    sh.innerHTML=`<div class="in"><h2>Recherche impossible</h2><p class="note">La reconnaissance d'image n'a pas pu démarrer sur ce téléphone (${esc(e&&e.message||String(e))}). Vérifie la connexion internet la première fois, puis réessaie.</p><button type="button" class="btn" id="psClose">OK</button></div>`;
+    $("#psClose").onclick=closeSheet;
+  }
+}
 ["#newCam","#newGal"].forEach(sel=>$(sel).addEventListener("change",e=>{ const f=e.target.files[0]; if(!f) return; stopCam();
   NP=NP||{}; if(NP.url) URL.revokeObjectURL(NP.url); NP.file=f; NP.url=URL.createObjectURL(f); showCrop(); e.target.value=""; }));
 

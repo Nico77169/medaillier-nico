@@ -1,0 +1,4 @@
+Reconnaissance d'image pour « Rechercher par photo ».
+- w.bin / model.json : poids MobileNet v1 (alpha 0.5, 224) de Keras Applications (licence Apache 2.0),
+  normalisation BatchNorm intégrée aux convolutions, stockés en float16.
+- ../tf.min.js : TensorFlow.js 4.22.0 (licence Apache 2.0).
