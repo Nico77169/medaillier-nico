@@ -176,7 +176,9 @@ function patch(id,obj){
   markDirty(id,before,S.items[id]);
   if(S.custom[id]) saveCustom(id); else saveItem(id);
 }
-function setSync(state,txt){ const el=$("#status"); el.innerHTML=`<span class="sync ${state}"><i></i>${esc(txt)}</span>${UID?'<button class="logout" id="logoutBtn">Se déconnecter</button>':""}`; }
+/* photos pas encore arrivées sur le serveur (prises sans réseau, ou envoi en cours) */
+function pendingPhotos(){ let n=0; for(const it of Object.values(S.items)) for(const sd of ["f","b"]) if(typeof it[sd]==="string"&&it[sd].startsWith("idb:")) n++; return n; }
+function setSync(state,txt){ const el=$("#status"); const pp=pendingPhotos(); if(pp&&state!=="ok") txt+=` · ${pp} photo${pp>1?"s":""} en attente d'envoi`; el.innerHTML=`<span class="sync ${state}"><i></i>${esc(txt)}</span>${UID?'<button class="logout" id="logoutBtn">Se déconnecter</button>':""}`; }
 async function uploadPending(id){
   const it=S.items[id]; if(!it) return;
   for(const side of ["f","b"]){
@@ -192,7 +194,7 @@ async function uploadPending(id){
 }
 async function flush(){
   if(!UID||syncing) return; const q=Q(); const ids=Object.keys(q); if(!ids.length){ setSync("ok","Tout est sauvegardé en ligne"); return; }
-  if(!navigator.onLine){ setSync("wait","Hors ligne : enregistré sur le téléphone, envoi au retour du réseau"); return; }
+  if(!navigator.onLine){ setSync("wait","Hors ligne : enregistré sur le téléphone, envoi au retour du réseau"); clearTimeout(retryTimer); retryTimer=setTimeout(flush,30000); return; }
   syncing=true; setSync("wait","Sauvegarde en cours…"); let failed=false;
   try{
     for(const id of ids){
@@ -1286,7 +1288,7 @@ function showLogin(){
 window.addEventListener("online",flush);
 let HIDDENAT=0;
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden"){ HIDDENAT=Date.now(); if(UID&&Object.keys(Q()).length){ clearTimeout(flushTimer); flush(); } } // on réduit l'appli : envoi immédiat
-  if(document.visibilityState==="visible"){ checkRobot(); if(UID){ if(HIDDENAT&&Date.now()-HIDDENAT>60e3&&navigator.onLine) showBoot(); pull(); } setTimeout(retryPhotos,300); } });
+  if(document.visibilityState==="visible"){ checkRobot(); if(UID){ if(HIDDENAT&&Date.now()-HIDDENAT>60e3&&navigator.onLine) showBoot(); pull(); if(Object.keys(Q()).length) setTimeout(flush,1500); } setTimeout(retryPhotos,300); } }); // retour dans l'appli : on renvoie ce qui attend
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 /* ---------- bouton « retour » du téléphone : revient à l'écran précédent au lieu de fermer l'appli ---------- */
 let ARMED=false;
