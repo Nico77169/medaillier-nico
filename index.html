@@ -264,12 +264,9 @@ img{max-width:100%}
 .wbody{display:grid;gap:8px;padding:0 12px 12px}.wname{font-weight:700}.waddr{font-size:.9rem}.wnote{font-size:.75rem;color:var(--muted)}
 .wmap{width:100%;height:200px;border:0;border-radius:12px;background:var(--line)}
 .wbtns{display:flex;flex-wrap:wrap;gap:6px}.wgo{text-decoration:none;font-weight:700;font-size:.82rem;color:var(--gold);background:var(--gold-soft);border:0;border-radius:999px;padding:8px 12px}.wgo.main{background:var(--gold);color:#fff}
-.psbtn{flex:none;width:38px;height:38px;border-radius:10px;border:0;background:var(--surface);color:var(--gold);display:grid;place-items:center;padding:0}.psbtn svg{width:24px;height:24px}
-.psbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin:6px 0 12px}.psbar i{display:block;height:100%;width:0;background:var(--gold);transition:width .2s}
-.psme{display:flex;gap:12px;align-items:center}.psme img{width:72px;height:72px;border-radius:50%;object-fit:cover;flex:none;background:#808080}
-.psres{display:grid;gap:8px;margin:10px 0}.psit{display:flex;gap:10px;align-items:center;text-align:left;width:100%;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:14px;padding:8px}
-.psit img{width:58px;height:58px;border-radius:50%;object-fit:cover;flex:none;background:var(--line)}.psit span{display:grid;gap:2px;min-width:0;flex:1}.psit b{font-size:.92rem}.psit small{color:var(--muted);font-size:.75rem}
-.psit em{font-style:normal;font-size:.72rem;color:var(--gold);font-weight:700;flex:none}.psit:first-child{border-color:var(--gold)}
+.rpgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:10px 0;max-height:55vh;overflow:auto}
+.rpit{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px;background:var(--surface);font-size:.8rem;min-width:0}
+.rpit img{width:48px;height:48px;border-radius:50%;object-fit:cover;flex:none;background:var(--line)}.rpit span{display:grid;min-width:0}.rpit small{color:var(--muted);font-size:.7rem}
 .yrchips{display:flex;gap:5px;overflow-x:auto;margin:2px 0 8px;padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.yrchips::-webkit-scrollbar{display:none}
 .yrchip{flex:0 0 auto;display:inline-flex;align-items:baseline;gap:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 9px;line-height:1.2}
 .yrchip b{font-size:.74rem;font-weight:700}.yrchip small{font-size:.64rem;color:var(--muted)}.yrchip.on{background:var(--gold);border-color:var(--gold);color:#fff}.yrchip.on small{color:#fff;opacity:.85}
@@ -375,7 +372,6 @@ img{max-width:100%}
     <div class="search">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);flex:none"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
       <input id="q" type="search" placeholder="Code, nom ou thème…" autocomplete="off" aria-label="Rechercher">
-      <button type="button" id="psBtn" class="psbtn" aria-label="Rechercher par photo" title="Rechercher par photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3l2-3h5"/><path d="M3 8v11h11"/><circle cx="9" cy="13" r="3"/><circle cx="17.5" cy="8.5" r="3.5"/><path d="M20 11l2.5 2.5"/></svg></button>
     </div>
     <div class="filters" role="group" aria-label="Filtre">
       <button class="chip" data-f="own">Possédées</button>
@@ -396,7 +392,7 @@ img{max-width:100%}
 <section class="sheet" id="sheet" hidden aria-label="Ajouter ma pièce"></section>
 <footer class="foot"><div class="in" id="foot"></div></footer>
 <script src="vendor/supabase.js"></script>
-<script src="config.js?v=40"></script>
-<script src="app.js?v=40"></script>
+<script src="config.js?v=41"></script>
+<script src="app.js?v=41"></script>
 </body>
 </html>
