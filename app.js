@@ -43,7 +43,7 @@ function passFilter(t){
   if(S.filter==="own") return us.some(x=>x.q>0);
   if(S.filter==="missing") return us.some(x=>x.q===0);
   if(S.filter==="dup") return us.some(x=>x.q>1);
-  if(S.filter==="hugo") return Object.keys(st(t.id).hv||{}).length>0;
+  if(S.filter==="hugo"){ const n=hugoN(t); return S.hsub==="has"?n>0:S.hsub==="miss"?n<units(t).length:true; }
   if(S.filter==="pend") return units(t).some(x=>x.p&&x.q<=0);
   return true;
 }
@@ -75,7 +75,12 @@ function score(t,q){ const nq=norm(q).trim();
   const hits=qs.filter(w=>wordHit(w,hay,flat)).length; if(hits<qs.length) return hits/qs.length;
   return qs.every(w=>flat.includes(w))?2:1; } // 2 = tous les mots tels quels, 1 = avec une petite faute
 function matches(t,q){ return !q || score(t,q)>=1; }
+/* filtre Hugo : on voit la collection du point de vue de Hugo (ses cases « Hugo »), sans toucher à celle de Nico */
+const HU=()=>S.filter==="hugo";
+function hugoN(t){ const hv=st(t.id).hv||{}; return units(t).filter(x=>hv[x.k]).length; }
+function hasOwn(t){ return HU()?hugoN(t)>0:eff(t).qty>0; }
 function stats(list){
+  if(HU()){ let total=0,own=0; list.forEach(t=>{ const n=units(t).length; total+=n; own+=hugoN(t); }); return {total,own,missing:total-own,qty:own,dup:0,spent:0,value:0,pend:0}; }
   let total=0,own=0,qty=0,dup=0,spent=0,value=0,pend=0;
   list.forEach(t=>{const e=eff(t); e.us.forEach(x=>{ total++; if(x.q>0){own++; qty+=x.q; dup+=x.q-1; value+=(x.c??e.val??0)*x.q;} else if(x.p) pend++; }); spent+=(e.paid||0)*e.qty;});
   return {total,own,missing:total-own,qty,dup,spent,value,pend};
@@ -347,11 +352,11 @@ function mosaicHTML(list,mode){
   const idx=byL?`<nav class="mabc">${keys.map(k=>`<button data-ml="ml-${k==="#"?"0":k}">${esc(k)}</button>`).join("")}</nav>`:"";
   // une ligne par année : étiquette à gauche (année + compte), pièces à droite
   return yrChips()+`<p class="mhint">Touche une pièce pour ouvrir sa fiche, ou ${byL?"une lettre":"une année"} pour la voir dans la liste.</p>`+idx+keys.map(k=>{
-    const ts=groups.get(k), own=ts.filter(t=>eff(t).qty>0).length;
+    const ts=groups.get(k), own=ts.filter(hasOwn).length;
     return `<section class="mrow"${byL?` id="ml-${k==="#"?"0":k}"`:""}><button class="mlab${own===ts.length?" full":""}" data-j${byL?"l":"y"}="${esc(k)}" aria-label="${esc(k)} : ${own} sur ${ts.length} possédée${own>1?"s":""}"><b>${esc(k==="Sans année"?"?":k)}</b><small>${own}/${ts.length}</small></button><div class="mgrid four">${ts.map(mtileHTML).join("")}</div></section>`; }).join("");
 }
 function mtileHTML(t){
-  const e=eff(t), np=PHOTOS[t.id]||{}, own=e.qty>0, pend=!own&&units(t).some(x=>x.p);
+  const e=eff(t), np=PHOTOS[t.id]||{}, own=hasOwn(t), pend=!own&&!HU()&&units(t).some(x=>x.p);
   let img="";
   if(e.f) img=`<img src="${esc(ownSrc(e.f))}" data-ph="${esc(e.f)}" alt="" loading="lazy">`;
   else if(np.f&&!(st(t.id).hide||{}).f) img=`<img src="${esc(String(np.f.src).replace("-original.jpg","-180.jpg"))}" alt="" loading="lazy">`;
@@ -387,6 +392,7 @@ function renderMain(){
   $("#crumb").textContent=S.cat?(cc.dep&&/^\d|^2[AB]/.test(cc.num||"")&&cc.id!=="dom"?"Département "+cc.num:(cc.dep?"Catégorie":"Thème")):"Jetons Monnaie de Paris";
   $("#q").placeholder=S.cat?(catOf(S.cat).dep?"Chercher dans ce département…":"Chercher dans ce thème…"):"Code, nom, lieu ou département…";
   document.querySelectorAll(".chip[data-f]").forEach(b=>b.setAttribute("aria-pressed",String(S.filter===b.dataset.f)));
+  const hs=$("#hugoSub"); if(hs){ hs.hidden=!HU(); hs.querySelectorAll("[data-hs]").forEach(b=>{ const on=(S.hsub||"all")===b.dataset.hs; b.classList.toggle("on",on); b.setAttribute("aria-pressed",String(on)); }); }
   $("#clearF").hidden=!S.filter;
   const v=$("#view");
   if(S.near){ $("#title").textContent="Autour de moi"; $("#crumb").textContent="Pièces vendues près d'ici"; mb.hidden=true; v.innerHTML=nearHTML(); renderFoot(allTokens().filter(t=>geoOf(t.id)&&(S.nearY!=="rec"||recentUnits(t).length)),"Pièces sur la carte"); return; }
@@ -402,7 +408,7 @@ function renderMain(){
   S.approx=APPROX;
   if(mos&&!S.addOpen){ v.innerHTML=mosaicHTML(list,mmode); renderFoot(pool,"Total "+catOf(S.cat).name); return; }
   if(!S.cat&&S.q){ const dm=matchDeps(S.q).map(c=>c.id); if(dm.length){ const first=t=>dm.includes(catT(t))||(t.dept&&dm.includes("d"+t.dept))?0:1; list.sort((a,b)=>first(a)-first(b)); } } // pièces du département tapé en premier
-  const vk=[S.cat,S.q,S.filter,S.yr].join("§"); if(vk!==VIEWKEY){ VIEWKEY=vk; S.shown=PAGE; }
+  const vk=[S.cat,S.q,S.filter,S.yr,S.hsub].join("§"); if(vk!==VIEWKEY){ VIEWKEY=vk; S.shown=PAGE; }
   S.list=list; const part=list.slice(0,S.shown), rest=list.length-part.length;
   let h="";
   if(!S.cat){ const dm=matchDeps(S.q); if(dm.length) h+=`<p class="sect-title">Département${dm.length>1?"s":""}</p><div class="deps">${depTiles(dm,groupByCat())}</div>`;
@@ -416,7 +422,7 @@ function renderMain(){
   renderFoot(S.cat?pool:list, S.cat?"Total "+catOf(S.cat).name:"Total des résultats");
 }
 function catMeta(all){ const l=S.filter?all.filter(passFilter):all, s=stats(all), pct=s.total?Math.round(s.own/s.total*100):0;
-  return {l,s,pct,f:S.filter?`<span class="meta">${l.length} jeton${l.length>1?"s":""} ${({own:"possédé",missing:"avec un manque",dup:"avec doublon",hugo:"avec Hugo",pend:"en attente"})[S.filter]}${l.length>1&&S.filter==="own"?"s":""}</span>`:""}; }
+  return {l,s,pct,f:S.filter?`<span class="meta">${l.length} jeton${l.length>1?"s":""} ${({own:"possédé",missing:"avec un manque",dup:"avec doublon",hugo:({has:"que Hugo a",miss:"qui manquent à Hugo"})[S.hsub]||"vus par Hugo",pend:"en attente"})[S.filter]}${l.length>1&&S.filter==="own"?"s":""}</span>`:""}; }
 function groupByCat(){ const g={}; allTokens().forEach(t=>{ const k=catT(t); (g[k]=g[k]||[]).push(t); }); return g; }
 // ronds des départements (accueil et recherche) : blason en transparence sous le numéro, anneau = progression
 function depTiles(cats,groups){ return cats.map(c=>{ const all=groups[c.id]||[]; if(!all.length) return ""; const m=catMeta(all); if(S.filter&&!m.l.length) return "";
@@ -598,7 +604,7 @@ function creditHTML(ps){
   return c.length?`<div class="credit">Photo${c.length>1?"s":""} ${c.map(esc).join(" · ")} · Source : Numista</div>`:"";
 }
 function cardHTML(t){
-  const e=eff(t); const own=e.qty>0; const faceOnly=!!t.v;
+  const e=eff(t); const own=hasOwn(t); const faceOnly=!!t.v;
   const np=PHOTOS[t.id]||{};
   const hid=st(t.id).hide||{};
   const side=k=>{ if(e[k]) return {src:ownSrc(e[k]),own:true,ph:e[k]}; if(np[k]&&!hid[k]) return {src:np[k].src,by:np[k].by,lic:np[k].lic}; return null; };
@@ -631,8 +637,8 @@ function yearsLabel(t,e){ const ys=[...new Set(e.us.map(x=>+x.y).filter(Boolean)
 function renderFoot(list,label){
   const s=stats(list); const gain=s.value-s.spent;
   $("#foot").setAttribute("aria-label",label);
-  $("#foot").innerHTML=`<div class="kpi"><span>Obtenues</span><b>${s.own}<small style="font-size:.7em;color:var(--muted)">/${s.total}</small></b></div>
-   <div class="kpi"><span>Manque</span><b>${s.missing}</b></div>
+  $("#foot").innerHTML=`<div class="kpi"><span>${HU()?"Hugo a":"Obtenues"}</span><b>${s.own}<small style="font-size:.7em;color:var(--muted)">/${s.total}</small></b></div>
+   <div class="kpi"><span>${HU()?"Lui manque":"Manque"}</span><b>${s.missing}</b></div>
    <span class="gap" aria-hidden="true"></span>
    <div class="kpi kpend"><span>Attente</span><b>${s.pend}</b></div>
    <div class="kpi"><span>Doubles</span><b>${s.dup}</b></div>
@@ -692,6 +698,7 @@ document.addEventListener("click",e=>{
   if(b.id==="backBtn"&&S.near&&!S.cat){ exitNear(); return; }
   if(b.id==="backBtn"){ OPEN.clear(); S.mosaic=false; S.addOpen=false; S.cat=null; S.q=S.homeQ||""; $("#q").value=S.q; render(); backHome(); return; }
   if(b.dataset.f){ S.filter=S.filter===b.dataset.f?null:b.dataset.f; saveFilter(); render(); return; }
+  if(b.dataset.hs){ S.hsub=b.dataset.hs; ls.set("nico_hsub",S.hsub); render(); return; }
   if(b.id==="clearF"||b.id==="clearF2"){ S.filter=null; saveFilter(); render(); return; }
   // double appui sur une ligne = « En attente » (orange) ; le 1er appui est annulé
   if(b.dataset.vt&&NOCLICK){ NOCLICK=false; return; }
@@ -1262,7 +1269,7 @@ async function loadCatalogue(){
   CATALOG.forEach(t=>{ if(t.np&&!PHOTOS[t.id]) PHOTOS[t.id]=t.np; });
 }
 async function start(){
-  S.nearR=ls.get("nico_nearR")||10; S.filter=ls.get("nico_filter")||null; S.items=ls.get("nico_items")||{}; S.custom=ls.get("nico_custom")||{};
+  S.nearR=ls.get("nico_nearR")||10; S.filter=ls.get("nico_filter")||null; S.hsub=ls.get("nico_hsub")||"all"; S.items=ls.get("nico_items")||{}; S.custom=ls.get("nico_custom")||{};
   showBoot("Chargement du catalogue…");
   try{ await Promise.all([loadCatalogue(),loadGeo()]); }catch(e){ bootDone(); $("#view").innerHTML='<div class="empty">Impossible de charger le catalogue. Vérifie ta connexion et relance l\'appli.</div>'; return; }
   // retour au même écran seulement si l'appli a été quittée il y a moins de 30 min (sinon on repart de l'accueil)

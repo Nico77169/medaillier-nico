@@ -381,6 +381,11 @@ img{max-width:100%}
       <button class="chip chip-hugo" data-f="hugo">Hugo</button>
       <button class="chip clear" id="clearF" hidden aria-label="Retirer le filtre">✕</button>
     </div>
+    <div class="yrchips hsub" id="hugoSub" role="group" aria-label="Pièces de Hugo" hidden>
+      <button class="yrchip" data-hs="all"><b>Toutes</b></button>
+      <button class="yrchip" data-hs="has"><b>Hugo les a</b></button>
+      <button class="yrchip" data-hs="miss"><b>Il lui manque</b></button>
+    </div>
   </header>
   <input type="file" id="newCam" class="vh" accept="image/*" capture="environment" tabindex="-1">
   <input type="file" id="newGal" class="vh" accept="image/*" tabindex="-1">
@@ -392,7 +397,7 @@ img{max-width:100%}
 <section class="sheet" id="sheet" hidden aria-label="Ajouter ma pièce"></section>
 <footer class="foot"><div class="in" id="foot"></div></footer>
 <script src="vendor/supabase.js"></script>
-<script src="config.js?v=42"></script>
-<script src="app.js?v=42"></script>
+<script src="config.js?v=43"></script>
+<script src="app.js?v=43"></script>
 </body>
 </html>
