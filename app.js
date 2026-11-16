@@ -426,7 +426,7 @@ function catMeta(all){ const l=S.filter?all.filter(passFilter):all, s=stats(all)
 function groupByCat(){ const g={}; allTokens().forEach(t=>{ const k=catT(t); (g[k]=g[k]||[]).push(t); }); return g; }
 // ronds des départements (accueil et recherche) : blason en transparence sous le numéro, anneau = progression
 function depTiles(cats,groups){ return cats.map(c=>{ const all=groups[c.id]||[]; if(!all.length) return ""; const m=catMeta(all); if(S.filter&&!m.l.length) return "";
-  return `<button class="dep" data-cat="${c.id}" style="--c1:${c.c1};--c2:${c.c2};--p:${m.pct}" aria-label="${esc(c.num)} ${esc(c.name)} : ${m.s.own} sur ${m.s.total} possédées"><span class="dnum"><b>${esc(c.num)}</b></span><span class="dname">${esc(c.name)}</span></button>`; }).join(""); }
+  return `<button class="dep" data-cat="${c.id}" style="--c1:${c.c1};--c2:${c.c2};--p:${m.pct}" aria-label="${esc(c.num)} ${esc(c.name)} : ${m.s.own} sur ${m.s.total} ${HU()?"à Hugo":"possédées"}"><span class="dnum"><b>${esc(c.num)}</b></span><span class="dname">${esc(c.name)}</span></button>`; }).join(""); }
 // « 77 », « 7 », « 2a », « seine »… -> départements dont le numéro ou le nom correspond
 function matchDeps(q){ const n=norm(q).trim(); if(!n) return [];
   const num=/^\d{1,3}$|^2[ab]$/.test(n);
@@ -485,7 +485,7 @@ function homeHTML(){
       ${c.star?'<span class="badge-star">Objectif</span>':""}
       <span class="medal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${c.icon}</svg></span>
       <b>${esc(c.name)}</b>
-      <span class="meta">${m.s.own} / ${m.s.total} ${all.some(t=>t.v)?"variantes possédées":"possédées"}</span>${m.f}
+      <span class="meta">${m.s.own} / ${m.s.total} ${all.some(t=>t.v)?"variantes":""} ${HU()?"à Hugo":"possédées"}</span>${m.f}
       <span class="bar"><i style="width:${m.pct}%"></i></span></button>`; }).join("");
   const deps=depTiles(CATS.filter(c=>c.dep),groups);
   return `<p class="sect-title">Thèmes</p><div class="cats">${big}</div>
