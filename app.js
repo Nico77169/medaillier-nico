@@ -21,7 +21,11 @@ let NEWY=0; // année des nouveautés (la plus récente du catalogue)
 function hasCat(c){ return CATS.some(x=>x.id===c); }
 function catT(t){ const mv=S.items[t.id]&&S.items[t.id].mv; if(mv&&hasCat(mv)) return mv; if(hasCat(t.cat)) return t.cat;
   if(t.dept&&hasCat("d"+t.dept)) return "d"+t.dept; return "autres"; } // anciennes catégories -> département ou « Sans département » // thème choisi par Nico s'il a déplacé la pièce
-function inCat(t,c){ const k=catT(t); if(c==="nouveautes") return k!=="disney"&&k!=="beauval"&&parseInt(t.years,10)===NEWY; /* pièces sorties pour la première fois cette année */ return k===c; }
+function inCat(t,c){ if(c==="favoris") return isFav(t.id); const k=catT(t); if(c==="nouveautes") return k!=="disney"&&k!=="beauval"&&parseInt(t.years,10)===NEWY; /* pièces sorties pour la première fois cette année */ return k===c; }
+/* ---------- Mes favoris : raccourcis vers des pièces de toute la collection ---------- */
+function isFav(id){ return !!(S.items[id]&&S.items[id].fav); }
+const FAVCAT={id:"favoris",name:"Mes favoris",virtual:true,c1:"#f6cf6a",c2:"#b07a14",icon:'<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>'};
+function emptyMsg(){ if(S.cat==="favoris"&&!S.filter&&!S.q) return "Pas encore de favori. Ouvre n'importe quelle pièce et touche l'étoile ☆ pour la retrouver ici en un clic."; return "Aucune médaille ne correspond"+(S.filter?" avec ce filtre":"")+"."; }
 function isVirtual(c){ return !!(CATS.find(x=>x.id===c)||{}).virtual; }
 function st(id){ return S.items[id]||{}; }
 // lignes toujours rangées par année puis par revers (une année ajoutée se met à sa place)
@@ -155,7 +159,7 @@ function markDirty(id,before,after){
   });
   DV[id]=(DV[id]||0)+1; ls.set("nico_dirty",DIRTY);
 }
-function emptyItem(c){ return !c.q && !c.vq && !c.xv && !c.hv && !c.f && !c.b && !c.mv && !c.pv && !c.hide && !c.ns && !c.loc && !c.vx; }
+function emptyItem(c){ return !c.q && !c.vq && !c.xv && !c.hv && !c.f && !c.b && !c.mv && !c.pv && !c.hide && !c.ns && !c.loc && !c.vx && !c.fav; }
 function applyDirty(base,d){
   const r=JSON.parse(JSON.stringify(base||{}));
   Object.entries(d||{}).forEach(([k,v])=>{
@@ -345,7 +349,7 @@ function yrChips(){
   return `<div class="yrchips" role="tablist" aria-label="Année">`+[["","Toutes",pool.length],...ys.map(y=>[y,y,n(y)])].map(([y,l,c])=>`<button class="yrchip${(S.yr||"")===y?" on":""}" data-yr="${y}" role="tab" aria-selected="${(S.yr||"")===y}"><b>${l}</b><small>${c}</small></button>`).join("")+`</div>`;
 }
 function mosaicHTML(list,mode){
-  if(!list.length) return yrChips()+`<div class="empty">Aucune médaille ne correspond${S.filter?" avec ce filtre":""}.</div>`;
+  if(!list.length) return yrChips()+`<div class="empty">${emptyMsg()}</div>`;
   const byL=mode==="letter", none=byL?"#":"Sans année", groups=new Map();
   list.forEach(t=>{ const k=byL?letterOf(t):(S.yr||yearOf(t)||none); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(t); });
   const keys=[...groups.keys()].sort((a,b)=>(a===none)-(b===none)||(byL?a.localeCompare(b):b.localeCompare(a))); // années : les plus récentes en haut
@@ -414,7 +418,7 @@ function renderMain(){
   if(!S.cat){ const dm=matchDeps(S.q); if(dm.length) h+=`<p class="sect-title">Département${dm.length>1?"s":""}</p><div class="deps">${depTiles(dm,groupByCat())}</div>`;
     h+=`<p class="sect-title">${S.approx?"Rien d'exact — pièces les plus proches":`${list.length} pièce${list.length>1?"s":""} trouvée${list.length>1?"s":""}`}</p>`; }
   h+=yrChips();
-  h+= list.length?`<div class="list">${part.map(cardHTML).join("")}</div>${rest>0?`<button class="addbtn more" id="moreBtn">Afficher la suite (${rest} pièce${rest>1?"s":""})</button>`:""}`:`<div class="empty">Aucune médaille ne correspond${S.filter?" avec ce filtre":""}.</div>`;
+  h+= list.length?`<div class="list">${part.map(cardHTML).join("")}</div>${rest>0?`<button class="addbtn more" id="moreBtn">Afficher la suite (${rest} pièce${rest>1?"s":""})</button>`:""}`:`<div class="empty">${emptyMsg()}</div>`;
   if(S.cat&&!isVirtual(S.cat)) h+=S.addOpen?`<div id="addPanel">${addFormHTML()}</div>`:`<button class="addbtn" id="addBtn">+ Ajouter une médaille absente du catalogue</button><div id="addPanel"></div>`;
   const y0=scrollY; v.innerHTML=h; if(KEEPY){ scrollTo(0,y0); KEEPY=false; }
   bindAdd();
@@ -423,7 +427,7 @@ function renderMain(){
 }
 function catMeta(all){ const l=S.filter?all.filter(passFilter):all, s=stats(all), pct=s.total?Math.round(s.own/s.total*100):0;
   return {l,s,pct,f:S.filter?`<span class="meta">${l.length} jeton${l.length>1?"s":""} ${({own:"possédé",missing:"avec un manque",dup:"avec doublon",hugo:({has:"que Hugo a",miss:"qui manquent à Hugo"})[S.hsub]||"vus par Hugo",pend:"en attente"})[S.filter]}${l.length>1&&S.filter==="own"?"s":""}</span>`:""}; }
-function groupByCat(){ const g={}; allTokens().forEach(t=>{ const k=catT(t); (g[k]=g[k]||[]).push(t); }); return g; }
+function groupByCat(){ const g={favoris:[]}; allTokens().forEach(t=>{ const k=catT(t); (g[k]=g[k]||[]).push(t); if(isFav(t.id)) g.favoris.push(t); }); return g; }
 // ronds des départements (accueil et recherche) : blason en transparence sous le numéro, anneau = progression
 function depTiles(cats,groups){ return cats.map(c=>{ const all=groups[c.id]||[]; if(!all.length) return ""; const m=catMeta(all); if(S.filter&&!m.l.length) return "";
   return `<button class="dep" data-cat="${c.id}" style="--c1:${c.c1};--c2:${c.c2};--p:${m.pct}" aria-label="${esc(c.num)} ${esc(c.name)} : ${m.s.own} sur ${m.s.total} ${HU()?"à Hugo":"possédées"}"><span class="dnum"><b>${esc(c.num)}</b></span><span class="dname">${esc(c.name)}</span></button>`; }).join(""); }
@@ -485,8 +489,8 @@ function homeHTML(){
       ${c.star?'<span class="badge-star">Objectif</span>':""}
       <span class="medal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${c.icon}</svg></span>
       <b>${esc(c.name)}</b>
-      <span class="meta">${m.s.own} / ${m.s.total} ${all.some(t=>t.v)?"variantes":""} ${HU()?"à Hugo":"possédées"}</span>${m.f}
-      <span class="bar"><i style="width:${m.pct}%"></i></span></button>`; }).join("");
+      ${c.id==="favoris"?`<span class="meta">${all.length?`${all.length} pièce${all.length>1?"s":""} en favori`:"Touche ☆ sur une pièce pour l'ajouter ici"}</span>`:`<span class="meta">${m.s.own} / ${m.s.total} ${all.some(t=>t.v)?"variantes":""} ${HU()?"à Hugo":"possédées"}</span>${m.f}`}
+      ${c.id==="favoris"?"":`<span class="bar"><i style="width:${m.pct}%"></i></span>`}</button>`; }).join("");
   const deps=depTiles(CATS.filter(c=>c.dep),groups);
   return `<p class="sect-title">Thèmes</p><div class="cats">${big}</div>
     <button class="nearbtn" id="nearBtn"><span>📍</span><b>Autour de moi</b><small>Pièces vendues près d'ici, de 2 à 80 km</small></button>
@@ -616,11 +620,13 @@ function cardHTML(t){
   return `<article class="card${own?" own":""}" data-id="${t.id}" data-year="${yearOf(t)}" data-letter="${letterOf(t)}">
     ${photoBlock(t,e,sf)}
     <div>
+      <button class="favbtn${isFav(t.id)?" on":""}" data-fav="${t.id}" aria-pressed="${isFav(t.id)}" aria-label="${isFav(t.id)?"Retirer de mes favoris":"Ajouter à mes favoris"}">${isFav(t.id)?"★":"☆"}</button>
       <div class="ref" data-mv="${t.id}">${esc(t.ref||"Sans référence JTC")}${st(t.id).mv?' <span class="moved">· déplacée</span>':""}</div>
       <h3 class="name">${esc(t.name)}</h3>
       <div class="info"><span>${esc(yearsLabel(t,e))}</span>${t.dept?`<span>Dép. ${esc(t.dept)}</span>`:""}${t.metal?`<span>${esc(t.metal)}</span>`:""}${t.mint?`<span>Tirage ${esc(t.mint)}</span>`:""}${!S.cat||isVirtual(S.cat)?`<span>${esc(catOf(catT(t)).name)}</span>`:""}</div>
       ${t.note?`<div class="note">${esc(t.note)}</div>`:""}
       <div class="links">${sf?`<a class="nlink" href="${numUrl(t)}" target="_blank" rel="noopener">Photos sur Numista ↗</a>${cjtLink(t)}`:""}</div>
+      ${S.cat==="favoris"||INSHEET?`<button class="golink" data-goto="${t.id}">↪ Aller à sa place : ${esc(catOf(catT(t)).name)}</button>`:""}
       ${whereHTML(t)}
     </div>
     ${dup?`<div class="pills"><span class="pill ok">${dup} doublon${dup>1?"s":""}</span></div>`:""}
@@ -673,6 +679,10 @@ function numUrlSafe(t){ return numUrl(t); }
 document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
   if(b.dataset.cat){ if(!S.cat){ S.homeQ=S.q; HOMEY=scrollY; } OPEN.clear(); S.mosaic=true; S.addOpen=false; S.cat=b.dataset.cat; S.yr=""; S.q=""; $("#q").value=""; scrollTo(0,0); render(); return; }
+  if(b.dataset.fav){ const id=b.dataset.fav, on=isFav(id); patch(id,{fav:on?"":Date.now()}); toast(on?"Retirée de tes favoris":"Ajoutée à tes favoris ⭐"); rerender(); return; }
+  if(b.dataset.goto){ const id=b.dataset.goto, t=byId(id); if(!t) return; if(PIECE) closePiece();
+    if(!S.cat){ S.homeQ=S.q; HOMEY=scrollY; } OPEN.clear(); S.addOpen=false; S.cat=catT(t); S.yr=""; S.q=""; $("#q").value=""; OPEN.add(id);
+    jumpTo(x=>x.id===id); if(!(S.list||[]).some(x=>x.id===id)){ S.filter=null; saveFilter(); jumpTo(x=>x.id===id); } return; }
   if(b.dataset.where){ const id=b.dataset.where; if(PIECE===id) return; WOPEN.has(id)?WOPEN.delete(id):WOPEN.add(id); rerender(); return; }
   if(b.dataset.wcopy){ const g=geoOf(b.dataset.wcopy)||[], txt=[g[3],g[4]].filter(Boolean).join(", ")||`${g[0]}, ${g[1]}`;
     (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast("Adresse copiée"),()=>toast(txt)); return; }
@@ -1264,7 +1274,7 @@ function bootDone(msg){ clearTimeout(BOOTT); if(!BOOT) return; BOOT=false; $("#b
 /* ---------- démarrage ---------- */
 async function loadCatalogue(){
   const r=await fetch("catalogue.json",{cache:"no-cache"}); const c=await r.json();
-  CATS=c.cats; CATALOG=c.tokens; PHOTOS=c.photos||{}; CATALOG_DATE=c.updated||""; LEGACY=c.legacy||{}; CJT_OWN=c.cjtOwn||{}; CJT_DATE=c.cjtDate||""; RESET_OWN=c.resetOwn||""; RESET_BACK=c.resetBack||"";
+  CATS=c.cats.filter(x=>x.id!=="favoris"); { const i=CATS.findIndex(x=>x.id==="beauval"); CATS.splice(i<0?CATS.findIndex(x=>x.dep):i+1,0,FAVCAT); } CATALOG=c.tokens; PHOTOS=c.photos||{}; CATALOG_DATE=c.updated||""; LEGACY=c.legacy||{}; CJT_OWN=c.cjtOwn||{}; CJT_DATE=c.cjtDate||""; RESET_OWN=c.resetOwn||""; RESET_BACK=c.resetBack||"";
   NEWY=Math.max(...CATALOG.filter(t=>t.cat!=="disney"&&t.cat!=="beauval").flatMap(t=>t.v?t.v.map(v=>+v[0]):[parseInt(t.years,10)||0]));
   CATALOG.forEach(t=>{ if(t.np&&!PHOTOS[t.id]) PHOTOS[t.id]=t.np; });
 }
