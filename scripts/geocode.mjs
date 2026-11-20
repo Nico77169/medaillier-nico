@@ -95,6 +95,17 @@ async function findTown(q, dept) {
   }
   return null;
 }
+// commune hors du département indiqué (fiche mal rangée) : seulement si le nom correspond exactement
+const norm = x => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]+/g, " ").trim();
+async function findTownAny(q) {
+  if (!q || q.length < 4) return null;
+  await sleep(150);
+  const j = await getJSON(`https://api-adresse.data.gouv.fr/search/?type=municipality&limit=3&q=${encodeURIComponent(q)}`);
+  const f = ((j && j.features) || [])[0];
+  if (f && f.properties.score > 0.85 && norm(f.properties.city || f.properties.name) === norm(q))
+    return { lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], name: f.properties.city || f.properties.name };
+  return null;
+}
 // --- Offices de tourisme de France (une seule requête Overpass) ------------------------------
 async function loadOffices() {
   const q = `[out:json][timeout:240];area["ISO3166-1"="FR"][admin_level=2]->.a;nwr["tourism"="information"]["information"="office"](area.a);out center tags;`;
@@ -121,12 +132,17 @@ function townGuesses(t) {
   const m = String(t.site || "").match(/\b(?:de|du|des|d')\s*(?:la |le |l')?([A-ZÉÈ][\wÀ-ÿ' -]+)$/);
   if (m) out.push(m[1]);
   if (seg[1]) out.push(seg[1]);
+  // « Festival du film de Cabourg » → Cabourg ; « Château de Pierrefonds » → Pierrefonds
+  for (const sg of seg) { const d = sg.match(/\b(?:de|du|des|d'|à|sur)\s+(?:la |le |les |l')?([A-ZÉÈÊÀÂÎÔ][\wÀ-ÿ'-]+(?:[ -](?:sur|en|les|le|la|de|du|d'|lès)[ -]?[A-ZÉÈÊÀÂÎÔ]?[\wÀ-ÿ'-]+)*)\s*$/); if (d) out.push(d[1]); }
+  // puis chaque mot à majuscule (hors mots courants)
+  const COMMON = /^(festival|parc|mus[ée]e|ch[aâ]teau|abbaye|[ée]glise|cath[ée]drale|basilique|chapelle|zoo|aquarium|grotte|mus[ée]um|ville|port|phare|pont|tour|place|fort|citadelle|jardin|jardins|domaine|maison|villa|saint|sainte|notre|dame|office|tourisme|mairie|the|les|des|anniversaire|edition|[ée]dition|face|centre|statue|chute|roue|stade|inauguration|chemin|depuis|moulin|tramway|amour|menhir|reflet|simple)$/i;
+  for (const w of String(t.name).match(/\b[A-ZÉÈÊÀÂÎÔ][\wÀ-ÿ'-]{3,}\b/g) || []) if (!COMMON.test(w)) out.push(w);
   return [...new Set(out.map(s => s.trim()).filter(s => s.length > 2))];
 }
 
 // REDO=1 : on refait tout (après amélioration du robot)
 if (process.env.REDO === "1") for (const k of Object.keys(GEO)) delete GEO[k];
-const todo = cat.tokens.filter(t => !GEO[t.id] && !MISS[t.id] && (ALL || RECENT.has(t.id)))
+const todo = cat.tokens.filter(t => !GEO[t.id] && (!MISS[t.id] || MISS[t.id] < 2) && (ALL || RECENT.has(t.id)))
   .sort((a, b) => (RECENT.has(b.id) - RECENT.has(a.id)) || ((+String(b.years).slice(0, 4) || 0) - (+String(a.years).slice(0, 4) || 0)));
 log("Pièces à placer :", todo.length, "(déjà placées :", Object.keys(GEO).length + ", toutes années :", ALL + ")");
 let OFFICES = null;
@@ -151,6 +167,7 @@ for (const t of todo) {
   if (!hit || ["city", "town", "village", "municipality", "administrative", "county", "state"].includes(hit.type)) {
     let town = hit && { lat: hit.lat, lon: hit.lon, name: hit.name };
     if (!town) for (const q of townGuesses(t)) { town = await findTown(q, dept); if (town) break; }
+    if (!town) for (const q of townGuesses(t).slice(0, 3)) { town = await findTownAny(q); if (town) break; }
     if (town) {
       if (!OFFICES) OFFICES = await loadOffices();
       let o = nearest(OFFICES, town.lat, town.lon, 15);
@@ -159,8 +176,8 @@ for (const t of todo) {
       else { hit = town; prec = "v"; label = town.name; }
     }
   }
-  if (hit) { GEO[t.id] = [+hit.lat.toFixed(5), +hit.lon.toFixed(5), prec, label]; stats[prec]++; }
-  else { stats.rien++; MISS[t.id] = 1; log("  ✗ introuvable :", t.ref, "|", t.name, "|", site, "|", dept); }
+  if (hit) { GEO[t.id] = [+hit.lat.toFixed(5), +hit.lon.toFixed(5), prec, label]; stats[prec]++; delete MISS[t.id]; }
+  else { stats.rien++; MISS[t.id] = 2; log("  ✗ introuvable :", t.ref, "|", t.name, "|", site, "|", dept); }
   if (n % 25 === 0) { log(`… ${n}/${todo.length}`, JSON.stringify(stats)); save(); }
 }
 save();
