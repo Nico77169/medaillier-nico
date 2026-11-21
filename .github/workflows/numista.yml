@@ -1,7 +1,7 @@
 name: Nouveautés Numista
 on:
   schedule:
-    - cron: "17 5 1 * *"   # le 1er de chaque mois, vers 6h-7h heure de Paris
+    - cron: "17 5 * * 1"   # chaque lundi, vers 6h-7h heure de Paris
   workflow_dispatch: {}      # bouton « Run workflow » pour le lancer à la main
 permissions:
   contents: write
@@ -16,6 +16,7 @@ jobs:
       - name: Chercher les nouveautés
         env:
           NUMISTA_API_KEY: ${{ secrets.NUMISTA_API_KEY }}
+          MAX_REQUESTS: "350"   # 5 lundis max par mois × 350 = sous le quota Numista de 2000/mois
         run: node scripts/update-numista.mjs
       - name: Placer les nouvelles pièces sur la carte
         continue-on-error: true
@@ -25,4 +26,4 @@ jobs:
           git config user.name "Robot Médaillier"
           git config user.email "actions@users.noreply.github.com"
           git add catalogue.json scripts/seen.json scripts/last-run.txt geo.json geo-old.json geo-miss.json scripts/geo-log.txt 2>/dev/null; git add catalogue.json scripts/seen.json scripts/last-run.txt
-          git diff --cached --quiet || (git commit -m "Nouveautés Numista du mois" && (git pull --rebase -q && git push -q || (sleep 10 && git pull --rebase -q && git push -q)))
+          git diff --cached --quiet || (git commit -m "Nouveautés Numista de la semaine" && (git pull --rebase -q && git push -q || (sleep 10 && git pull --rebase -q && git push -q)))

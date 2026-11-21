@@ -1,4 +1,4 @@
-// Robot mensuel : ajoute au catalogue les nouveaux jetons Monnaie de Paris trouvés sur Numista.
+// Robot hebdomadaire (chaque lundi) : ajoute au catalogue les nouveaux jetons Monnaie de Paris trouvés sur Numista.
 // Priorité : Disney, puis Beauval, puis toutes les autres nouveautés de l'année (si le budget le permet).
 // La clé API vient du secret GitHub NUMISTA_API_KEY (jamais écrite dans le code).
 import fs from "node:fs";
