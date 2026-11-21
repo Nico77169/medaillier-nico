@@ -1,7 +1,7 @@
 name: Nouveautés Numista
 on:
   schedule:
-    - cron: "17 5 * * 1"   # chaque lundi, vers 6h-7h heure de Paris
+    - cron: "7 2 * * 1"    # chaque lundi vers 3h du matin, heure de Paris (4h en été)
   workflow_dispatch: {}      # bouton « Run workflow » pour le lancer à la main
 permissions:
   contents: write
