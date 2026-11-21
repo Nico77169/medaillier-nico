@@ -42,6 +42,18 @@ function eff(t){ const u=st(t.id); const us=units(t); return {
   rar: u.rar||t.rar||"", shop: u.shop!=null&&u.shop!==""?u.shop:(t.shop==null?"":(t.shop?"oui":"non")), f:u.f, b:u.b }; }
 function num(v){ const n=parseFloat(String(v??"").replace(",",".")); return isNaN(n)?null:n; }
 
+/* une année tapée (4 chiffres, 19xx ou 20xx) est OBLIGATOIRE et exacte : pas d'à-peu-près dessus.
+   Le filtre s'applique aux lignes de cette année-là (ex. Manquantes + 2024 = la ligne 2024 manque). */
+const YEAR_RE=/(?<!\d)(?:19|20)\d\d(?!\d)/g;
+function splitQuery(q){ if(CODE_RE.test(norm(String(q||"")).trim())) return {ys:[],text:String(q||"")}; const ys=[...new Set(String(q||"").match(YEAR_RE)||[])]; return {ys, text:ys.length?String(q).replace(YEAR_RE," ").replace(/\s+/g," ").trim():String(q||"")}; }
+function unitPass(t,x){ const hv=st(t.id).hv||{};
+  if(S.filter==="own") return x.q>0;
+  if(S.filter==="missing") return x.q===0;
+  if(S.filter==="dup") return x.q>1;
+  if(S.filter==="pend") return x.p&&x.q<=0;
+  if(S.filter==="hugo") return S.hsub==="has"?!!hv[x.k]:S.hsub==="miss"?!hv[x.k]:true;
+  return true; }
+function passSearch(t,ys){ if(!ys.length) return passFilter(t); return units(t).some(x=>ys.includes(String(x.y))&&unitPass(t,x)); }
 function passFilter(t){
   const us=units(t);
   if(S.filter==="own") return us.some(x=>x.q>0);
@@ -351,7 +363,7 @@ function yrChips(){
 function mosaicHTML(list,mode){
   if(!list.length) return yrChips()+`<div class="empty">${emptyMsg()}</div>`;
   const byL=mode==="letter", none=byL?"#":"Sans année", groups=new Map();
-  list.forEach(t=>{ const k=byL?letterOf(t):(S.yr||yearOf(t)||none); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(t); });
+  const qy=splitQuery(S.q).ys; list.forEach(t=>{ const k=byL?letterOf(t):(S.yr||(qy.length===1?qy[0]:null)||yearOf(t)||none); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(t); });
   const keys=[...groups.keys()].sort((a,b)=>(a===none)-(b===none)||(byL?a.localeCompare(b):b.localeCompare(a))); // années : les plus récentes en haut
   const idx=byL?`<nav class="mabc">${keys.map(k=>`<button data-ml="ml-${k==="#"?"0":k}">${esc(k)}</button>`).join("")}</nav>`:"";
   // une ligne par année : étiquette à gauche (année + compte), pièces à droite
@@ -405,9 +417,9 @@ function renderMain(){
   const srt=mmode==="letter"?((a,b)=>a.name.localeCompare(b.name,"fr")):((a,b)=>String(b.years).localeCompare(String(a.years))||a.name.localeCompare(b.name)); // plus récentes d'abord
   let list, APPROX=false;
   if(!S.q) list=pool.filter(passFilter).sort(srt);
-  else { const sc=new Map(); pool.forEach(t=>{ if(passFilter(t)) sc.set(t,score(t,S.q)); });
+  else { const sq=splitQuery(S.q), sc=new Map(); pool.forEach(t=>{ if(passSearch(t,sq.ys)) sc.set(t,sq.text?score(t,sq.text):2); });
     list=[...sc].filter(([,v])=>v>=1).sort((a,b)=>b[1]-a[1]||srt(a[0],b[0])).map(([t])=>t);
-    if(!list.length&&words(S.q).length>1){ APPROX=true; // aucun résultat exact : les plus proches d'abord
+    if(!list.length&&words(sq.text).length>1){ APPROX=true; // aucun résultat exact : les plus proches d'abord
       list=[...sc].filter(([,v])=>v>=0.5).sort((a,b)=>b[1]-a[1]||srt(a[0],b[0])).map(([t])=>t).slice(0,120); } }
   S.approx=APPROX;
   if(mos&&!S.addOpen){ v.innerHTML=mosaicHTML(list,mmode); renderFoot(pool,"Total "+catOf(S.cat).name); return; }
