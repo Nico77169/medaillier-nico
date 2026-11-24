@@ -1,3 +1,3 @@
-Pièces à placer : 0 (déjà placées : 4442, toutes années : false)
+Pièces à placer : 0 (déjà placées : 4442, toutes années : true)
 Terminé : {"l":0,"o":0,"v":0,"rien":0}
 Adresses trouvées : 1
