@@ -1,0 +1,19 @@
+name: Diagnostic photos (lecture seule)
+on:
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Compter les photos (aucune modification)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          REF=axqafbplpfcohfincobx
+          Q=$(python3 -c 'import json;print(json.dumps({"query":open("scripts/diag-photos.sql").read(),"read_only":True}))')
+          curl -s -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" \
+            "https://api.supabase.com/v1/projects/$REF/database/query" -d "$Q"
+          echo
