@@ -151,7 +151,13 @@ let UID=null, syncing=false, flushTimer=null, retryTimer=null;
 const EDIT={}; // heure de la dernière modif locale de chaque pièce (évite qu'une synchro en cours écrase un clic récent)
 const Q=()=>ls.get("nico_queue")||{};
 function queue(id){ EDIT[id]=Date.now(); const q=Q(); q[id]=1; ls.set("nico_queue",q); clearTimeout(flushTimer); flushTimer=setTimeout(flush,500); }
-function persistLocal(){ ls.set("nico_items",S.items); ls.set("nico_custom",S.custom); }
+/* copie du téléphone : dans le stockage rapide ET, en secours, dans la base du téléphone (plus grande).
+   Si le stockage rapide est plein, l'appli ne repart plus d'une vieille copie sans photos. */
+let LSFULL=false, BKT=null;
+function persistLocal(){ const t=Date.now();
+  try{ localStorage.setItem("nico_items",JSON.stringify(S.items)); localStorage.setItem("nico_custom",JSON.stringify(S.custom)); localStorage.setItem("nico_items_t",String(t)); LSFULL=false; }
+  catch(e){ if(!LSFULL){ LSFULL=true; phLog("copie rapide du téléphone pleine : secours dans la base du téléphone"); } }
+  clearTimeout(BKT); BKT=setTimeout(()=>idb.put("nico_items_bk",{t,items:S.items,custom:S.custom}).catch(()=>{}),400); }
 function saveItem(id){ persistLocal(); queue(id); }
 function saveCustom(id){ persistLocal(); queue(id); }
 function saveFilter(){ ls.set("nico_filter",S.filter); }
@@ -280,6 +286,9 @@ async function pullOnce(){
     if(S.items[id]) items[id]=S.items[id]; else delete items[id]; if(S.custom[id]) custom[id]=S.custom[id]; else delete custom[id]; });
   Object.entries(S.items).forEach(([id,u])=>{ if(q[id]||!u) return; ["f","b"].forEach(k=>{ const srv=items[id]||{};
     if(u[k]&&!srv[k]&&!(REMOVED[id+k]>Date.now()-864e5)){ items[id]={...srv,[k]:u[k]}; const c=Q(); c[id]=1; ls.set("nico_queue",c); phLog("photo gardée (le serveur ne l'avait pas) : "+id); } }); });
+  // photos restées « en attente d'envoi » alors que le serveur a déjà la fiche : on les renvoie
+  for(const [id,u] of Object.entries(items)){ for(const k of ["f","b"]){ const r=u&&u[k];
+    if(typeof r==="string"&&r.startsWith("idb:")&&!Q()[id]&&(MEM[r]||await idb.get(r).catch(()=>null))){ const c=Q(); c[id]=1; ls.set("nico_queue",c); if(!DIRTY[id]) DIRTY[id]={}; DIRTY[id]["="+k]=r; ls.set("nico_dirty",DIRTY); phLog("photo en attente renvoyée : "+id); } } }
   if(!(prefs&&prefs.seeded) && !q._prefs && !(ls.get("nico_prefs")||{}).seeded && !Object.keys(raw).length){
     // premier lancement : on reprend ce qui avait été coché localement + les variantes vertes du tableau de Nico
     Object.assign(items,S.items); Object.assign(custom,S.custom); applyPreset(items);
@@ -1293,6 +1302,7 @@ async function loadCatalogue(){
 async function start(){
   S.nearR=ls.get("nico_nearR")||10; S.filter=ls.get("nico_filter")||null; S.hsub=ls.get("nico_hsub")||"all"; S.items=ls.get("nico_items")||{}; S.custom=ls.get("nico_custom")||{};
   showBoot("Chargement du catalogue…");
+  try{ const bk=await idb.get("nico_items_bk"); if(bk&&bk.t>(+localStorage.getItem("nico_items_t")||0)){ S.items=bk.items||{}; S.custom=bk.custom||{}; } }catch(e){} // copie de secours plus récente
   try{ await Promise.all([loadCatalogue(),loadGeo()]); }catch(e){ bootDone(); $("#view").innerHTML='<div class="empty">Impossible de charger le catalogue. Vérifie ta connexion et relance l\'appli.</div>'; return; }
   // retour au même écran seulement si l'appli a été quittée il y a moins de 30 min (sinon on repart de l'accueil)
   let vw=ls.get("nico_view"); if(vw&&!(Date.now()-(vw.t||0)<30*60e3)) vw=null;
